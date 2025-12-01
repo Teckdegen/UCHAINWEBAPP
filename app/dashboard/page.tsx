@@ -9,10 +9,10 @@ import {
   getCurrentWallet,
   getCurrentWalletId,
   setCurrentWalletId,
-  createWalletFromExistingMnemonic,
   importWalletFromMnemonic,
   importWalletFromPrivateKey,
   addWallet,
+  createWallet,
 } from "@/lib/wallet"
 import { getNativeBalance } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
@@ -430,7 +430,7 @@ export default function DashboardPage() {
                   onClick={() => setAddWalletMode("from-seed")}
                   className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all text-sm"
                 >
-                  Create New Wallet from Current Seed
+                  Create New Wallet (New Seed)
                 </button>
                 <button
                   onClick={() => setAddWalletMode("import-seed")}
@@ -484,13 +484,7 @@ export default function DashboardPage() {
                         return
                       }
                       setAddWalletLoading(true)
-                      const baseId = currentWalletId || (wallets[0]?.id ?? "")
-                      const newWallet = await createWalletFromExistingMnemonic(
-                        addPassword,
-                        baseId,
-                        chainId,
-                      )
-                      newWallet.name = newWalletName || newWallet.name
+                      const newWallet = await createWallet(addPassword, newWalletName || undefined, chainId)
                       addWallet(newWallet)
                       setWallets(getWallets())
                       setCurrentWalletId(newWallet.id)
@@ -501,7 +495,7 @@ export default function DashboardPage() {
                       setNewWalletName("")
                       fetchBalances()
                     } catch (err: any) {
-                      setAddWalletError(err.message || "Failed to create wallet from seed")
+                      setAddWalletError(err.message || "Failed to create wallet")
                     } finally {
                       setAddWalletLoading(false)
                     }
