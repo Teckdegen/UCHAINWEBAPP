@@ -149,7 +149,7 @@ export default function SwapPage() {
       const tokensWithBalance = tokensWithBalances.filter(
         (token) => Number.parseFloat(token.balance || "0") > 0,
       )
-      
+
       // Sort: PEPU native first if it has balance, then others
       const sortedFromTokens = tokensWithBalance.sort((a, b) => {
         if (a.isNative) return -1
@@ -158,12 +158,17 @@ export default function SwapPage() {
       })
       setFromTokens(sortedFromTokens)
 
-      // For "to" selector, show all tokens but PEPU native ALWAYS at top
-      // Remove PEPU from tokens array if it exists, then add it at the beginning
-      const tokensWithoutPepu = tokens.filter(
-        (token) => token.address.toLowerCase() !== PEPU_NATIVE.address.toLowerCase(),
+      // For "to" selector, show all tokens (so you can swap into new ones),
+      // but keep PEPU native at the top and include balances where available
+      const uniqueToTokens = tokensWithBalances.filter(
+        (token, index, self) =>
+          index === self.findIndex((t) => t.address.toLowerCase() === token.address.toLowerCase()),
       )
-      const toTokensList = [PEPU_NATIVE, ...tokensWithoutPepu]
+      const toTokensList = uniqueToTokens.sort((a, b) => {
+        if (a.isNative) return -1
+        if (b.isNative) return 1
+        return a.symbol.localeCompare(b.symbol)
+      })
       setToTokens(toTokensList)
     } catch (err) {
       console.error("Error loading tokens:", err)
@@ -287,10 +292,10 @@ export default function SwapPage() {
   const maxAmount = Number.parseFloat(fromTokenBalance)
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
+    <div className="min-h-screen bg-black text-white pb-24 relative">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-10">
+        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-green-500" />
