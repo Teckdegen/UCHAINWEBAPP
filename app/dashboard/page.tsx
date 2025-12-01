@@ -222,8 +222,8 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {/* Quick Actions - Only core actions, nav icons removed */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* Send - Always visible */}
             <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
               <div className="flex justify-center mb-2">
@@ -243,50 +243,6 @@ export default function DashboardPage() {
               </div>
               <p className="text-sm font-semibold">Receive</p>
             </Link>
-
-            {chainId === 97741 && (
-              <Link href="/swap" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-green-500" />
-                  </div>
-                </div>
-                <p className="text-sm font-semibold">Unchained Swap</p>
-              </Link>
-            )}
-
-            {chainId === 97741 && (
-              <Link href="/bridge" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-green-500" />
-                  </div>
-                </div>
-                <p className="text-sm font-semibold">Unchained Bridge</p>
-              </Link>
-            )}
-
-            {chainId === 97741 && (
-              <Link href="/browser" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-green-500" />
-                  </div>
-                </div>
-                <p className="text-sm font-semibold">Unchained Browser</p>
-              </Link>
-            )}
-
-            {chainId === 97741 && (
-              <Link href="/nfts" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <ImageIcon className="w-5 h-5 text-green-500" />
-                  </div>
-                </div>
-                <p className="text-sm font-semibold">NFTs</p>
-              </Link>
-            )}
           </div>
         </div>
 

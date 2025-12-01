@@ -14,6 +14,7 @@ export interface Wallet {
 
 const WALLETS_KEY = "unchained_wallets"
 const WALLET_STATE_KEY = "unchained_wallet_state"
+const AUTO_LOCK_KEY = "unchained_auto_lock_seconds"
 
 export function generateWalletId() {
   return Math.random().toString(36).substring(2, 15)
@@ -33,6 +34,55 @@ export async function createWallet(password: string, name?: string, chainId = 1)
     encryptedMnemonic,
     createdAt: Date.now(),
     name: name || `Wallet ${new Date().toLocaleDateString()}`,
+    chainId,
+  }
+}
+
+export async function importWalletFromMnemonic(
+  seedPhrase: string,
+  password: string,
+  name?: string,
+  chainId = 1,
+): Promise<Wallet> {
+  const wallet = ethers.Wallet.fromPhrase(seedPhrase)
+  const mnemonic = wallet.mnemonic?.phrase || seedPhrase
+
+  const encryptedPrivateKey = encryptData(wallet.privateKey, password)
+  const encryptedMnemonic = mnemonic ? encryptData(mnemonic, password) : undefined
+
+  return {
+    id: generateWalletId(),
+    address: wallet.address,
+    encryptedPrivateKey,
+    encryptedMnemonic,
+    createdAt: Date.now(),
+    name: name || `Imported Wallet ${new Date().toLocaleDateString()}`,
+    chainId,
+  }
+}
+
+export async function importWalletFromPrivateKey(
+  privateKey: string,
+  password: string,
+  name?: string,
+  chainId = 1,
+): Promise<Wallet> {
+  let cleaned = privateKey.trim()
+  if (!cleaned.startsWith("0x")) {
+    cleaned = "0x" + cleaned
+  }
+
+  const wallet = new ethers.Wallet(cleaned)
+
+  const encryptedPrivateKey = encryptData(wallet.privateKey, password)
+
+  return {
+    id: generateWalletId(),
+    address: wallet.address,
+    encryptedPrivateKey,
+    encryptedMnemonic: undefined,
+    createdAt: Date.now(),
+    name: name || `Imported Wallet ${new Date().toLocaleDateString()}`,
     chainId,
   }
 }
@@ -74,7 +124,19 @@ export function saveWallets(wallets: Wallet[]) {
 export function getWalletState() {
   if (typeof window === "undefined") return { isLocked: true, lastActivity: 0 }
   const stored = localStorage.getItem(WALLET_STATE_KEY)
-  return stored ? JSON.parse(stored) : { isLocked: true, lastActivity: 0 }
+  const state = stored ? JSON.parse(stored) : { isLocked: true, lastActivity: 0 }
+
+  // Auto-lock based on inactivity
+  const autoLockSeconds = getAutoLockSeconds()
+  if (!state.isLocked && state.lastActivity && autoLockSeconds > 0) {
+    const now = Date.now()
+    if (now - state.lastActivity > autoLockSeconds * 1000) {
+      state.isLocked = true
+      saveWalletState(state)
+    }
+  }
+
+  return state
 }
 
 export function saveWalletState(state: any) {
@@ -118,4 +180,17 @@ export function updateActivity() {
   const state = getWalletState()
   state.lastActivity = Date.now()
   saveWalletState(state)
+}
+
+export function getAutoLockSeconds(): number {
+  if (typeof window === "undefined") return 60
+  const stored = localStorage.getItem(AUTO_LOCK_KEY)
+  const parsed = stored ? Number.parseInt(stored, 10) : 60
+  return Number.isNaN(parsed) ? 60 : parsed
+}
+
+export function setAutoLockSeconds(seconds: number) {
+  if (typeof window === "undefined") return
+  const safe = Math.max(0, seconds)
+  localStorage.setItem(AUTO_LOCK_KEY, safe.toString())
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { createWallet, addWallet, getMnemonic } from "@/lib/wallet"
+import { createWallet, addWallet, getMnemonic, importWalletFromMnemonic, importWalletFromPrivateKey } from "@/lib/wallet"
 import { Eye, EyeOff, Copy } from "lucide-react"
 import Image from "next/image"
 
@@ -18,12 +18,15 @@ export default function SetupPage() {
   const [derivedAddress, setDerivedAddress] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [mnemonic, setMnemonic] = useState("")
+  const [quizIndices, setQuizIndices] = useState<number[]>([])
+  const [quizAnswers, setQuizAnswers] = useState<string[]>([])
+  const [quizError, setQuizError] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   const handleCreateWallet = async () => {
     if (!password || password.length < 4) {
-      setError("Password must be at least 4 characters")
+      setError("Password must be exactly 4 digits")
       return
     }
 
@@ -33,9 +36,41 @@ export default function SetupPage() {
       addWallet(wallet) // This will automatically register userId with API
       const mnemonic = getMnemonic(wallet, password)
       setMnemonic(mnemonic || "")
+      // Prepare quiz
+      if (mnemonic) {
+        const words = mnemonic.split(" ")
+        // Pick 3 random unique indices
+        const indices = new Set<number>()
+        while (indices.size < 3 && indices.size < words.length) {
+          indices.add(Math.floor(Math.random() * words.length))
+        }
+        setQuizIndices(Array.from(indices))
+        setQuizAnswers(Array.from(indices).map(() => ""))
+      }
       setMode("menu")
     } catch (err: any) {
       setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleImportSeed = async () => {
+    if (!seedPhrase || !password) {
+      setError("Please enter both seed phrase and password")
+      return
+    }
+
+    setLoading(true)
+    try {
+      const wallet = await importWalletFromMnemonic(seedPhrase.trim(), password, walletName || "Imported Wallet", 1)
+      addWallet(wallet)
+      setSeedPhrase("")
+      setWalletName("")
+      setPassword("")
+      router.push("/dashboard")
+    } catch (err: any) {
+      setError(err.message || "Failed to import seed phrase")
     } finally {
       setLoading(false)
     }
@@ -49,8 +84,14 @@ export default function SetupPage() {
 
     setLoading(true)
     try {
-      // This would implement private key import logic
-      setError("Private key import coming soon")
+      const wallet = await importWalletFromPrivateKey(privateKey.trim(), password, walletName || "Imported Wallet", 1)
+      addWallet(wallet)
+      setPrivateKey("")
+      setWalletName("")
+      setPassword("")
+      router.push("/dashboard")
+    } catch (err: any) {
+      setError(err.message || "Failed to import private key")
     } finally {
       setLoading(false)
     }
@@ -152,7 +193,109 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Mnemonic Display */}
+        {/* Import Seed Phrase */}
+        {mode === "import-seed" && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Wallet Name (Optional)</label>
+              <input
+                type="text"
+                value={walletName}
+                onChange={(e) => setWalletName(e.target.value)}
+                placeholder="My Imported Wallet"
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Seed Phrase</label>
+              <textarea
+                value={seedPhrase}
+                onChange={(e) => setSeedPhrase(e.target.value)}
+                placeholder="Enter your 12 or 24 word seed phrase"
+                className="input-field min-h-[100px]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Passcode (4 digits)</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                maxLength={4}
+                placeholder="Enter a 4-digit passcode"
+                className="input-field"
+              />
+            </div>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <button onClick={handleImportSeed} disabled={loading} className="btn-primary w-full disabled:opacity-50">
+              {loading ? "Importing..." : "Import Seed Phrase"}
+            </button>
+            <button
+              onClick={() => {
+                setMode("menu")
+                setError("")
+              }}
+              className="btn-secondary w-full"
+            >
+              Back
+            </button>
+          </div>
+        )}
+
+        {/* Import Private Key */}
+        {mode === "import-key" && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Wallet Name (Optional)</label>
+              <input
+                type="text"
+                value={walletName}
+                onChange={(e) => setWalletName(e.target.value)}
+                placeholder="My Imported Wallet"
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Private Key</label>
+              <textarea
+                value={privateKey}
+                onChange={(e) => setPrivateKey(e.target.value)}
+                placeholder="Enter your private key"
+                className="input-field min-h-[80px]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Passcode (4 digits)</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                maxLength={4}
+                placeholder="Enter a 4-digit passcode"
+                className="input-field"
+              />
+            </div>
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+            <button
+              onClick={handleImportPrivateKey}
+              disabled={loading}
+              className="btn-primary w-full disabled:opacity-50"
+            >
+              {loading ? "Importing..." : "Import Private Key"}
+            </button>
+            <button
+              onClick={() => {
+                setMode("menu")
+                setError("")
+              }}
+              className="btn-secondary w-full"
+            >
+              Back
+            </button>
+          </div>
+        )}
+
+        {/* Mnemonic Display + Backup Quiz */}
         {mnemonic && (
           <div className="space-y-4">
             <div className="glass-card p-6">
@@ -173,9 +316,47 @@ export default function SetupPage() {
                 Copy to clipboard
               </button>
             </div>
-            <button onClick={proceedToDashboard} className="btn-primary w-full">
-              I have saved my seed phrase
-            </button>
+            {quizIndices.length > 0 && (
+              <div className="glass-card p-6 space-y-3">
+                <h3 className="font-semibold text-sm mb-2">Verify Your Backup</h3>
+                <p className="text-xs text-gray-400 mb-2">
+                  Enter the correct words from your seed phrase to confirm you backed it up.
+                </p>
+                {quizIndices.map((index, i) => (
+                  <div key={index}>
+                    <label className="block text-xs text-gray-400 mb-1">{`Word #${index + 1}`}</label>
+                    <input
+                      type="text"
+                      value={quizAnswers[i] || ""}
+                      onChange={(e) => {
+                        const next = [...quizAnswers]
+                        next[i] = e.target.value
+                        setQuizAnswers(next)
+                        setQuizError("")
+                      }}
+                      className="input-field"
+                    />
+                  </div>
+                ))}
+                {quizError && <p className="text-xs text-red-400">{quizError}</p>}
+                <button
+                  onClick={() => {
+                    const words = mnemonic.split(" ")
+                    const allCorrect = quizIndices.every((idx, i) => {
+                      return (quizAnswers[i] || "").trim().toLowerCase() === words[idx].toLowerCase()
+                    })
+                    if (!allCorrect) {
+                      setQuizError("Incorrect words. Please check your seed phrase and try again.")
+                      return
+                    }
+                    proceedToDashboard()
+                  }}
+                  className="btn-primary w-full"
+                >
+                  Continue
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

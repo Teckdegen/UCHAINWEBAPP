@@ -96,7 +96,9 @@ export class UnchainedProvider {
     const self = this
     
     const provider: any = {
+      // Pretend to be multiple popular wallets so any choice routes to Unchained
       isMetaMask: true,
+      isCoinbaseWallet: true,
       isUnchained: true,
 
       request: async (args: { method: string; params?: any[] }) => {
@@ -158,14 +160,15 @@ export class UnchainedProvider {
       enumerable: true,
     })
 
-    // Only set if window.ethereum doesn't exist or if it's our provider
-    if (!window.ethereum || (window.ethereum as any).isUnchained) {
+    // Always override window.ethereum so any injected-wallet choice (MetaMask, Coinbase, etc.)
+    // inside this window will route through Unchained
+    ;(provider as any).providers = [provider]
+
     Object.defineProperty(window, "ethereum", {
       value: provider,
       writable: true,
-        configurable: true,
+      configurable: true,
     })
-    }
   }
 
   private async handleRequest(args: { method: string; params?: any[] }) {

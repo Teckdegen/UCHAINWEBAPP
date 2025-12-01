@@ -11,6 +11,8 @@ import {
   getMnemonic,
   encryptData,
   decryptData,
+  getAutoLockSeconds,
+  setAutoLockSeconds,
 } from "@/lib/wallet"
 import { deleteAllCookies } from "@/lib/cookies"
 import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key } from "lucide-react"
@@ -30,6 +32,7 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [changePasscodeLoading, setChangePasscodeLoading] = useState(false)
   const [changePasscodeSuccess, setChangePasscodeSuccess] = useState("")
+  const [autoLockSeconds, setAutoLockSecondsState] = useState<number>(60)
 
   useEffect(() => {
     const state = getWalletState()
@@ -40,6 +43,11 @@ export default function SettingsPage() {
 
     updateActivity()
     setWallets(getWallets())
+
+    // Load auto-lock setting
+    if (typeof window !== "undefined") {
+      setAutoLockSecondsState(getAutoLockSeconds())
+    }
   }, [router])
 
   const handleCopy = (text: string, field: string) => {
@@ -51,6 +59,13 @@ export default function SettingsPage() {
   const handleLock = () => {
     lockWallet()
     router.push("/unlock")
+  }
+
+  const handleAutoLockChange = (value: string) => {
+    const seconds = Number.parseInt(value, 10)
+    if (Number.isNaN(seconds)) return
+    setAutoLockSecondsState(seconds)
+    setAutoLockSeconds(seconds)
   }
 
   const handleReset = () => {
@@ -200,90 +215,107 @@ export default function SettingsPage() {
                 <h2 className="text-lg font-bold">Security</h2>
               </div>
             </div>
-            {!showChangePasscode ? (
-              <button
-                onClick={() => setShowChangePasscode(true)}
-                className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all"
-              >
-                Change Passcode
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Current Passcode</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => {
-                      setCurrentPassword(e.target.value)
-                      setError("")
-                    }}
-                    placeholder="Enter current passcode"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">New Passcode</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value)
-                      setError("")
-                    }}
-                    placeholder="Enter new passcode"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Confirm New Passcode</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value)
-                      setError("")
-                    }}
-                    placeholder="Confirm new passcode"
-                    className="input-field"
-                  />
-                </div>
 
-                {error && (
-                  <div className="glass-card p-3 border border-red-500/50 bg-red-500/10">
-                    <p className="text-red-400 text-sm">{error}</p>
-                  </div>
-                )}
-
-                {changePasscodeSuccess && (
-                  <div className="glass-card p-3 border border-green-500/50 bg-green-500/10">
-                    <p className="text-green-400 text-sm">{changePasscodeSuccess}</p>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleChangePasscode}
-                    disabled={changePasscodeLoading}
-                    className="flex-1 px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50"
-                  >
-                    {changePasscodeLoading ? "Updating..." : "Update Passcode"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowChangePasscode(false)
-                      setCurrentPassword("")
-                      setNewPassword("")
-                      setConfirmPassword("")
-                      setError("")
-                    }}
-                    className="flex-1 px-4 py-3 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 font-semibold transition-all"
-                  >
-                    Cancel
-                  </button>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Auto-Lock Timer (seconds)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={autoLockSeconds}
+                  onChange={(e) => handleAutoLockChange(e.target.value)}
+                  className="input-field"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Set how long of inactivity before the wallet auto-locks. Use 0 to disable auto-lock.
+                </p>
               </div>
-            )}
+
+              {!showChangePasscode ? (
+                <button
+                  onClick={() => setShowChangePasscode(true)}
+                  className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all"
+                >
+                  Change Passcode
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Current Passcode</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => {
+                        setCurrentPassword(e.target.value)
+                        setError("")
+                      }}
+                      placeholder="Enter current passcode"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">New Passcode</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value)
+                        setError("")
+                      }}
+                      placeholder="Enter new passcode"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Confirm New Passcode</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value)
+                        setError("")
+                      }}
+                      placeholder="Confirm new passcode"
+                      className="input-field"
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="glass-card p-3 border border-red-500/50 bg-red-500/10">
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                  )}
+
+                  {changePasscodeSuccess && (
+                    <div className="glass-card p-3 border border-green-500/50 bg-green-500/10">
+                      <p className="text-green-400 text-sm">{changePasscodeSuccess}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleChangePasscode}
+                      disabled={changePasscodeLoading}
+                      className="flex-1 px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50"
+                    >
+                      {changePasscodeLoading ? "Updating..." : "Update Passcode"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowChangePasscode(false)
+                        setCurrentPassword("")
+                        setNewPassword("")
+                        setConfirmPassword("")
+                        setError("")
+                      }}
+                      className="flex-1 px-4 py-3 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 font-semibold transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Recovery Section */}
