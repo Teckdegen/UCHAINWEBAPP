@@ -1,4 +1,6 @@
 import { ethers } from "ethers"
+import { createPublicClient, http } from "viem"
+import { mainnet } from "viem/chains"
 
 // Multiple RPC endpoints for Ethereum (fallback support)
 const ETH_RPC_URLS = [
@@ -90,12 +92,25 @@ export function getNativeSymbol(chainId: number): string {
 }
 
 export async function getNativeBalance(address: string, chainId: number): Promise<string> {
+  // Use viem for Ethereum native balance
+  if (chainId === 1) {
+    try {
+      const client = createPublicClient({
+        chain: mainnet,
+        transport: http(ETH_RPC_URLS[0]),
+      })
+      const balance = await client.getBalance({ address: address as `0x${string}` })
+      return ethers.formatEther(balance)
+    } catch {
+      // Fallback to ethers provider chain
+    }
+  }
+
   try {
     const provider = await getProviderWithFallback(chainId)
     const balance = await provider.getBalance(address)
     return ethers.formatEther(balance)
   } catch (error) {
-    // Fallback to first endpoint
     const provider = getProvider(chainId)
     const balance = await provider.getBalance(address)
     return ethers.formatEther(balance)
@@ -103,6 +118,50 @@ export async function getNativeBalance(address: string, chainId: number): Promis
 }
 
 export async function getTokenBalance(tokenAddress: string, userAddress: string, chainId: number): Promise<string> {
+  // Use viem for Ethereum ERC-20 balance
+  if (chainId === 1) {
+    try {
+      const client = createPublicClient({
+        chain: mainnet,
+        transport: http(ETH_RPC_URLS[0]),
+      })
+      const [balance, decimals] = await Promise.all([
+        client.readContract({
+          address: tokenAddress as `0x${string}`,
+          abi: [
+            {
+              name: "balanceOf",
+              type: "function",
+              stateMutability: "view",
+              inputs: [{ name: "account", type: "address" }],
+              outputs: [{ name: "", type: "uint256" }],
+            },
+          ],
+          functionName: "balanceOf",
+          args: [userAddress as `0x${string}`],
+        }),
+        client.readContract({
+          address: tokenAddress as `0x${string}`,
+          abi: [
+            {
+              name: "decimals",
+              type: "function",
+              stateMutability: "view",
+              inputs: [],
+              outputs: [{ name: "", type: "uint8" }],
+            },
+          ],
+          functionName: "decimals",
+          args: [],
+        }),
+      ])
+
+      return ethers.formatUnits(balance as bigint, Number(decimals))
+    } catch {
+      // fall through to ethers-based path
+    }
+  }
+
   try {
     const provider = await getProviderWithFallback(chainId)
     const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
@@ -112,7 +171,6 @@ export async function getTokenBalance(tokenAddress: string, userAddress: string,
 
     return ethers.formatUnits(balance, decimals)
   } catch (error) {
-    // Fallback to first endpoint
     const provider = getProvider(chainId)
     const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
 

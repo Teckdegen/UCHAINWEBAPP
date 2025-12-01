@@ -52,6 +52,12 @@ export default function DashboardPage() {
   const [showAddToken, setShowAddToken] = useState(false)
   const [customTokenAddress, setCustomTokenAddress] = useState("")
   const [customTokenError, setCustomTokenError] = useState("")
+  const [customTokenInfo, setCustomTokenInfo] = useState<{
+    address: string
+    symbol: string
+    name: string
+    decimals: number
+  } | null>(null)
 
   useEffect(() => {
     const state = getWalletState()
@@ -460,6 +466,7 @@ export default function DashboardPage() {
                   setShowAddToken(false)
                   setCustomTokenAddress("")
                   setCustomTokenError("")
+                  setCustomTokenInfo(null)
                 }}
                 className="text-gray-400 hover:text-white"
               >
@@ -475,6 +482,7 @@ export default function DashboardPage() {
                 onChange={(e) => {
                   setCustomTokenAddress(e.target.value)
                   setCustomTokenError("")
+                  setCustomTokenInfo(null)
                 }}
                 placeholder="0x..."
                 className="input-field"
@@ -482,6 +490,23 @@ export default function DashboardPage() {
             </div>
 
             {customTokenError && <p className="text-xs text-red-400">{customTokenError}</p>}
+
+            {customTokenInfo && (
+              <div className="glass-card p-3 border border-white/10 text-xs space-y-1">
+                <p className="text-gray-300">
+                  <span className="font-semibold">Symbol:</span> {customTokenInfo.symbol}
+                </p>
+                <p className="text-gray-300">
+                  <span className="font-semibold">Name:</span> {customTokenInfo.name}
+                </p>
+                <p className="text-gray-300">
+                  <span className="font-semibold">Decimals:</span> {customTokenInfo.decimals}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  Confirm this matches the token details on your explorer before saving.
+                </p>
+              </div>
+            )}
 
             <button
               onClick={async () => {
@@ -491,9 +516,32 @@ export default function DashboardPage() {
                     setCustomTokenError("Enter a token contract address")
                     return
                   }
-                  addEthCustomToken(customTokenAddress)
+
+                  const normalized = customTokenAddress.trim()
+
+                  // Step 1: lookup token details via public RPC
+                  if (!customTokenInfo) {
+                    const provider = new ethers.JsonRpcProvider("https://eth.llamarpc.com")
+                    const contract = new ethers.Contract(normalized, ERC20_ABI, provider)
+                    const [symbol, name, decimals] = await Promise.all([
+                      contract.symbol().catch(() => "???"),
+                      contract.name().catch(() => "Unknown Token"),
+                      contract.decimals(),
+                    ])
+                    setCustomTokenInfo({
+                      address: normalized,
+                      symbol,
+                      name,
+                      decimals: Number(decimals),
+                    })
+                    return
+                  }
+
+                  // Step 2: user confirms, so save token
+                  addEthCustomToken(customTokenInfo.address)
                   setShowAddToken(false)
                   setCustomTokenAddress("")
+                  setCustomTokenInfo(null)
                   await fetchBalances()
                 } catch (err: any) {
                   setCustomTokenError(err.message || "Failed to add token")
@@ -501,7 +549,7 @@ export default function DashboardPage() {
               }}
               className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all text-sm"
             >
-              Save Token
+              {customTokenInfo ? "Confirm & Save Token" : "Lookup Token"}
             </button>
 
             <p className="text-[11px] text-gray-500">

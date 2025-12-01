@@ -354,7 +354,7 @@ export default function SetupPage() {
                   className="btn-primary w-full"
                 >
                   Continue
-                </button>
+            </button>
               </div>
             )}
           </div>
