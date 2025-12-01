@@ -49,6 +49,13 @@ export default function DashboardPage() {
   const [addWalletLoading, setAddWalletLoading] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
 
+  const ETH_FORCE_TOKENS = [
+    // USDC
+    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+    // Custom token provided by user
+    "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6",
+  ]
+
   useEffect(() => {
     const state = getWalletState()
     if (state.isLocked) {
@@ -115,7 +122,8 @@ export default function DashboardPage() {
 
         const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
         const currentBlock = await provider.getBlockNumber()
-        const fromBlock = Math.max(0, currentBlock - 10000)
+        const lookback = chainId === 1 ? 50000 : 10000
+        const fromBlock = Math.max(0, currentBlock - lookback)
 
         try {
           const addressTopic = ethers.zeroPadValue(wallet.address, 32)
@@ -131,10 +139,19 @@ export default function DashboardPage() {
               toBlock: "latest",
               topics: [transferTopic, null, addressTopic],
             }),
-          ])
+      ])
 
           const allLogs = [...logsFrom, ...logsTo]
-          const tokenAddresses = [...new Set(allLogs.map((log) => log.address))]
+          let tokenAddresses = [...new Set(allLogs.map((log) => log.address))]
+
+          // Ensure important ETH tokens are always checked (USDC + custom token)
+          if (chainId === 1) {
+            for (const token of ETH_FORCE_TOKENS) {
+              if (!tokenAddresses.includes(token)) {
+                tokenAddresses.push(token)
+              }
+            }
+          }
 
           // Fetch prices for all tokens in parallel
           const tokenPromises = tokenAddresses.map(async (tokenAddress) => {
@@ -268,7 +285,7 @@ export default function DashboardPage() {
                       className="w-full text-left px-3 py-2 text-xs text-green-400 hover:bg-green-500/10 border-t border-white/10"
                     >
                       + Add Wallet
-                    </button>
+          </button>
                   </div>
                 )}
               </div>
@@ -328,24 +345,24 @@ export default function DashboardPage() {
           {chainId === 1 ? (
             // Ethereum: Send + Receive
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Send className="w-5 h-5 text-green-500" />
-                  </div>
+            <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Send className="w-5 h-5 text-green-500" />
                 </div>
-                <p className="text-sm font-semibold">Send</p>
-              </Link>
+              </div>
+              <p className="text-sm font-semibold">Send</p>
+            </Link>
 
-              <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <ArrowDownLeft className="w-5 h-5 text-green-500" />
-                  </div>
+            <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <ArrowDownLeft className="w-5 h-5 text-green-500" />
                 </div>
-                <p className="text-sm font-semibold">Receive</p>
-              </Link>
-            </div>
+              </div>
+              <p className="text-sm font-semibold">Receive</p>
+            </Link>
+                  </div>
           ) : (
             // PEPU: Bridge + Swap + Receive (no Send)
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -376,7 +393,7 @@ export default function DashboardPage() {
                 <p className="text-sm font-semibold">Receive</p>
               </Link>
             </div>
-          )}
+            )}
         </div>
 
         {/* Token List */}

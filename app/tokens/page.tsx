@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
+import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
 import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { Coins, Loader } from "lucide-react"
 import Link from "next/link"
@@ -15,6 +15,12 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
   "function symbol() view returns (string)",
   "function name() view returns (string)",
+]
+const ETH_FORCE_TOKENS = [
+  // USDC
+  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  // Custom token provided by user
+  "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6",
 ]
 
 export default function TokensPage() {
@@ -45,7 +51,7 @@ export default function TokensPage() {
         return
       }
 
-      const wallet = wallets[0]
+      const wallet = getCurrentWallet() || wallets[0]
       const allTokens: any[] = []
 
       // Get native balance
@@ -63,9 +69,10 @@ export default function TokensPage() {
       const provider = await getProviderWithFallback(chainId)
 
       // Get Transfer event logs
-      const transferTopic = ethers.id("Transfer(address,indexed address,indexed address,uint256)")
+      const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
       const currentBlock = await provider.getBlockNumber()
-      const fromBlock = Math.max(0, currentBlock - 5000) // Scan last 5000 blocks
+      const lookback = chainId === 1 ? 50000 : 5000
+      const fromBlock = Math.max(0, currentBlock - lookback) // Scan recent blocks
 
       try {
         const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
@@ -87,7 +94,16 @@ export default function TokensPage() {
         const logs = [...logsFrom, ...logsTo]
 
         // Extract unique token addresses
-        const tokenAddresses = [...new Set(logs.map((log) => log.address))]
+        let tokenAddresses = [...new Set(logs.map((log) => log.address))]
+
+        // Always include important ETH tokens so balances show even without recent transfers
+        if (chainId === 1) {
+          for (const token of ETH_FORCE_TOKENS) {
+            if (!tokenAddresses.includes(token)) {
+              tokenAddresses.push(token)
+            }
+          }
+        }
 
         for (const tokenAddress of tokenAddresses) {
           try {

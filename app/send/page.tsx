@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
+import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
 import { sendNativeToken, sendToken } from "@/lib/transactions"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
 import { ArrowUp, Loader, ChevronDown } from "lucide-react"
@@ -23,6 +23,12 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
   "function symbol() view returns (string)",
   "function name() view returns (string)",
+]
+const ETH_FORCE_TOKENS = [
+  // USDC
+  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  // Custom token provided by user
+  "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6",
 ]
 
 export default function SendPage() {
@@ -70,7 +76,7 @@ export default function SendPage() {
       const wallets = getWallets()
       if (wallets.length === 0) return
 
-      const wallet = wallets[0]
+      const wallet = getCurrentWallet() || wallets[0]
       const allTokens: Token[] = []
 
       // Get native balance
@@ -91,7 +97,8 @@ export default function SendPage() {
 
       const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
       const currentBlock = await provider.getBlockNumber()
-      const fromBlock = Math.max(0, currentBlock - 10000)
+      const lookback = chainId === 1 ? 50000 : 10000
+      const fromBlock = Math.max(0, currentBlock - lookback)
 
       try {
         const addressTopic = ethers.zeroPadValue(wallet.address, 32)
@@ -111,7 +118,16 @@ export default function SendPage() {
 
         const logs = [...logsFrom, ...logsTo]
 
-        const tokenAddresses = [...new Set(logs.map((log) => log.address))]
+        let tokenAddresses = [...new Set(logs.map((log) => log.address))]
+
+        // Always include important ETH tokens so balances show even without recent transfers
+        if (chainId === 1) {
+          for (const token of ETH_FORCE_TOKENS) {
+            if (!tokenAddresses.includes(token)) {
+              tokenAddresses.push(token)
+            }
+          }
+        }
 
         for (const tokenAddress of tokenAddresses) {
           try {
@@ -180,11 +196,13 @@ export default function SendPage() {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
 
+      const active = getCurrentWallet() || wallets[0]
+
       let txHash: string
       if (selectedToken.isNative) {
-        txHash = await sendNativeToken(wallets[0], password, recipient, amount, chainId)
+        txHash = await sendNativeToken(active, password, recipient, amount, chainId)
       } else {
-        txHash = await sendToken(wallets[0], password, selectedToken.address, recipient, amount, chainId)
+        txHash = await sendToken(active, password, selectedToken.address, recipient, amount, chainId)
       }
 
       setSuccess(`Transaction sent: ${txHash.slice(0, 10)}...`)
