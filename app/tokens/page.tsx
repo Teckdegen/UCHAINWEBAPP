@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
-import { getNativeBalance } from "@/lib/rpc"
+import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { Coins, Loader } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
@@ -60,9 +60,7 @@ export default function TokensPage() {
         isNative: true,
       })
 
-      const provider = new ethers.JsonRpcProvider(
-        chainId === 1 ? "https://eth.llamarpc.com" : "https://rpc-pepu-v2-mainnet-0.t.conduit.xyz",
-      )
+      const provider = await getProviderWithFallback(chainId)
 
       // Get Transfer event logs
       const transferTopic = ethers.id("Transfer(address,indexed address,indexed address,uint256)")
@@ -183,20 +181,9 @@ export default function TokensPage() {
         ) : (
           <div className="space-y-2">
             {tokens.map((token) => (
-              <button
+              <div
                 key={token.address}
-                onClick={() => {
-                  if (!token.isNative && chainId === 97741) {
-                    setSelectedToken(token)
-                    setShowTokenModal(true)
-                  }
-                }}
-                disabled={token.isNative || chainId !== 97741}
-                className={`glass-card p-4 flex items-center justify-between transition-all w-full text-left ${
-                  token.isNative || chainId !== 97741
-                    ? "cursor-default"
-                    : "hover:bg-white/10 cursor-pointer"
-                }`}
+                className="glass-card p-4 flex items-center justify-between transition-all w-full"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -211,7 +198,7 @@ export default function TokensPage() {
                   <p className="font-semibold">{Number.parseFloat(token.balance).toFixed(4)}</p>
                   <p className="text-xs text-gray-400">{token.symbol}</p>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -219,8 +206,8 @@ export default function TokensPage() {
 
       <BottomNav active="tokens" />
 
-      {/* Token Details Modal */}
-      {selectedToken && (
+      {/* Token Details Modal - Only for PEPU chain */}
+      {selectedToken && chainId === 97741 && (
         <TokenDetailsModal
           tokenAddress={selectedToken.address}
           tokenSymbol={selectedToken.symbol}

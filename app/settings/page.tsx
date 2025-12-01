@@ -12,6 +12,7 @@ import {
   encryptData,
   decryptData,
 } from "@/lib/wallet"
+import { deleteAllCookies } from "@/lib/cookies"
 import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 
@@ -53,8 +54,13 @@ export default function SettingsPage() {
   }
 
   const handleReset = () => {
-    if (confirm("Are you sure? This will delete all wallets. Make sure you have saved your seed phrases.")) {
+    if (confirm("Are you sure? This will delete all wallets, localStorage, and cookies. Make sure you have saved your seed phrases.")) {
+      // Clear all localStorage
       localStorage.clear()
+      
+      // Delete all cookies (including unchained_user_id)
+      deleteAllCookies()
+      
       router.push("/setup")
     }
   }
@@ -73,8 +79,8 @@ export default function SettingsPage() {
       return
     }
 
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters")
+    if (newPassword.length !== 4) {
+      setError("Password must be exactly 4 digits")
       return
     }
 

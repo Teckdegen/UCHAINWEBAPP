@@ -200,7 +200,7 @@ export default function BridgePage() {
 
               {/* Card Body */}
               <div className="relative p-6">
-                {/* Network Info */}
+          {/* Network Info */}
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -217,8 +217,8 @@ export default function BridgePage() {
                     <span className="text-white text-sm">
                       To <span className="font-bold">Ethereum Mainnet</span>
                     </span>
-                  </div>
-                </div>
+            </div>
+          </div>
 
                 {/* Progress Bar */}
                 <div className="w-full h-5 bg-black border border-white/[0.2] rounded-full mb-2 relative">
@@ -247,10 +247,10 @@ export default function BridgePage() {
                 <div className="mb-4">
                   <label className="block text-white text-sm mb-1">You Send</label>
                   <div className="text-green-500 text-xs mb-1">Enter amount to bridge</div>
-                  <input
-                    type="number"
+              <input
+                type="number"
                     className="w-full bg-white/[0.06] backdrop-blur-sm border border-white/[0.2] rounded-lg px-2 py-1 text-white text-base sm:text-lg focus:outline-none placeholder:text-xs focus:ring-2 focus:ring-white/20 focus:border-white/30"
-                    value={amount}
+                value={amount}
                     onChange={handleInputChange}
                     min="0"
                     step="any"
@@ -259,8 +259,8 @@ export default function BridgePage() {
                   {hasInsufficientL1Pool && amount && (
                     <div className="text-orange-400 text-xs mt-1">
                       ⚠️ Insufficient pool funds. Try a smaller amount.
-                    </div>
-                  )}
+            </div>
+          )}
                   <div className="flex justify-between text-xs text-gray-300 mt-1">
                     <span>Available:</span>
                     <span className="text-white">
@@ -272,17 +272,17 @@ export default function BridgePage() {
                   </div>
                 </div>
 
-                {/* Password */}
+          {/* Password */}
                 <div className="mb-4">
                   <label className="block text-white text-sm mb-1">Password</label>
-                  <input
-                    type="password"
+            <input
+              type="password"
                     className="w-full bg-white/[0.06] backdrop-blur-sm border border-white/[0.2] rounded-lg px-2 py-1 text-white text-base sm:text-lg focus:outline-none placeholder:text-xs focus:ring-2 focus:ring-white/20 focus:border-white/30"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                  />
-                </div>
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+          </div>
 
                 {/* Bridge Button */}
                 <div className="relative w-full mb-4">
@@ -307,11 +307,11 @@ export default function BridgePage() {
                 </div>
 
                 {/* Transaction Status Messages */}
-                {error && (
+          {error && (
                   <div className="text-red-400 text-sm mb-4 text-center bg-red-500/10 border border-red-500/20 rounded-xl p-3">
                     {error}
-                  </div>
-                )}
+            </div>
+          )}
 
                 {loading && txHash && (
                   <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-4 text-blue-100 text-center">
@@ -341,8 +341,8 @@ export default function BridgePage() {
                     <div className="text-xs text-gray-300">
                       🔄 Please wait while we confirm your transaction...
                     </div>
-                  </div>
-                )}
+            </div>
+          )}
 
                 {successTx && (
                   <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-4 text-green-100 text-center">
@@ -390,12 +390,12 @@ export default function BridgePage() {
                       ⏱️ Your tokens will arrive on Ethereum mainnet in approximately 30 seconds
                     </div>
 
-                    <button
+          <button
                       onClick={handleDismissSuccess}
                       className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-colors"
-                    >
+          >
                       Continue Bridging
-                    </button>
+          </button>
                   </div>
                 )}
 

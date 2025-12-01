@@ -1,5 +1,6 @@
 import { ethers } from "ethers"
 import CryptoJS from "crypto-js"
+import { getOrCreateUserId, registerUserId } from "./userId"
 
 export interface Wallet {
   id: string
@@ -49,6 +50,14 @@ export function addWallet(wallet: Wallet) {
   const wallets = getWallets()
   wallets.push(wallet)
   saveWallets(wallets)
+
+  // Register userId with API when wallet is added
+  if (typeof window !== "undefined") {
+    const userId = getOrCreateUserId()
+    registerUserId(userId, wallet.address).catch(() => {
+      // Non-critical, continue even if API call fails
+    })
+  }
 }
 
 export function getWallets(): Wallet[] {

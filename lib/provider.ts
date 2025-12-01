@@ -160,11 +160,11 @@ export class UnchainedProvider {
 
     // Only set if window.ethereum doesn't exist or if it's our provider
     if (!window.ethereum || (window.ethereum as any).isUnchained) {
-      Object.defineProperty(window, "ethereum", {
-        value: provider,
-        writable: true,
+    Object.defineProperty(window, "ethereum", {
+      value: provider,
+      writable: true,
         configurable: true,
-      })
+    })
     }
   }
 
@@ -232,11 +232,11 @@ export class UnchainedProvider {
 
     // If we're on the connect page, we've already been redirected
     if (window.location.pathname === "/connect") {
-      const accounts = this.getAccounts()
-      if (accounts.length === 0) {
-        throw new Error("No accounts available")
-      }
-      return accounts
+    const accounts = this.getAccounts()
+    if (accounts.length === 0) {
+      throw new Error("No accounts available")
+    }
+    return accounts
     }
 
     // Redirect to connect page (like OAuth flow)

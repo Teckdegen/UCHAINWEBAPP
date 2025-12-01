@@ -57,7 +57,7 @@ export default function ConnectPage() {
       returnUrlObj.searchParams.set("wallet_result", encodeURIComponent(JSON.stringify(result)))
       returnUrlObj.searchParams.set("wallet_status", "approved")
       
-      setApproved(true)
+        setApproved(true)
       setTimeout(() => {
         window.location.href = returnUrlObj.toString()
       }, 1000)
@@ -75,7 +75,7 @@ export default function ConnectPage() {
     returnUrlObj.searchParams.set("wallet_error", "User rejected connection")
     returnUrlObj.searchParams.set("wallet_status", "rejected")
     
-    setRejected(true)
+      setRejected(true)
     setTimeout(() => {
       window.location.href = returnUrlObj.toString()
     }, 1000)

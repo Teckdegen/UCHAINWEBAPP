@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
 import { sendNativeToken, sendToken } from "@/lib/transactions"
-import { getNativeBalance, getTokenBalance } from "@/lib/rpc"
+import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
 import { ArrowUp, Loader, ChevronDown } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
@@ -87,9 +87,7 @@ export default function SendPage() {
       allTokens.push(nativeToken)
 
       // Get ERC-20 tokens
-      const provider = new ethers.JsonRpcProvider(
-        chainId === 1 ? "https://eth.llamarpc.com" : "https://rpc-pepu-v2-mainnet-0.t.conduit.xyz",
-      )
+      const provider = await getProviderWithFallback(chainId)
 
       const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
       const currentBlock = await provider.getBlockNumber()

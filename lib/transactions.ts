@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-import { getProvider } from "./rpc"
+import { getProvider, getProviderWithFallback } from "./rpc"
 import { getPrivateKey, type Wallet } from "./wallet"
 
 const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || "0x0000000000000000000000000000000000000000"
@@ -18,7 +18,7 @@ export async function sendNativeToken(
     }
 
     const privateKey = getPrivateKey(wallet, password)
-    const provider = getProvider(chainId)
+    const provider = await getProviderWithFallback(chainId)
     const walletInstance = new ethers.Wallet(privateKey, provider)
 
     const amountWei = ethers.parseEther(amount)
@@ -56,7 +56,7 @@ export async function sendToken(
     }
 
     const privateKey = getPrivateKey(wallet, password)
-    const provider = getProvider(chainId)
+    const provider = await getProviderWithFallback(chainId)
     const walletInstance = new ethers.Wallet(privateKey, provider)
 
     const erc20Abi = [

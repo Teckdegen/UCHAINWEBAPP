@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
-import { getNativeBalance, getTokenBalance } from "@/lib/rpc"
+import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
 import { TrendingUp, Loader, ArrowRightLeft, ChevronDown } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import TokenDetailsModal from "@/components/TokenDetailsModal"
@@ -65,7 +65,7 @@ export default function SwapPage() {
     }
     updateActivity()
     loadTokens()
-  }, [router])
+  }, [router, chainId])
 
   // Close selectors when clicking outside
   useEffect(() => {
@@ -323,20 +323,20 @@ export default function SwapPage() {
                 onClick={() => setShowFromSelector(!showFromSelector)}
                 className="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors mb-3"
               >
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
                     <span className="text-xs font-bold">{fromToken.symbol.slice(0, 2)}</span>
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold">{fromToken.symbol}</p>
-                    <p className="text-xs text-gray-400">{fromToken.name}</p>
-                  </div>
+                  <p className="font-semibold">{fromToken.symbol}</p>
+                  <p className="text-xs text-gray-400">{fromToken.name}</p>
                 </div>
+              </div>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
 
               {showFromSelector && (
-                <div className="absolute z-50 w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/10 rounded-lg">
+                <div className="absolute z-[100] w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/10 rounded-lg shadow-2xl bg-black/95 backdrop-blur-xl">
                   {loadingTokens ? (
                     <div className="p-4 text-center text-gray-400">Loading tokens...</div>
                   ) : fromTokens.length === 0 ? (
@@ -392,14 +392,14 @@ export default function SwapPage() {
             </div>
 
             <div className="flex items-center gap-2 mb-2">
-              <input
-                type="number"
-                value={amountIn}
-                onChange={(e) => setAmountIn(e.target.value)}
-                placeholder="0.0"
+            <input
+              type="number"
+              value={amountIn}
+              onChange={(e) => setAmountIn(e.target.value)}
+              placeholder="0.0"
                 className="input-field flex-1"
-                step="0.0001"
-              />
+              step="0.0001"
+            />
               <button
                 onClick={() => setAmountIn(fromTokenBalance)}
                 className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold whitespace-nowrap text-sm"
@@ -436,20 +436,20 @@ export default function SwapPage() {
                 onClick={() => setShowToSelector(!showToSelector)}
                 className="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors mb-3"
               >
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
                     <span className="text-xs font-bold">{toToken.symbol.slice(0, 2)}</span>
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold">{toToken.symbol}</p>
-                    <p className="text-xs text-gray-400">{toToken.name}</p>
-                  </div>
+                  <p className="font-semibold">{toToken.symbol}</p>
+                  <p className="text-xs text-gray-400">{toToken.name}</p>
                 </div>
+              </div>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
 
               {showToSelector && (
-                <div className="absolute z-50 w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/10 rounded-lg">
+                <div className="absolute z-[100] w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/10 rounded-lg shadow-2xl bg-black/95 backdrop-blur-xl">
                   {loadingTokens ? (
                     <div className="p-4 text-center text-gray-400">Loading tokens...</div>
                   ) : (

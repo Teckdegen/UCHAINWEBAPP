@@ -30,7 +30,7 @@ export default function SetupPage() {
     setLoading(true)
     try {
       const wallet = await createWallet(password, walletName || "My Wallet", 1)
-      addWallet(wallet)
+      addWallet(wallet) // This will automatically register userId with API
       const mnemonic = getMnemonic(wallet, password)
       setMnemonic(mnemonic || "")
       setMode("menu")

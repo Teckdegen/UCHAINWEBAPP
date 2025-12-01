@@ -74,9 +74,9 @@ export default function DashboardPage() {
       }
 
       allBalances.push({
-        symbol: nativeSymbol,
-        name: chainId === 1 ? "Ethereum" : "Pepe Unchained",
-        balance,
+          symbol: nativeSymbol,
+          name: chainId === 1 ? "Ethereum" : "Pepe Unchained",
+          balance,
         usdValue: nativeUsdValue,
         isNative: true,
         isBonded: nativePrice > 0, // Native token is bonded if price > 0
@@ -314,7 +314,7 @@ export default function DashboardPage() {
                   {!token.isNative && !token.isBonded ? (
                     <p className="text-xs text-gray-500">Not Bonded</p>
                   ) : (
-                    <p className="text-xs text-green-400">${token.usdValue}</p>
+                  <p className="text-xs text-green-400">${token.usdValue}</p>
                   )}
                 </div>
               </div>

@@ -290,18 +290,18 @@ export async function getSwapQuote(
       let bestQuote: bigint | null = null
       let bestFee = 3000
 
-      for (const fee of FEE_TIERS) {
-        try {
+    for (const fee of FEE_TIERS) {
+      try {
           const actualTokenIn = tokenIn.address === NATIVE_TOKEN ? WPEPU_ADDRESS : tokenIn.address
           const actualTokenOut = tokenOut.address === NATIVE_TOKEN ? WPEPU_ADDRESS : tokenOut.address
 
-          const result = await quoter.quoteExactInputSingle.staticCall({
+        const result = await quoter.quoteExactInputSingle.staticCall({
             tokenIn: actualTokenIn,
             tokenOut: actualTokenOut,
-            amountIn: amountInWei,
-            fee,
-            sqrtPriceLimitX96: 0,
-          })
+          amountIn: amountInWei,
+          fee,
+          sqrtPriceLimitX96: 0,
+        })
 
           const amountOut = result[0] // First element is amountOut
           if (!bestQuote || amountOut > bestQuote) {
@@ -309,12 +309,12 @@ export async function getSwapQuote(
             bestFee = fee
           }
         } catch {
-          continue
-        }
+        continue
       }
+    }
 
       if (!bestQuote) {
-        throw new Error("No liquidity found")
+    throw new Error("No liquidity found")
       }
 
       return ethers.formatUnits(bestQuote, tokenOut.decimals)
@@ -517,15 +517,15 @@ export async function executeSwap(
         })
       } else {
         // Regular ERC20 to ERC20 swap
-        const params = {
+    const params = {
           tokenIn: actualTokenIn,
           tokenOut: actualTokenOut,
           fee: bestFee,
-          recipient: wallet.address,
-          amountIn: amountInWei,
-          amountOutMinimum: slippageAmount,
-          sqrtPriceLimitX96: 0,
-        }
+      recipient: wallet.address,
+      amountIn: amountInWei,
+      amountOutMinimum: slippageAmount,
+      sqrtPriceLimitX96: 0,
+    }
 
         tx = await swapRouter.exactInputSingle(params, { gasLimit: 300000 })
       }

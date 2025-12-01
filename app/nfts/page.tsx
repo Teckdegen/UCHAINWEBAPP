@@ -76,8 +76,8 @@ export default function NFTsPage() {
           topics: [erc721TransferTopic, null, ethers.getAddress(wallet.address)],
         }).catch(() => []),
         provider.getLogs({
-          fromBlock,
-          toBlock: "latest",
+        fromBlock,
+        toBlock: "latest",
           topics: [erc1155TransferTopic, null, ethers.getAddress(wallet.address)],
         }).catch(() => []),
       ])
@@ -131,11 +131,11 @@ export default function NFTsPage() {
                     const response = await fetch(gatewayUrl, { signal: AbortSignal.timeout(5000) })
                     if (response.ok) {
                       const metadata = await response.json()
-                      nftName = metadata.name || nftName
-                      if (metadata.image) {
-                        image = metadata.image.startsWith("ipfs://")
+                  nftName = metadata.name || nftName
+                  if (metadata.image) {
+                    image = metadata.image.startsWith("ipfs://")
                           ? `https://ipfs.io/ipfs/${metadata.image.replace("ipfs://", "").replace("ipfs/", "")}`
-                          : metadata.image
+                      : metadata.image
                       }
                       break
                     }
@@ -148,7 +148,7 @@ export default function NFTsPage() {
                   const response = await fetch(tokenURI, { signal: AbortSignal.timeout(5000) })
                   if (response.ok) {
                     const metadata = await response.json()
-                    nftName = metadata.name || nftName
+                  nftName = metadata.name || nftName
                     if (metadata.image) {
                       image = metadata.image.startsWith("ipfs://")
                         ? `https://ipfs.io/ipfs/${metadata.image.replace("ipfs://", "").replace("ipfs/", "")}`
