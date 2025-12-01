@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [addPrivateKey, setAddPrivateKey] = useState("")
   const [addWalletError, setAddWalletError] = useState("")
   const [addWalletLoading, setAddWalletLoading] = useState(false)
+  const [showWalletMenu, setShowWalletMenu] = useState(false)
 
   useEffect(() => {
     const state = getWalletState()
@@ -208,6 +209,7 @@ export default function DashboardPage() {
             {wallets.length > 0 && (
               <div className="relative">
                 <button
+                  onClick={() => setShowWalletMenu((prev) => !prev)}
                   className="glass-card px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white/10 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -224,37 +226,41 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </button>
-                {/* Simple dropdown list */}
-                <div className="absolute right-0 mt-2 w-64 glass-card border border-white/10 max-h-64 overflow-y-auto z-50">
-                  {wallets.map((wallet) => (
+                {/* Simple dropdown list, toggled by button */}
+                {showWalletMenu && (
+                  <div className="absolute right-0 mt-2 w-64 glass-card border border-white/10 max-h-64 overflow-y-auto z-50">
+                    {wallets.map((wallet) => (
+                      <button
+                        key={wallet.id}
+                        onClick={() => {
+                          setCurrentWalletId(wallet.id)
+                          setCurrentWalletIdState(wallet.id)
+                          setShowWalletMenu(false)
+                          fetchBalances()
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 flex flex-col ${
+                          wallet.id === currentWalletId ? "bg-green-500/10" : ""
+                        }`}
+                      >
+                        <span className="font-semibold">{wallet.name || "Wallet"}</span>
+                        <span className="font-mono text-[10px] text-gray-400">
+                          {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                        </span>
+                      </button>
+                    ))}
                     <button
-                      key={wallet.id}
                       onClick={() => {
-                        setCurrentWalletId(wallet.id)
-                        setCurrentWalletIdState(wallet.id)
-                        fetchBalances()
+                        setShowAddWallet(true)
+                        setAddWalletMode("menu")
+                        setAddWalletError("")
+                        setShowWalletMenu(false)
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 flex flex-col ${
-                        wallet.id === currentWalletId ? "bg-green-500/10" : ""
-                      }`}
+                      className="w-full text-left px-3 py-2 text-xs text-green-400 hover:bg-green-500/10 border-t border-white/10"
                     >
-                      <span className="font-semibold">{wallet.name || "Wallet"}</span>
-                      <span className="font-mono text-[10px] text-gray-400">
-                        {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
-                      </span>
+                      + Add Wallet
                     </button>
-                  ))}
-                  <button
-                    onClick={() => {
-                      setShowAddWallet(true)
-                      setAddWalletMode("menu")
-                      setAddWalletError("")
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs text-green-400 hover:bg-green-500/10 border-t border-white/10"
-                  >
-                    + Add Wallet
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
