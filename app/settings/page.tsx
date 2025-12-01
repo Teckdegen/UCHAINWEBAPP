@@ -14,6 +14,7 @@ import {
   getAutoLockSeconds,
   setAutoLockSeconds,
   getCurrentWallet,
+  deleteWallet,
 } from "@/lib/wallet"
 import { deleteAllCookies } from "@/lib/cookies"
 import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key } from "lucide-react"
@@ -162,6 +163,26 @@ export default function SettingsPage() {
   const privateKey = showPrivateKey ? getPrivateKeyDisplay() : null
   const mnemonic = showMnemonic ? getMnemonicDisplay() : null
 
+  const handleDeleteActiveWallet = () => {
+    if (wallets.length <= 1) {
+      setError("You cannot delete your primary wallet")
+      return
+    }
+    const active = getCurrentWallet() || wallets[0]
+    if (wallets[0].id === active.id) {
+      setError("You cannot delete your primary wallet")
+      return
+    }
+    try {
+      deleteWallet(active.id)
+      const updated = getWallets()
+      setWallets(updated)
+      setError("")
+    } catch (err: any) {
+      setError(err.message || "Failed to delete wallet")
+    }
+  }
+
   return (
     <div className="min-h-screen bg-black text-white pb-24">
       <div className="max-w-2xl mx-auto">
@@ -208,6 +229,15 @@ export default function SettingsPage() {
                   <p className="text-sm text-gray-400 mb-2">Wallet Name</p>
                   <p className="font-semibold">{(getCurrentWallet() || wallets[0]).name || "My Wallet"}</p>
                 </div>
+
+                {wallets.length > 1 && (
+                  <button
+                    onClick={handleDeleteActiveWallet}
+                    className="mt-4 w-full px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 text-sm font-semibold transition-all"
+                  >
+                    Delete This Wallet (keeps primary wallet)
+                  </button>
+                )}
               </div>
             </div>
           )}

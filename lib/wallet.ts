@@ -226,6 +226,32 @@ export function getCurrentWallet(): Wallet | null {
   return wallets.find((w) => w.id === currentId) || wallets[0]
 }
 
+export function deleteWallet(id: string) {
+  const wallets = getWallets()
+  if (wallets.length <= 1) {
+    throw new Error("Cannot delete the only wallet")
+  }
+
+  const index = wallets.findIndex((w) => w.id === id)
+  if (index === -1) return
+
+  // Prevent deleting the primary (first) wallet
+  if (index === 0) {
+    throw new Error("Cannot delete the primary wallet")
+  }
+
+  wallets.splice(index, 1)
+  saveWallets(wallets)
+
+  // If we deleted the active wallet, fall back to the first remaining
+  if (typeof window !== "undefined") {
+    const currentId = localStorage.getItem(CURRENT_WALLET_ID_KEY)
+    if (currentId === id) {
+      localStorage.setItem(CURRENT_WALLET_ID_KEY, wallets[0].id)
+    }
+  }
+}
+
 export async function createWalletFromExistingMnemonic(
   password: string,
   baseWalletId?: string,
@@ -251,9 +277,16 @@ export async function createWalletFromExistingMnemonic(
   }
 
   // Derive next index from this mnemonic (HD wallet style)
-  const relatedWallets = wallets.filter(
-    (w) => w.encryptedMnemonic && w.encryptedMnemonic === baseWallet.encryptedMnemonic,
-  )
+  // We group wallets by the *actual* mnemonic text (encryption output can differ)
+  const relatedWallets = wallets.filter((w) => {
+    if (!w.encryptedMnemonic) return false
+    try {
+      const walletMnemonic = getMnemonic(w, password)
+      return walletMnemonic === mnemonic
+    } catch {
+      return false
+    }
+  })
   const maxIndex = relatedWallets.reduce((max, w) => {
     if (typeof w.derivationIndex === "number") {
       return Math.max(max, w.derivationIndex)
