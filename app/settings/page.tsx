@@ -1,0 +1,396 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import {
+  getWallets,
+  getWalletState,
+  updateActivity,
+  lockWallet,
+  getPrivateKey,
+  getMnemonic,
+  encryptData,
+  decryptData,
+} from "@/lib/wallet"
+import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key } from "lucide-react"
+import BottomNav from "@/components/BottomNav"
+
+export default function SettingsPage() {
+  const router = useRouter()
+  const [wallets, setWallets] = useState<any[]>([])
+  const [showPrivateKey, setShowPrivateKey] = useState(false)
+  const [showMnemonic, setShowMnemonic] = useState(false)
+  const [password, setPassword] = useState("")
+  const [copied, setCopied] = useState("")
+  const [error, setError] = useState("")
+  const [showChangePasscode, setShowChangePasscode] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [changePasscodeLoading, setChangePasscodeLoading] = useState(false)
+  const [changePasscodeSuccess, setChangePasscodeSuccess] = useState("")
+
+  useEffect(() => {
+    const state = getWalletState()
+    if (state.isLocked) {
+      router.push("/unlock")
+      return
+    }
+
+    updateActivity()
+    setWallets(getWallets())
+  }, [router])
+
+  const handleCopy = (text: string, field: string) => {
+    navigator.clipboard.writeText(text)
+    setCopied(field)
+    setTimeout(() => setCopied(""), 2000)
+  }
+
+  const handleLock = () => {
+    lockWallet()
+    router.push("/unlock")
+  }
+
+  const handleReset = () => {
+    if (confirm("Are you sure? This will delete all wallets. Make sure you have saved your seed phrases.")) {
+      localStorage.clear()
+      router.push("/setup")
+    }
+  }
+
+  const handleChangePasscode = async () => {
+    setError("")
+    setChangePasscodeSuccess("")
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Please fill all fields")
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("New passwords don't match")
+      return
+    }
+
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters")
+      return
+    }
+
+    setChangePasscodeLoading(true)
+    try {
+      const currentWallets = getWallets()
+      if (currentWallets.length === 0) throw new Error("No wallet found")
+
+      // Verify current password by trying to decrypt
+      try {
+        decryptData(currentWallets[0].encryptedPrivateKey, currentPassword)
+      } catch {
+        throw new Error("Current password is incorrect")
+      }
+
+      // Re-encrypt all wallets with new password
+      const updatedWallets = currentWallets.map((wallet) => ({
+        ...wallet,
+        encryptedPrivateKey: encryptData(decryptData(wallet.encryptedPrivateKey, currentPassword), newPassword),
+        encryptedMnemonic: wallet.encryptedMnemonic
+          ? encryptData(decryptData(wallet.encryptedMnemonic, currentPassword), newPassword)
+          : undefined,
+      }))
+
+      localStorage.setItem("unchained_wallets", JSON.stringify(updatedWallets))
+      setChangePasscodeSuccess("Passcode changed successfully!")
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+      setShowChangePasscode(false)
+
+      setTimeout(() => setChangePasscodeSuccess(""), 3000)
+    } catch (err: any) {
+      setError(err.message || "Failed to change passcode")
+    } finally {
+      setChangePasscodeLoading(false)
+    }
+  }
+
+  const getPrivateKeyDisplay = () => {
+    if (!password || wallets.length === 0) return null
+    try {
+      return getPrivateKey(wallets[0], password)
+    } catch {
+      setError("Invalid password")
+      return null
+    }
+  }
+
+  const getMnemonicDisplay = () => {
+    if (!password || wallets.length === 0) return null
+    try {
+      return getMnemonic(wallets[0], password) || "No mnemonic available"
+    } catch {
+      setError("Invalid password")
+      return null
+    }
+  }
+
+  const privateKey = showPrivateKey ? getPrivateKeyDisplay() : null
+  const mnemonic = showMnemonic ? getMnemonicDisplay() : null
+
+  return (
+    <div className="min-h-screen bg-black text-white pb-24">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Settings</h1>
+              <p className="text-sm text-gray-400">Manage your wallet</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 md:p-8 space-y-6">
+          {/* Wallet Info */}
+          {wallets.length > 0 && (
+            <div className="glass-card p-6">
+              <h2 className="text-lg font-bold mb-4">Active Wallet</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">Address</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm font-mono text-green-400 break-all bg-black/50 p-2 rounded flex-1">
+                      {wallets[0].address}
+                    </code>
+                    <button
+                      onClick={() => handleCopy(wallets[0].address, "address")}
+                      className="p-2 hover:bg-white/10 rounded transition-colors"
+                    >
+                      {copied === "address" ? (
+                        <Check className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-400 mb-2">Wallet Name</p>
+                  <p className="font-semibold">{wallets[0].name || "My Wallet"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="glass-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-green-500" />
+                <h2 className="text-lg font-bold">Security</h2>
+              </div>
+            </div>
+            {!showChangePasscode ? (
+              <button
+                onClick={() => setShowChangePasscode(true)}
+                className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all"
+              >
+                Change Passcode
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Current Passcode</label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value)
+                      setError("")
+                    }}
+                    placeholder="Enter current passcode"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">New Passcode</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value)
+                      setError("")
+                    }}
+                    placeholder="Enter new passcode"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Confirm New Passcode</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value)
+                      setError("")
+                    }}
+                    placeholder="Confirm new passcode"
+                    className="input-field"
+                  />
+                </div>
+
+                {error && (
+                  <div className="glass-card p-3 border border-red-500/50 bg-red-500/10">
+                    <p className="text-red-400 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {changePasscodeSuccess && (
+                  <div className="glass-card p-3 border border-green-500/50 bg-green-500/10">
+                    <p className="text-green-400 text-sm">{changePasscodeSuccess}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleChangePasscode}
+                    disabled={changePasscodeLoading}
+                    className="flex-1 px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50"
+                  >
+                    {changePasscodeLoading ? "Updating..." : "Update Passcode"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowChangePasscode(false)
+                      setCurrentPassword("")
+                      setNewPassword("")
+                      setConfirmPassword("")
+                      setError("")
+                    }}
+                    className="flex-1 px-4 py-3 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 font-semibold transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Recovery Section */}
+          <div className="glass-card p-6">
+            <h2 className="text-lg font-bold mb-4">Recovery Keys</h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Enter your password to view your private key and seed phrase. Store these safely!
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm text-gray-400 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setError("")
+                }}
+                placeholder="Enter your password"
+                className="input-field"
+              />
+            </div>
+
+            {error && !showChangePasscode && (
+              <div className="mb-4 glass-card p-3 border border-red-500/50 bg-red-500/10">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Private Key */}
+            <div className="mb-4">
+              <button
+                onClick={() => setShowPrivateKey(!showPrivateKey)}
+                className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-2"
+              >
+                {showPrivateKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPrivateKey ? "Hide" : "Show"} Private Key
+              </button>
+              {showPrivateKey && privateKey && (
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono text-yellow-400 break-all bg-black/50 p-2 rounded flex-1">
+                    {privateKey}
+                  </code>
+                  <button
+                    onClick={() => handleCopy(privateKey, "key")}
+                    className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+                  >
+                    {copied === "key" ? (
+                      <Check className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Mnemonic */}
+            <div>
+              <button
+                onClick={() => setShowMnemonic(!showMnemonic)}
+                className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-2"
+              >
+                {showMnemonic ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showMnemonic ? "Hide" : "Show"} Seed Phrase
+              </button>
+              {showMnemonic && mnemonic && (
+                <div className="flex items-center gap-2">
+                  <code className="text-xs font-mono text-yellow-400 break-all bg-black/50 p-2 rounded flex-1">
+                    {mnemonic}
+                  </code>
+                  <button
+                    onClick={() => handleCopy(mnemonic, "seed")}
+                    className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+                  >
+                    {copied === "seed" ? (
+                      <Check className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="glass-card p-6 space-y-3">
+            <button onClick={handleLock} className="w-full flex items-center justify-center gap-2 btn-secondary">
+              <Lock className="w-4 h-4" />
+              Lock Wallet
+            </button>
+
+            <button
+              onClick={handleReset}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+              Reset Wallet
+            </button>
+          </div>
+
+          {/* Info */}
+          <div className="glass-card p-4 text-sm text-gray-400">
+            <p>
+              Never share your private key or seed phrase with anyone. This wallet is non-custodial - only you have
+              access to your keys.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <BottomNav active="settings" />
+    </div>
+  )
+}

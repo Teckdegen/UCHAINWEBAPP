@@ -1,0 +1,112 @@
+import { ethers } from "ethers"
+import CryptoJS from "crypto-js"
+
+export interface Wallet {
+  id: string
+  address: string
+  encryptedPrivateKey: string
+  encryptedMnemonic?: string
+  createdAt: number
+  name?: string
+  chainId: number
+}
+
+const WALLETS_KEY = "unchained_wallets"
+const WALLET_STATE_KEY = "unchained_wallet_state"
+
+export function generateWalletId() {
+  return Math.random().toString(36).substring(2, 15)
+}
+
+export async function createWallet(password: string, name?: string, chainId = 1): Promise<Wallet> {
+  const wallet = ethers.Wallet.createRandom()
+  const mnemonic = wallet.mnemonic?.phrase || ""
+
+  const encryptedPrivateKey = encryptData(wallet.privateKey, password)
+  const encryptedMnemonic = mnemonic ? encryptData(mnemonic, password) : undefined
+
+  return {
+    id: generateWalletId(),
+    address: wallet.address,
+    encryptedPrivateKey,
+    encryptedMnemonic,
+    createdAt: Date.now(),
+    name: name || `Wallet ${new Date().toLocaleDateString()}`,
+    chainId,
+  }
+}
+
+export function encryptData(data: string, password: string): string {
+  return CryptoJS.AES.encrypt(data, password).toString()
+}
+
+export function decryptData(encryptedData: string, password: string): string {
+  const bytes = CryptoJS.AES.decrypt(encryptedData, password)
+  return bytes.toString(CryptoJS.enc.Utf8)
+}
+
+export function addWallet(wallet: Wallet) {
+  const wallets = getWallets()
+  wallets.push(wallet)
+  saveWallets(wallets)
+}
+
+export function getWallets(): Wallet[] {
+  if (typeof window === "undefined") return []
+  const stored = localStorage.getItem(WALLETS_KEY)
+  return stored ? JSON.parse(stored) : []
+}
+
+export function saveWallets(wallets: Wallet[]) {
+  if (typeof window === "undefined") return
+  localStorage.setItem(WALLETS_KEY, JSON.stringify(wallets))
+}
+
+export function getWalletState() {
+  if (typeof window === "undefined") return { isLocked: true, lastActivity: 0 }
+  const stored = localStorage.getItem(WALLET_STATE_KEY)
+  return stored ? JSON.parse(stored) : { isLocked: true, lastActivity: 0 }
+}
+
+export function saveWalletState(state: any) {
+  if (typeof window === "undefined") return
+  localStorage.setItem(WALLET_STATE_KEY, JSON.stringify(state))
+}
+
+export function lockWallet() {
+  const state = getWalletState()
+  state.isLocked = true
+  saveWalletState(state)
+}
+
+export function unlockWallet(password: string): boolean {
+  const wallets = getWallets()
+  if (wallets.length === 0) return false
+
+  try {
+    const testWallet = wallets[0]
+    decryptData(testWallet.encryptedPrivateKey, password)
+    const state = getWalletState()
+    state.isLocked = false
+    state.lastActivity = Date.now()
+    saveWalletState(state)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function getPrivateKey(wallet: Wallet, password: string): string {
+  return decryptData(wallet.encryptedPrivateKey, password)
+}
+
+export function getMnemonic(wallet: Wallet, password: string): string | undefined {
+  if (!wallet.encryptedMnemonic) return undefined
+  return decryptData(wallet.encryptedMnemonic, password)
+}
+
+export function updateActivity() {
+  const state = getWalletState()
+  state.lastActivity = Date.now()
+  saveWalletState(state)
+}
