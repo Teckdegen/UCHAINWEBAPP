@@ -14,7 +14,7 @@ import {
   addWallet,
   createWallet,
 } from "@/lib/wallet"
-import { getSavedEthCustomTokens } from "@/lib/customTokens"
+import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
@@ -49,6 +49,9 @@ export default function DashboardPage() {
   const [addWalletError, setAddWalletError] = useState("")
   const [addWalletLoading, setAddWalletLoading] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
+  const [showAddToken, setShowAddToken] = useState(false)
+  const [customTokenAddress, setCustomTokenAddress] = useState("")
+  const [customTokenError, setCustomTokenError] = useState("")
 
   useEffect(() => {
     const state = getWalletState()
@@ -323,24 +326,39 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Chain Selector */}
-          <div className="flex gap-2 mb-6">
-            <button
-              onClick={() => setChainId(1)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-              }`}
-            >
-              Ethereum
-            </button>
-            <button
-              onClick={() => setChainId(97741)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-              }`}
-            >
-              PEPU
-            </button>
+          {/* Chain Selector + Add Token (ETH) */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setChainId(1)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                }`}
+              >
+                Ethereum
+              </button>
+              <button
+                onClick={() => setChainId(97741)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                }`}
+              >
+                PEPU
+              </button>
+            </div>
+
+            {chainId === 1 && (
+              <button
+                onClick={() => {
+                  setShowAddToken(true)
+                  setCustomTokenAddress("")
+                  setCustomTokenError("")
+                }}
+                className="self-start px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 text-xs md:text-sm font-semibold transition-all"
+              >
+                + Add Custom ETH Token
+              </button>
+            )}
           </div>
 
           {/* Quick Actions */}
@@ -430,6 +448,69 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Add Custom Token Modal (Dashboard, ETH) */}
+      {showAddToken && chainId === 1 && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[999]">
+          <div className="glass-card w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">Add Custom ETH Token</h2>
+              <button
+                onClick={() => {
+                  setShowAddToken(false)
+                  setCustomTokenAddress("")
+                  setCustomTokenError("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Token Contract Address</label>
+              <input
+                type="text"
+                value={customTokenAddress}
+                onChange={(e) => {
+                  setCustomTokenAddress(e.target.value)
+                  setCustomTokenError("")
+                }}
+                placeholder="0x..."
+                className="input-field"
+              />
+            </div>
+
+            {customTokenError && <p className="text-xs text-red-400">{customTokenError}</p>}
+
+            <button
+              onClick={async () => {
+                try {
+                  setCustomTokenError("")
+                  if (!customTokenAddress.trim()) {
+                    setCustomTokenError("Enter a token contract address")
+                    return
+                  }
+                  addEthCustomToken(customTokenAddress)
+                  setShowAddToken(false)
+                  setCustomTokenAddress("")
+                  await fetchBalances()
+                } catch (err: any) {
+                  setCustomTokenError(err.message || "Failed to add token")
+                }
+              }}
+              className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all text-sm"
+            >
+              Save Token
+            </button>
+
+            <p className="text-[11px] text-gray-500">
+              This token will be remembered locally and included in your ETH portfolio, tokens list and send list using
+              only public RPC.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Add Wallet Modal */}
       {showAddWallet && (
