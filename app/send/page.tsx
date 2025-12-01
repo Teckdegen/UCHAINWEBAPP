@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
+import { getSavedEthCustomTokens } from "@/lib/customTokens"
 import { sendNativeToken, sendToken } from "@/lib/transactions"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
 import { ArrowUp, Loader, ChevronDown } from "lucide-react"
@@ -23,12 +24,6 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
   "function symbol() view returns (string)",
   "function name() view returns (string)",
-]
-const ETH_FORCE_TOKENS = [
-  // USDC
-  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  // Custom token provided by user
-  "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6",
 ]
 
 export default function SendPage() {
@@ -118,11 +113,19 @@ export default function SendPage() {
 
         const logs = [...logsFrom, ...logsTo]
 
-        let tokenAddresses = [...new Set(logs.map((log) => log.address))]
+        let tokenAddresses = [...new Set(logs.map((log) => log.address.toLowerCase()))]
 
         // Always include important ETH tokens so balances show even without recent transfers
         if (chainId === 1) {
-          for (const token of ETH_FORCE_TOKENS) {
+          const baseForceTokens = [
+            // USDC
+            "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            // Previously added custom token
+            "0x93aa0ccd1e5628d3a841c4dbdf602d9eb04085d6",
+          ]
+          const custom = getSavedEthCustomTokens()
+          const forceTokens = [...baseForceTokens, ...custom].map((t) => t.toLowerCase())
+          for (const token of forceTokens) {
             if (!tokenAddresses.includes(token)) {
               tokenAddresses.push(token)
             }

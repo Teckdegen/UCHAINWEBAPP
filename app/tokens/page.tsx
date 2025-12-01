@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
+import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { Coins, Loader } from "lucide-react"
 import Link from "next/link"
@@ -16,12 +17,6 @@ const ERC20_ABI = [
   "function symbol() view returns (string)",
   "function name() view returns (string)",
 ]
-const ETH_FORCE_TOKENS = [
-  // USDC
-  "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  // Custom token provided by user
-  "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6",
-]
 
 export default function TokensPage() {
   const router = useRouter()
@@ -30,6 +25,9 @@ export default function TokensPage() {
   const [chainId, setChainId] = useState(1)
   const [selectedToken, setSelectedToken] = useState<any>(null)
   const [showTokenModal, setShowTokenModal] = useState(false)
+  const [showAddToken, setShowAddToken] = useState(false)
+  const [customAddress, setCustomAddress] = useState("")
+  const [customError, setCustomError] = useState("")
 
   useEffect(() => {
     const state = getWalletState()
@@ -94,11 +92,19 @@ export default function TokensPage() {
         const logs = [...logsFrom, ...logsTo]
 
         // Extract unique token addresses
-        let tokenAddresses = [...new Set(logs.map((log) => log.address))]
+        let tokenAddresses = [...new Set(logs.map((log) => log.address.toLowerCase()))]
 
         // Always include important ETH tokens so balances show even without recent transfers
         if (chainId === 1) {
-          for (const token of ETH_FORCE_TOKENS) {
+          const baseForceTokens = [
+            // USDC
+            "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            // Previously added custom token
+            "0x93aa0ccd1e5628d3a841c4dbdf602d9eb04085d6",
+          ]
+          const custom = getSavedEthCustomTokens()
+          const forceTokens = [...baseForceTokens, ...custom].map((t) => t.toLowerCase())
+          for (const token of forceTokens) {
             if (!tokenAddresses.includes(token)) {
               tokenAddresses.push(token)
             }
@@ -165,24 +171,41 @@ export default function TokensPage() {
 
       {/* Chain Selector */}
       <div className="max-w-6xl mx-auto px-4 mt-6">
-        <p className="text-sm text-gray-400 mb-3">Network</p>
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setChainId(1)}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-            }`}
-          >
-            Ethereum
-          </button>
-          <button
-            onClick={() => setChainId(97741)}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-            }`}
-          >
-            PEPU
-          </button>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+          <div>
+            <p className="text-sm text-gray-400 mb-3">Network</p>
+            <div className="flex gap-2 mb-2">
+              <button
+                onClick={() => setChainId(1)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                }`}
+              >
+                Ethereum
+              </button>
+              <button
+                onClick={() => setChainId(97741)}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                  chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                }`}
+              >
+                PEPU
+              </button>
+            </div>
+          </div>
+
+          {chainId === 1 && (
+            <button
+              onClick={() => {
+                setShowAddToken(true)
+                setCustomAddress("")
+                setCustomError("")
+              }}
+              className="self-start px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm font-semibold transition-all"
+            >
+              + Add Custom ETH Token
+            </button>
+          )}
         </div>
       </div>
 
@@ -243,6 +266,69 @@ export default function TokensPage() {
           }}
           chainId={chainId}
         />
+      )}
+
+      {/* Add Custom Token Modal */}
+      {showAddToken && chainId === 1 && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-card w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">Add Custom ETH Token</h2>
+              <button
+                onClick={() => {
+                  setShowAddToken(false)
+                  setCustomAddress("")
+                  setCustomError("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Token Contract Address</label>
+              <input
+                type="text"
+                value={customAddress}
+                onChange={(e) => {
+                  setCustomAddress(e.target.value)
+                  setCustomError("")
+                }}
+                placeholder="0x..."
+                className="input-field"
+              />
+            </div>
+
+            {customError && <p className="text-xs text-red-400">{customError}</p>}
+
+            <button
+              onClick={async () => {
+                try {
+                  setCustomError("")
+                  if (!customAddress.trim()) {
+                    setCustomError("Enter a token contract address")
+                    return
+                  }
+                  addEthCustomToken(customAddress)
+                  setShowAddToken(false)
+                  setCustomAddress("")
+                  await fetchAllTokens()
+                } catch (err: any) {
+                  setCustomError(err.message || "Failed to add token")
+                }
+              }}
+              className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all text-sm"
+            >
+              Save Token
+            </button>
+
+            <p className="text-[11px] text-gray-500">
+              This token will be remembered locally and included in your ETH balances and send list, using only public
+              RPC.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   )

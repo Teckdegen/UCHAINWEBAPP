@@ -14,6 +14,7 @@ import {
   addWallet,
   createWallet,
 } from "@/lib/wallet"
+import { getSavedEthCustomTokens } from "@/lib/customTokens"
 import { getNativeBalance } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
@@ -48,13 +49,6 @@ export default function DashboardPage() {
   const [addWalletError, setAddWalletError] = useState("")
   const [addWalletLoading, setAddWalletLoading] = useState(false)
   const [showWalletMenu, setShowWalletMenu] = useState(false)
-
-  const ETH_FORCE_TOKENS = [
-    // USDC
-    "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-    // Custom token provided by user
-    "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6",
-  ]
 
   useEffect(() => {
     const state = getWalletState()
@@ -142,11 +136,19 @@ export default function DashboardPage() {
       ])
 
           const allLogs = [...logsFrom, ...logsTo]
-          let tokenAddresses = [...new Set(allLogs.map((log) => log.address))]
+          let tokenAddresses = [...new Set(allLogs.map((log) => log.address.toLowerCase()))]
 
-          // Ensure important ETH tokens are always checked (USDC + custom token)
+          // Ensure important ETH tokens are always checked (USDC + user-saved custom tokens)
           if (chainId === 1) {
-            for (const token of ETH_FORCE_TOKENS) {
+            const baseForceTokens = [
+              // USDC
+              "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+              // Previously added custom token
+              "0x93aa0ccd1e5628d3a841c4dbdf602d9eb04085d6",
+            ]
+            const custom = getSavedEthCustomTokens()
+            const forceTokens = [...baseForceTokens, ...custom].map((t) => t.toLowerCase())
+            for (const token of forceTokens) {
               if (!tokenAddresses.includes(token)) {
                 tokenAddresses.push(token)
               }
