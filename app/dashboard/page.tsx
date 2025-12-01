@@ -196,9 +196,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
+    <div className="min-h-screen bg-black text-white pb-24 relative">
       {/* Header */}
-      <div className="glass-card rounded-none p-6 border-b border-white/10">
+      <div className="glass-card rounded-none p-6 border-b border-white/10 relative z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold gradient-text">Unchained</h1>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
                 </button>
                 {/* Simple dropdown list, toggled by button */}
                 {showWalletMenu && (
-                  <div className="absolute right-0 mt-2 w-64 glass-card border border-white/10 max-h-64 overflow-y-auto z-50">
+                  <div className="absolute right-0 mt-2 w-64 glass-card border border-white/10 max-h-64 overflow-y-auto z-[200]">
                     {wallets.map((wallet) => (
                       <button
                         key={wallet.id}

@@ -250,7 +250,7 @@ export async function createWalletFromExistingMnemonic(
     throw new Error("Failed to decrypt seed phrase")
   }
 
-  // Derive next index from this mnemonic
+  // Derive next index from this mnemonic (HD wallet style)
   const relatedWallets = wallets.filter(
     (w) => w.encryptedMnemonic && w.encryptedMnemonic === baseWallet.encryptedMnemonic,
   )
@@ -264,9 +264,9 @@ export async function createWalletFromExistingMnemonic(
 
   const nextIndex = maxIndex + 1
 
-  const root = ethers.HDNodeWallet.fromPhrase(mnemonic)
   const path = `m/44'/60'/0'/0/${nextIndex}`
-  const child = root.derivePath(path)
+  // Ethers v6: derive directly via Wallet.fromPhrase with a custom path
+  const child = ethers.Wallet.fromPhrase(mnemonic, undefined, path)
 
   const encryptedPrivateKey = encryptData(child.privateKey, password)
 
