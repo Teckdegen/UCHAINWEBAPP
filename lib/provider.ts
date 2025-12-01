@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-import { getWallets, getWalletState } from "./wallet"
+import { getWallets, getWalletState, getCurrentWallet, setCurrentWalletId } from "./wallet"
 import { getProvider } from "./rpc"
 
 export interface ConnectedDApp {
@@ -260,11 +260,12 @@ export class UnchainedProvider {
     if (state.isLocked || wallets.length === 0) {
       return []
     }
-    return [wallets[0].address.toLowerCase()]
+    const wallet = getCurrentWallet() || wallets[0]
+    return [wallet.address.toLowerCase()]
   }
 
   private async personalSign(message: string, address: string) {
-    const wallet = getWallets()[0]
+    const wallet = getCurrentWallet() || getWallets()[0]
     if (!wallet || wallet.address.toLowerCase() !== address.toLowerCase()) {
       throw new Error("Account not found")
     }
@@ -311,7 +312,7 @@ export class UnchainedProvider {
   }
 
   private async signTypedData(domain: any, types: any, value: any) {
-    const wallet = getWallets()[0]
+    const wallet = getCurrentWallet() || getWallets()[0]
     if (!wallet) {
       throw new Error("No wallet found")
     }
@@ -353,7 +354,7 @@ export class UnchainedProvider {
   }
 
   private async sendTransaction(tx: any) {
-    const wallet = getWallets()[0]
+    const wallet = getCurrentWallet() || getWallets()[0]
     if (!wallet) {
       throw new Error("No wallet found")
     }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
+import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
 import { Copy, Check } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import BottomNav from "@/components/BottomNav"
@@ -22,8 +22,9 @@ export default function ReceivePage() {
 
     updateActivity()
     const wallets = getWallets()
-    if (wallets.length > 0) {
-      setAddress(wallets[0].address)
+    const wallet = getCurrentWallet() || wallets[0]
+    if (wallet) {
+      setAddress(wallet.address)
     }
   }, [router])
 

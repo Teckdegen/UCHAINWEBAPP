@@ -13,6 +13,7 @@ import {
   decryptData,
   getAutoLockSeconds,
   setAutoLockSeconds,
+  getCurrentWallet,
 } from "@/lib/wallet"
 import { deleteAllCookies } from "@/lib/cookies"
 import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key } from "lucide-react"
@@ -104,9 +105,10 @@ export default function SettingsPage() {
       const currentWallets = getWallets()
       if (currentWallets.length === 0) throw new Error("No wallet found")
 
-      // Verify current password by trying to decrypt
+      // Verify current password by trying to decrypt the active wallet
+      const active = getCurrentWallet() || currentWallets[0]
       try {
-        decryptData(currentWallets[0].encryptedPrivateKey, currentPassword)
+        decryptData(active.encryptedPrivateKey, currentPassword)
       } catch {
         throw new Error("Current password is incorrect")
       }
@@ -137,8 +139,9 @@ export default function SettingsPage() {
 
   const getPrivateKeyDisplay = () => {
     if (!password || wallets.length === 0) return null
+    const active = getCurrentWallet() || wallets[0]
     try {
-      return getPrivateKey(wallets[0], password)
+      return getPrivateKey(active, password)
     } catch {
       setError("Invalid password")
       return null
@@ -147,8 +150,9 @@ export default function SettingsPage() {
 
   const getMnemonicDisplay = () => {
     if (!password || wallets.length === 0) return null
+    const active = getCurrentWallet() || wallets[0]
     try {
-      return getMnemonic(wallets[0], password) || "No mnemonic available"
+      return getMnemonic(active, password) || "No mnemonic available"
     } catch {
       setError("Invalid password")
       return null
@@ -185,10 +189,10 @@ export default function SettingsPage() {
                   <p className="text-sm text-gray-400 mb-2">Address</p>
                   <div className="flex items-center gap-2">
                     <code className="text-sm font-mono text-green-400 break-all bg-black/50 p-2 rounded flex-1">
-                      {wallets[0].address}
+                      {(getCurrentWallet() || wallets[0]).address}
                     </code>
                     <button
-                      onClick={() => handleCopy(wallets[0].address, "address")}
+                      onClick={() => handleCopy((getCurrentWallet() || wallets[0]).address, "address")}
                       className="p-2 hover:bg-white/10 rounded transition-colors"
                     >
                       {copied === "address" ? (
@@ -202,7 +206,7 @@ export default function SettingsPage() {
 
                 <div>
                   <p className="text-sm text-gray-400 mb-2">Wallet Name</p>
-                  <p className="font-semibold">{wallets[0].name || "My Wallet"}</p>
+                  <p className="font-semibold">{(getCurrentWallet() || wallets[0]).name || "My Wallet"}</p>
                 </div>
               </div>
             </div>

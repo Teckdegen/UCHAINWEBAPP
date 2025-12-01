@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getWalletState, getWallets, getPrivateKey } from "@/lib/wallet"
+import { getWalletState, getWallets, getPrivateKey, getCurrentWalletId, setCurrentWalletId } from "@/lib/wallet"
 import { getProvider, getChainName } from "@/lib/rpc"
 import { getUnchainedProvider } from "@/lib/provider"
 import {
@@ -32,6 +32,8 @@ export default function SignPage() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "high">("low")
   const [selectedChainId, setSelectedChainId] = useState<number>(1) // Default to Ethereum
+  const [wallets, setWallets] = useState<any[]>([])
+  const [selectedWalletId, setSelectedWalletId] = useState<string>("")
 
   useEffect(() => {
     const state = getWalletState()
@@ -71,6 +73,15 @@ export default function SignPage() {
         console.error("[v0] Error parsing params:", e)
       }
     }
+
+    const allWallets = getWallets()
+    setWallets(allWallets)
+    const currentId = getCurrentWalletId()
+    if (currentId && allWallets.find((w) => w.id === currentId)) {
+      setSelectedWalletId(currentId)
+    } else if (allWallets.length > 0) {
+      setSelectedWalletId(allWallets[0].id)
+    }
   }, [router, searchParams])
 
   const handleApprove = async () => {
@@ -86,12 +97,12 @@ export default function SignPage() {
 
     setLoading(true)
     try {
-      const wallets = getWallets()
       if (wallets.length === 0) {
         throw new Error("No wallet found")
       }
 
-      const wallet = wallets[0]
+      const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
+      setCurrentWalletId(wallet.id)
       const privateKey = getPrivateKey(wallet, password)
 
       let result: any = null
@@ -216,6 +227,26 @@ export default function SignPage() {
               <p className="text-xs text-gray-400">{getDomainName(origin)}</p>
             </div>
           </div>
+          {wallets.length > 0 && (
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-gray-500 mb-1">Wallet</span>
+              <select
+                value={selectedWalletId}
+                onChange={(e) => setSelectedWalletId(e.target.value)}
+                className="bg-white/5 border border-white/20 text-xs rounded px-2 py-1 text-gray-200"
+              >
+                {wallets.map((wallet) => (
+                  <option key={wallet.id} value={wallet.id}>
+                    {(wallet.name || "Wallet") +
+                      " - " +
+                      wallet.address.slice(0, 6) +
+                      "..." +
+                      wallet.address.slice(-4)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -283,7 +314,11 @@ export default function SignPage() {
                 <span className="text-gray-400 text-sm">From</span>
                 <Copy className="w-4 h-4 text-gray-400 cursor-pointer hover:text-green-400" />
               </div>
-              <p className="text-white font-mono text-xs break-all">{formatAddress(getWallets()[0]?.address || "")}</p>
+              <p className="text-white font-mono text-xs break-all">
+                {formatAddress(
+                  (wallets.find((w) => w.id === selectedWalletId) || wallets[0] || { address: "" }).address || "",
+                )}
+              </p>
             </div>
 
             <div className="bg-white/5 rounded-lg p-4 border border-white/10">

@@ -2,7 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
+import {
+  getWallets,
+  getWalletState,
+  updateActivity,
+  getCurrentWallet,
+  getCurrentWalletId,
+  setCurrentWalletId,
+  createWalletFromExistingMnemonic,
+  importWalletFromMnemonic,
+  importWalletFromPrivateKey,
+  addWallet,
+} from "@/lib/wallet"
 import { getNativeBalance } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
@@ -26,6 +37,16 @@ export default function DashboardPage() {
   const [balances, setBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [chainId, setChainId] = useState(97741)
+  const [wallets, setWallets] = useState<any[]>([])
+  const [currentWalletId, setCurrentWalletIdState] = useState<string | null>(null)
+  const [showAddWallet, setShowAddWallet] = useState(false)
+  const [addWalletMode, setAddWalletMode] = useState<"menu" | "from-seed" | "import-seed" | "import-key">("menu")
+  const [newWalletName, setNewWalletName] = useState("")
+  const [addPassword, setAddPassword] = useState("")
+  const [addSeedPhrase, setAddSeedPhrase] = useState("")
+  const [addPrivateKey, setAddPrivateKey] = useState("")
+  const [addWalletError, setAddWalletError] = useState("")
+  const [addWalletLoading, setAddWalletLoading] = useState(false)
 
   useEffect(() => {
     const state = getWalletState()
@@ -35,6 +56,8 @@ export default function DashboardPage() {
     }
 
     updateActivity()
+    setWallets(getWallets())
+    setCurrentWalletIdState(getCurrentWalletId())
     fetchBalances()
     const interval = setInterval(fetchBalances, 30000)
     return () => clearInterval(interval)
@@ -49,7 +72,7 @@ export default function DashboardPage() {
         return
       }
 
-      const wallet = wallets[0]
+      const wallet = getCurrentWallet() || wallets[0]
       const allBalances: any[] = []
 
       // Get native balance
@@ -180,9 +203,61 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold gradient-text">Unchained</h1>
             <p className="text-sm text-gray-400">Web Wallet</p>
           </div>
-          <button className="glass-card p-3 hover:bg-white/10">
-            <Menu className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Wallet selector */}
+            {wallets.length > 0 && (
+              <div className="relative">
+                <button
+                  className="glass-card px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white/10 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <span className="text-xs font-bold text-green-400">
+                      {wallets.find((w) => w.id === currentWalletId)?.name?.[0] ||
+                        wallets[0].name?.[0] ||
+                        "W"}
+                    </span>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs text-gray-400">Active Wallet</p>
+                    <p className="text-sm font-semibold">
+                      {wallets.find((w) => w.id === currentWalletId)?.name || wallets[0].name || "My Wallet"}
+                    </p>
+                  </div>
+                </button>
+                {/* Simple dropdown list */}
+                <div className="absolute right-0 mt-2 w-64 glass-card border border-white/10 max-h-64 overflow-y-auto z-50">
+                  {wallets.map((wallet) => (
+                    <button
+                      key={wallet.id}
+                      onClick={() => {
+                        setCurrentWalletId(wallet.id)
+                        setCurrentWalletIdState(wallet.id)
+                        fetchBalances()
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 flex flex-col ${
+                        wallet.id === currentWalletId ? "bg-green-500/10" : ""
+                      }`}
+                    >
+                      <span className="font-semibold">{wallet.name || "Wallet"}</span>
+                      <span className="font-mono text-[10px] text-gray-400">
+                        {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                      </span>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => {
+                      setShowAddWallet(true)
+                      setAddWalletMode("menu")
+                      setAddWalletError("")
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs text-green-400 hover:bg-green-500/10 border-t border-white/10"
+                  >
+                    + Add Wallet
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -200,6 +275,17 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-400 mb-4">
               ETH Price: ${ethPrice.toFixed(2)}
             </p>
+          )}
+
+          {/* Active wallet display inside portfolio */}
+          {wallets.length > 0 && (
+            <div className="mb-4 text-xs text-gray-400">
+              <span className="mr-1">Wallet:</span>
+              <span className="font-mono text-green-400">
+                {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(0, 6)}...
+                {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(-4)}
+              </span>
+            </div>
           )}
 
           {/* Chain Selector */}
@@ -222,28 +308,59 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Quick Actions - Only core actions, nav icons removed */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Send - Always visible */}
-            <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Send className="w-5 h-5 text-green-500" />
+          {/* Quick Actions */}
+          {chainId === 1 ? (
+            // Ethereum: Send + Receive
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Send className="w-5 h-5 text-green-500" />
+                  </div>
                 </div>
-              </div>
-              <p className="text-sm font-semibold">Send</p>
-            </Link>
+                <p className="text-sm font-semibold">Send</p>
+              </Link>
 
-            {/* Receive - Always visible */}
-            <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <ArrowDownLeft className="w-5 h-5 text-green-500" />
+              <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                  </div>
                 </div>
-              </div>
-              <p className="text-sm font-semibold">Receive</p>
-            </Link>
-          </div>
+                <p className="text-sm font-semibold">Receive</p>
+              </Link>
+            </div>
+          ) : (
+            // PEPU: Bridge + Swap + Receive (no Send)
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <Link href="/bridge" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-green-500" />
+                  </div>
+                </div>
+                <p className="text-sm font-semibold">Unchained Bridge</p>
+              </Link>
+
+              <Link href="/swap" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-green-500" />
+                  </div>
+                </div>
+                <p className="text-sm font-semibold">Unchained Swap</p>
+              </Link>
+
+              <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                  </div>
+                </div>
+                <p className="text-sm font-semibold">Receive</p>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Token List */}
@@ -278,6 +395,264 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Add Wallet Modal */}
+      {showAddWallet && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="glass-card w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-bold">Add Wallet</h2>
+              <button
+                onClick={() => {
+                  setShowAddWallet(false)
+                  setAddWalletMode("menu")
+                  setAddWalletError("")
+                  setAddPassword("")
+                  setAddSeedPhrase("")
+                  setAddPrivateKey("")
+                  setNewWalletName("")
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {addWalletMode === "menu" && (
+              <div className="space-y-3">
+                <button
+                  onClick={() => setAddWalletMode("from-seed")}
+                  className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all text-sm"
+                >
+                  Create New Wallet from Current Seed
+                </button>
+                <button
+                  onClick={() => setAddWalletMode("import-seed")}
+                  className="w-full px-4 py-3 rounded-lg bg-white/10 text-gray-200 hover:bg-white/20 font-semibold transition-all text-sm"
+                >
+                  Import Seed Phrase
+                </button>
+                <button
+                  onClick={() => setAddWalletMode("import-key")}
+                  className="w-full px-4 py-3 rounded-lg bg-white/10 text-gray-200 hover:bg-white/20 font-semibold transition-all text-sm"
+                >
+                  Import Private Key
+                </button>
+                <p className="text-xs text-gray-400">
+                  All wallets share the same 4-digit passcode. You&apos;ll be asked for it to add new wallets.
+                </p>
+              </div>
+            )}
+
+            {addWalletMode === "from-seed" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Wallet Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={newWalletName}
+                    onChange={(e) => setNewWalletName(e.target.value)}
+                    placeholder="My New Wallet"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
+                  <input
+                    type="password"
+                    value={addPassword}
+                    onChange={(e) => setAddPassword(e.target.value)}
+                    maxLength={4}
+                    placeholder="Enter your existing 4-digit PIN"
+                    className="input-field"
+                  />
+                </div>
+                {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
+                <button
+                  disabled={addWalletLoading}
+                  onClick={async () => {
+                    try {
+                      setAddWalletError("")
+                      if (!addPassword || addPassword.length !== 4) {
+                        setAddWalletError("Please enter your 4-digit PIN")
+                        return
+                      }
+                      setAddWalletLoading(true)
+                      const baseId = currentWalletId || (wallets[0]?.id ?? "")
+                      const newWallet = await createWalletFromExistingMnemonic(
+                        addPassword,
+                        baseId,
+                        chainId,
+                      )
+                      newWallet.name = newWalletName || newWallet.name
+                      addWallet(newWallet)
+                      setWallets(getWallets())
+                      setCurrentWalletId(newWallet.id)
+                      setCurrentWalletIdState(newWallet.id)
+                      setShowAddWallet(false)
+                      setAddWalletMode("menu")
+                      setAddPassword("")
+                      setNewWalletName("")
+                      fetchBalances()
+                    } catch (err: any) {
+                      setAddWalletError(err.message || "Failed to create wallet from seed")
+                    } finally {
+                      setAddWalletLoading(false)
+                    }
+                  }}
+                  className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                >
+                  {addWalletLoading ? "Creating..." : "Create Wallet"}
+                </button>
+              </div>
+            )}
+
+            {addWalletMode === "import-seed" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Wallet Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={newWalletName}
+                    onChange={(e) => setNewWalletName(e.target.value)}
+                    placeholder="My Imported Wallet"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Seed Phrase</label>
+                  <textarea
+                    value={addSeedPhrase}
+                    onChange={(e) => setAddSeedPhrase(e.target.value)}
+                    placeholder="Enter your 12 or 24 word seed phrase"
+                    className="input-field min-h-[90px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
+                  <input
+                    type="password"
+                    value={addPassword}
+                    onChange={(e) => setAddPassword(e.target.value)}
+                    maxLength={4}
+                    placeholder="Enter your existing 4-digit PIN"
+                    className="input-field"
+                  />
+                </div>
+                {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
+                <button
+                  disabled={addWalletLoading}
+                  onClick={async () => {
+                    try {
+                      setAddWalletError("")
+                      if (!addSeedPhrase || !addPassword || addPassword.length !== 4) {
+                        setAddWalletError("Enter seed phrase and your 4-digit PIN")
+                        return
+                      }
+                      setAddWalletLoading(true)
+                      const newWallet = await importWalletFromMnemonic(
+                        addSeedPhrase.trim(),
+                        addPassword,
+                        newWalletName || "Imported Wallet",
+                        chainId,
+                      )
+                      addWallet(newWallet)
+                      setWallets(getWallets())
+                      setCurrentWalletId(newWallet.id)
+                      setCurrentWalletIdState(newWallet.id)
+                      setShowAddWallet(false)
+                      setAddWalletMode("menu")
+                      setAddPassword("")
+                      setAddSeedPhrase("")
+                      setNewWalletName("")
+                      fetchBalances()
+                    } catch (err: any) {
+                      setAddWalletError(err.message || "Failed to import seed phrase")
+                    } finally {
+                      setAddWalletLoading(false)
+                    }
+                  }}
+                  className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                >
+                  {addWalletLoading ? "Importing..." : "Import Seed Phrase"}
+                </button>
+              </div>
+            )}
+
+            {addWalletMode === "import-key" && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Wallet Name (Optional)</label>
+                  <input
+                    type="text"
+                    value={newWalletName}
+                    onChange={(e) => setNewWalletName(e.target.value)}
+                    placeholder="My Imported Wallet"
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Private Key</label>
+                  <textarea
+                    value={addPrivateKey}
+                    onChange={(e) => setAddPrivateKey(e.target.value)}
+                    placeholder="Enter your private key"
+                    className="input-field min-h-[80px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
+                  <input
+                    type="password"
+                    value={addPassword}
+                    onChange={(e) => setAddPassword(e.target.value)}
+                    maxLength={4}
+                    placeholder="Enter your existing 4-digit PIN"
+                    className="input-field"
+                  />
+                </div>
+                {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
+                <button
+                  disabled={addWalletLoading}
+                  onClick={async () => {
+                    try {
+                      setAddWalletError("")
+                      if (!addPrivateKey || !addPassword || addPassword.length !== 4) {
+                        setAddWalletError("Enter private key and your 4-digit PIN")
+                        return
+                      }
+                      setAddWalletLoading(true)
+                      const newWallet = await importWalletFromPrivateKey(
+                        addPrivateKey.trim(),
+                        addPassword,
+                        newWalletName || "Imported Wallet",
+                        chainId,
+                      )
+                      addWallet(newWallet)
+                      setWallets(getWallets())
+                      setCurrentWalletId(newWallet.id)
+                      setCurrentWalletIdState(newWallet.id)
+                      setShowAddWallet(false)
+                      setAddWalletMode("menu")
+                      setAddPassword("")
+                      setAddPrivateKey("")
+                      setNewWalletName("")
+                      fetchBalances()
+                    } catch (err: any) {
+                      setAddWalletError(err.message || "Failed to import private key")
+                    } finally {
+                      setAddWalletLoading(false)
+                    }
+                  }}
+                  className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                >
+                  {addWalletLoading ? "Importing..." : "Import Private Key"}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <BottomNav active="dashboard" />
     </div>

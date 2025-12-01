@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getWalletState, getWallets } from "@/lib/wallet"
+import { getWalletState, getWallets, getCurrentWalletId, setCurrentWalletId } from "@/lib/wallet"
 import { getUnchainedProvider } from "@/lib/provider"
 import { AlertCircle, CheckCircle, XCircle, Globe } from "lucide-react"
 
@@ -15,6 +15,8 @@ export default function ConnectPage() {
   const [rejected, setRejected] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [wallets, setWallets] = useState<any[]>([])
+  const [selectedWalletId, setSelectedWalletId] = useState<string>("")
 
   useEffect(() => {
     const state = getWalletState()
@@ -27,16 +29,27 @@ export default function ConnectPage() {
     const methodParam = searchParams.get("method") || "eth_requestAccounts"
     setOrigin(originParam)
     setMethod(methodParam)
+
+    const allWallets = getWallets()
+    setWallets(allWallets)
+    const currentId = getCurrentWalletId()
+    if (currentId && allWallets.find((w) => w.id === currentId)) {
+      setSelectedWalletId(currentId)
+    } else if (allWallets.length > 0) {
+      setSelectedWalletId(allWallets[0].id)
+    }
   }, [router, searchParams])
 
   const handleApprove = async () => {
     setLoading(true)
     try {
-      const wallets = getWallets()
       if (wallets.length === 0) {
         setError("No wallet found")
         return
       }
+
+      const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
+      setCurrentWalletId(wallet.id)
 
       // Track connection
       const provider = getUnchainedProvider()
@@ -46,7 +59,7 @@ export default function ConnectPage() {
 
       const result = {
         approved: true,
-        accounts: [wallets[0].address.toLowerCase()],
+        accounts: [wallet.address.toLowerCase()],
         chainId: "0x1",
         timestamp: Date.now(),
       }
@@ -110,6 +123,31 @@ export default function ConnectPage() {
 
           {/* Content */}
           <div className="p-6 space-y-4">
+            {/* Wallet Selector */}
+            {wallets.length > 0 && (
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <p className="text-xs text-gray-400 mb-2">Select Wallet</p>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {wallets.map((wallet) => (
+                    <label key={wallet.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                      <input
+                        type="radio"
+                        className="accent-green-500"
+                        checked={selectedWalletId === wallet.id}
+                        onChange={() => setSelectedWalletId(wallet.id)}
+                      />
+                      <div>
+                        <p className="font-semibold">{wallet.name || "Wallet"}</p>
+                        <p className="font-mono text-[10px] text-gray-400">
+                          {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+                        </p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Origin */}
             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
               <p className="text-xs text-gray-400 mb-2">Requesting App</p>

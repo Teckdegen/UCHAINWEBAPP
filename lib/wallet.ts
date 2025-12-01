@@ -10,11 +10,13 @@ export interface Wallet {
   createdAt: number
   name?: string
   chainId: number
+  derivationIndex?: number
 }
 
 const WALLETS_KEY = "unchained_wallets"
 const WALLET_STATE_KEY = "unchained_wallet_state"
 const AUTO_LOCK_KEY = "unchained_auto_lock_seconds"
+const CURRENT_WALLET_ID_KEY = "unchained_current_wallet_id"
 
 export function generateWalletId() {
   return Math.random().toString(36).substring(2, 15)
@@ -100,6 +102,14 @@ export function addWallet(wallet: Wallet) {
   const wallets = getWallets()
   wallets.push(wallet)
   saveWallets(wallets)
+
+  // If no current wallet is set, make this the active one
+  if (typeof window !== "undefined") {
+    const currentId = localStorage.getItem(CURRENT_WALLET_ID_KEY)
+    if (!currentId) {
+      localStorage.setItem(CURRENT_WALLET_ID_KEY, wallet.id)
+    }
+  }
 
   // Register userId with API when wallet is added
   if (typeof window !== "undefined") {
@@ -193,4 +203,81 @@ export function setAutoLockSeconds(seconds: number) {
   if (typeof window === "undefined") return
   const safe = Math.max(0, seconds)
   localStorage.setItem(AUTO_LOCK_KEY, safe.toString())
+}
+
+export function getCurrentWalletId(): string | null {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem(CURRENT_WALLET_ID_KEY)
+}
+
+export function setCurrentWalletId(id: string) {
+  if (typeof window === "undefined") return
+  localStorage.setItem(CURRENT_WALLET_ID_KEY, id)
+}
+
+export function getCurrentWallet(): Wallet | null {
+  const wallets = getWallets()
+  if (wallets.length === 0) return null
+  if (typeof window === "undefined") return wallets[0]
+
+  const currentId = localStorage.getItem(CURRENT_WALLET_ID_KEY)
+  if (!currentId) return wallets[0]
+
+  return wallets.find((w) => w.id === currentId) || wallets[0]
+}
+
+export async function createWalletFromExistingMnemonic(
+  password: string,
+  baseWalletId?: string,
+  chainId = 1,
+): Promise<Wallet> {
+  const wallets = getWallets()
+  if (wallets.length === 0) {
+    throw new Error("No wallet found to derive from")
+  }
+
+  const baseWallet =
+    wallets.find((w) => w.id === baseWalletId && w.encryptedMnemonic) ||
+    wallets.find((w) => w.encryptedMnemonic)
+
+  if (!baseWallet || !baseWallet.encryptedMnemonic) {
+    throw new Error("No seed phrase available to derive new wallet")
+  }
+
+  // Decrypt mnemonic with existing passcode
+  const mnemonic = getMnemonic(baseWallet, password)
+  if (!mnemonic) {
+    throw new Error("Failed to decrypt seed phrase")
+  }
+
+  // Derive next index from this mnemonic
+  const relatedWallets = wallets.filter(
+    (w) => w.encryptedMnemonic && w.encryptedMnemonic === baseWallet.encryptedMnemonic,
+  )
+  const maxIndex = relatedWallets.reduce((max, w) => {
+    if (typeof w.derivationIndex === "number") {
+      return Math.max(max, w.derivationIndex)
+    }
+    // Root wallet without explicit index -> treat as index 0
+    return Math.max(max, 0)
+  }, -1)
+
+  const nextIndex = maxIndex + 1
+
+  const root = ethers.HDNodeWallet.fromPhrase(mnemonic)
+  const path = `m/44'/60'/0'/0/${nextIndex}`
+  const child = root.derivePath(path)
+
+  const encryptedPrivateKey = encryptData(child.privateKey, password)
+
+  return {
+    id: generateWalletId(),
+    address: child.address,
+    encryptedPrivateKey,
+    encryptedMnemonic: baseWallet.encryptedMnemonic,
+    createdAt: Date.now(),
+    name: `Wallet ${nextIndex + 1}`,
+    chainId: chainId || baseWallet.chainId,
+    derivationIndex: nextIndex,
+  }
 }
