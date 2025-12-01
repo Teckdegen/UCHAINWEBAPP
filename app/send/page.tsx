@@ -94,11 +94,22 @@ export default function SendPage() {
       const fromBlock = Math.max(0, currentBlock - 10000)
 
       try {
-        const logs = await provider.getLogs({
-          fromBlock,
-          toBlock: "latest",
-          topics: [transferTopic, null, null, ethers.getAddress(wallet.address)],
-        })
+        const addressTopic = ethers.zeroPadValue(wallet.address, 32)
+
+        const [logsFrom, logsTo] = await Promise.all([
+          provider.getLogs({
+            fromBlock,
+            toBlock: "latest",
+            topics: [transferTopic, addressTopic],
+          }),
+          provider.getLogs({
+            fromBlock,
+            toBlock: "latest",
+            topics: [transferTopic, null, addressTopic],
+          }),
+        ])
+
+        const logs = [...logsFrom, ...logsTo]
 
         const tokenAddresses = [...new Set(logs.map((log) => log.address))]
 

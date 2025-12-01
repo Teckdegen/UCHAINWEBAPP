@@ -68,16 +68,23 @@ export default function TokensPage() {
       const fromBlock = Math.max(0, currentBlock - 5000) // Scan last 5000 blocks
 
       try {
-        const logs = await provider.getLogs({
-          fromBlock,
-          toBlock: "latest",
-          topics: [
-            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer event
-            null,
-            null,
-            ethers.getAddress(wallet.address),
-          ],
-        })
+        const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        const addressTopic = ethers.zeroPadValue(wallet.address, 32)
+
+        const [logsFrom, logsTo] = await Promise.all([
+          provider.getLogs({
+            fromBlock,
+            toBlock: "latest",
+            topics: [transferTopic, addressTopic],
+          }),
+          provider.getLogs({
+            fromBlock,
+            toBlock: "latest",
+            topics: [transferTopic, null, addressTopic],
+          }),
+        ])
+
+        const logs = [...logsFrom, ...logsTo]
 
         // Extract unique token addresses
         const tokenAddresses = [...new Set(logs.map((log) => log.address))]

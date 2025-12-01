@@ -118,13 +118,23 @@ export default function DashboardPage() {
         const fromBlock = Math.max(0, currentBlock - 10000)
 
         try {
-          const logs = await provider.getLogs({
-            fromBlock,
-            toBlock: "latest",
-            topics: [transferTopic, null, null, ethers.getAddress(wallet.address)],
-          })
+          const addressTopic = ethers.zeroPadValue(wallet.address, 32)
 
-          const tokenAddresses = [...new Set(logs.map((log) => log.address))]
+          const [logsFrom, logsTo] = await Promise.all([
+            provider.getLogs({
+              fromBlock,
+              toBlock: "latest",
+              topics: [transferTopic, addressTopic],
+            }),
+            provider.getLogs({
+              fromBlock,
+              toBlock: "latest",
+              topics: [transferTopic, null, addressTopic],
+            }),
+          ])
+
+          const allLogs = [...logsFrom, ...logsTo]
+          const tokenAddresses = [...new Set(allLogs.map((log) => log.address))]
 
           // Fetch prices for all tokens in parallel
           const tokenPromises = tokenAddresses.map(async (tokenAddress) => {
