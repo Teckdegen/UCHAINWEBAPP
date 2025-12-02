@@ -7,12 +7,11 @@
 
 'use client'
 
-import { createUnchainedConfig, isUnchainedInstalled } from './index'
+import { createUnchainedConfig, WalletSelector } from './index'
 import { mainnet } from 'wagmi/chains'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useAccount, useConnect, useDisconnect, useSendTransaction, useBalance } from 'wagmi'
-import { injected } from '@wagmi/connectors/injected'
+import { useAccount, useSendTransaction, useBalance } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
 
 // 1. Create wagmi config
@@ -38,27 +37,8 @@ export function App() {
 // 4. Your dApp Component
 function DAppContent() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending } = useConnect()
-  const { disconnect } = useDisconnect()
   const { data: balance } = useBalance({ address })
   const { sendTransaction, isPending: isSending } = useSendTransaction()
-
-  // Check if Unchained is installed
-  const hasUnchained = isUnchainedInstalled()
-
-  const handleConnect = () => {
-    // Find Unchained connector (injected connector will auto-detect)
-    const unchainedConnector = connectors.find(
-      (c) => c.id === 'injected' || (window.ethereum as any)?.isUnchained
-    )
-    
-    if (unchainedConnector) {
-      connect({ connector: unchainedConnector })
-    } else {
-      // Fallback to first available connector
-      connect({ connector: injected() })
-    }
-  }
 
   const handleSend = async () => {
     if (!address) return
@@ -69,46 +49,58 @@ function DAppContent() {
     })
   }
 
-  if (!isConnected) {
-    return (
-      <div style={{ padding: '2rem' }}>
-        <h1>Connect to Unchained Wallet</h1>
-        {hasUnchained ? (
-          <p>✅ Unchained Wallet detected!</p>
-        ) : (
-          <p>⚠️ Unchained Wallet not detected. Install it to continue.</p>
-        )}
-        <button 
-          onClick={handleConnect}
-          disabled={isPending}
-        >
-          {isPending ? 'Connecting...' : 'Connect Wallet'}
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Unchained Wallet Connected</h1>
+    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+      <h1>My dApp</h1>
       
-      <div style={{ marginBottom: '1rem' }}>
-        <p><strong>Address:</strong> {address}</p>
-        <p><strong>Balance:</strong> {balance ? formatEther(balance.value) : '0'} ETH</p>
+      {/* Wallet Selector UI - Shows available wallets */}
+      <div style={{ marginBottom: '2rem' }}>
+        <WalletSelector 
+          // onlyUnchained={true} // Uncomment to only show Unchained
+          // disableMetaMask={true} // Uncomment to hide MetaMask
+          // disableCoinbase={true} // Uncomment to hide Coinbase
+          walletConnectProjectId={process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID}
+          onConnect={(address, walletType) => {
+            console.log(`Connected to ${walletType}: ${address}`)
+          }}
+          onDisconnect={() => {
+            console.log('Disconnected')
+          }}
+        />
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button 
-          onClick={handleSend}
-          disabled={isSending}
-        >
-          {isSending ? 'Sending...' : 'Send 0.001 ETH'}
-        </button>
-        
-        <button onClick={() => disconnect()}>
-          Disconnect
-        </button>
-      </div>
+      {/* Transaction UI (only shown when connected) */}
+      {isConnected && address && (
+        <div style={{ 
+          padding: '1.5rem', 
+          background: '#1a1a1a', 
+          borderRadius: '12px',
+          border: '1px solid #333'
+        }}>
+          <h2 style={{ marginTop: 0 }}>Wallet Info</h2>
+          <div style={{ marginBottom: '1rem' }}>
+            <p><strong>Address:</strong> {address}</p>
+            <p><strong>Balance:</strong> {balance ? formatEther(balance.value) : '0'} ETH</p>
+          </div>
+
+          <button 
+            onClick={handleSend}
+            disabled={isSending}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: isSending ? '#333' : '#4a9eff',
+              border: 'none',
+              borderRadius: '8px',
+              color: 'white',
+              cursor: isSending ? 'not-allowed' : 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            }}
+          >
+            {isSending ? 'Sending...' : 'Send 0.001 ETH'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

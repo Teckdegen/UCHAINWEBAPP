@@ -1,81 +1,178 @@
 # Unchained Wallet SDK
 
-A simple SDK for dApps to connect to Unchained Wallet using wagmi and viem.
+A simple SDK for dApps to connect to **Unchained Wallet**, **MetaMask**, and **Coinbase Wallet** using wagmi and viem.
+
+Automatically detects and prioritizes Unchained Wallet when available (`window.ethereum.isUnchained === true`).
+
+## How Detection Works
+
+The SDK detects wallets through `window.ethereum` flags:
+
+- **Unchained Wallet**: `window.ethereum.isUnchained === true`
+- **MetaMask**: `window.ethereum.isMetaMask === true` (and not Unchained)
+- **Coinbase Wallet**: `window.ethereum.isCoinbaseWallet === true` (and not Unchained)
+
+**Important**: Unchained Wallet sets all three flags (`isUnchained: true`, `isMetaMask: true`, `isCoinbaseWallet: true`) for compatibility, but the SDK prioritizes Unchained when `isUnchained === true`.
 
 ## Installation
 
 ```bash
-npm install wagmi viem @tanstack/react-query @wagmi/connectors
+npm install wagmi viem @tanstack/react-query wagmi/connectors
 # or
-pnpm add wagmi viem @tanstack/react-query @wagmi/connectors
+pnpm add wagmi viem @tanstack/react-query wagmi/connectors
 ```
 
 ## Quick Start
 
-### 1. Setup wagmi config
+### Option 1: With UI Component (Recommended)
 
 ```typescript
-import { createUnchainedConfig } from '@unchained/sdk'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
 import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-// Create wagmi config
+// Create config
 const wagmiConfig = createUnchainedConfig({
-  projectId: 'your-walletconnect-project-id', // Optional, for WalletConnect support
-  chains: [mainnet], // Add your chains
+  projectId: 'your-walletconnect-project-id', // Optional
+  chains: [mainnet],
 })
 
-// Setup React Query
 const queryClient = new QueryClient()
 
 function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <YourApp />
+        <WalletSelector 
+          onlyUnchained={false} // Set to true to only show Unchained
+          disableMetaMask={false} // Set to true to hide MetaMask
+          disableCoinbase={false} // Set to true to hide Coinbase
+          walletConnectProjectId="your-project-id" // Optional
+          onConnect={(address, walletType) => {
+            console.log('Connected:', address, walletType)
+          }}
+        />
       </QueryClientProvider>
     </WagmiProvider>
   )
 }
 ```
 
-### 2. Use in your components
+### Option 2: Without UI (Custom Implementation)
 
 ```typescript
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
-import { injected } from '@wagmi/connectors/injected'
+import { createUnchainedConfig } from '@unchained/sdk'
+import { useConnect, useAccount } from 'wagmi'
+import { injected } from 'wagmi/connectors'
+
+// Create config
+const wagmiConfig = createUnchainedConfig({
+  chains: [mainnet],
+})
 
 function ConnectButton() {
   const { address, isConnected } = useAccount()
-  const { connect } = useConnect()
-  const { disconnect } = useDisconnect()
+  const { connect, connectors } = useConnect()
+
+  // Find available wallets
+  const injectedConnector = connectors.find(c => c.id === 'injected')
 
   if (isConnected) {
-    return (
-      <div>
-        <p>Connected: {address}</p>
-        <button onClick={() => disconnect()}>Disconnect</button>
-      </div>
-    )
+    return <div>Connected: {address}</div>
   }
 
   return (
-    <button
-      onClick={() => connect({ connector: injected() })}
-    >
-      Connect Unchained Wallet
+    <button onClick={() => connect({ connector: injectedConnector })}>
+      Connect Wallet
     </button>
   )
 }
 ```
 
-## Features
+## WalletSelector Component
 
-- ✅ **Auto-detection**: Automatically detects Unchained wallet via `window.ethereum.isUnchained`
-- ✅ **wagmi integration**: Full wagmi support with hooks
-- ✅ **viem integration**: Uses viem for all RPC calls
-- ✅ **WalletConnect support**: Optional WalletConnect connector
-- ✅ **TypeScript**: Full TypeScript support
+The `WalletSelector` component provides a ready-to-use UI for wallet connection.
+
+### Props
+
+```typescript
+interface WalletSelectorProps {
+  /** Show only Unchained Wallet */
+  onlyUnchained?: boolean
+  
+  /** Disable MetaMask */
+  disableMetaMask?: boolean
+  
+  /** Disable Coinbase Wallet */
+  disableCoinbase?: boolean
+  
+  /** Disable WalletConnect */
+  disableWalletConnect?: boolean
+  
+  /** WalletConnect Project ID (required if WalletConnect enabled) */
+  walletConnectProjectId?: string
+  
+  /** Custom CSS class */
+  className?: string
+  
+  /** Callback when wallet is connected */
+  onConnect?: (address: string, walletType: string) => void
+  
+  /** Callback when wallet is disconnected */
+  onDisconnect?: () => void
+}
+```
+
+### Examples
+
+**Only Unchained Wallet:**
+```tsx
+<WalletSelector onlyUnchained={true} />
+```
+
+**Unchained + MetaMask (no Coinbase):**
+```tsx
+<WalletSelector disableCoinbase={true} />
+```
+
+**All wallets with WalletConnect:**
+```tsx
+<WalletSelector 
+  walletConnectProjectId="your-project-id"
+  disableWalletConnect={false}
+/>
+```
+
+## Using Transactions (Normal wagmi/viem)
+
+Once connected, use standard wagmi hooks for transactions:
+
+```typescript
+import { useSendTransaction, useWriteContract, useBalance } from 'wagmi'
+import { parseEther } from 'viem'
+
+function SendTransaction() {
+  const { address } = useAccount()
+  const { data: balance } = useBalance({ address })
+  const { sendTransaction, isPending } = useSendTransaction()
+
+  const handleSend = async () => {
+    await sendTransaction({
+      to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+      value: parseEther('0.1'),
+    })
+  }
+
+  return (
+    <div>
+      <p>Balance: {balance?.formatted} ETH</p>
+      <button onClick={handleSend} disabled={isPending}>
+        {isPending ? 'Sending...' : 'Send 0.1 ETH'}
+      </button>
+    </div>
+  )
+}
+```
 
 ## API Reference
 
@@ -91,42 +188,58 @@ if (isUnchainedInstalled()) {
 }
 ```
 
-### `getUnchainedProvider()`
+### `getDetectedWallet()`
 
-Get the Unchained provider instance.
+Get information about the currently detected wallet.
 
 ```typescript
-import { getUnchainedProvider } from '@unchained/sdk'
+import { getDetectedWallet } from '@unchained/sdk'
 
-const provider = getUnchainedProvider()
-if (provider) {
-  const accounts = await provider.request({ method: 'eth_requestAccounts' })
-}
+const wallet = getDetectedWallet()
+console.log(wallet.name) // "Unchained Wallet", "MetaMask", "Coinbase Wallet", etc.
+console.log(wallet.type) // "unchained", "metamask", "coinbase", "injected"
 ```
 
 ### `createUnchainedConfig(options)`
 
-Create a wagmi config optimized for Unchained.
+Create a wagmi config optimized for Unchained, MetaMask, and Coinbase.
 
 **Options:**
 - `projectId` (string, optional): WalletConnect Project ID
 - `chains` (Chain[], optional): Array of chains (defaults to mainnet)
 - `rpcUrls` (Record<number, string>, optional): Custom RPC URLs
+- `enableMetaMask` (boolean, optional): Enable MetaMask (default: true)
+- `enableCoinbase` (boolean, optional): Enable Coinbase Wallet (default: true)
+- `enableWalletConnect` (boolean, optional): Enable WalletConnect (default: true if projectId provided)
 
-## Example: Full dApp Integration
+## Detection & Priority
+
+The SDK automatically detects wallets in this priority order:
+
+1. **Unchained Wallet** - Detected via `window.ethereum.isUnchained === true`
+2. **MetaMask** - Detected via `window.ethereum.isMetaMask === true` (and not Unchained)
+3. **Coinbase Wallet** - Detected via `window.ethereum.isCoinbaseWallet === true` (and not Unchained)
+4. **Generic Injected** - Any other `window.ethereum` provider
+5. **WalletConnect** - If projectId is provided
+
+**Note**: Unchained Wallet sets `isUnchained: true`, `isMetaMask: true`, and `isCoinbaseWallet: true` to ensure compatibility, but the SDK prioritizes Unchained when `isUnchained === true`.
+
+## Complete Example
 
 ```typescript
-import { createUnchainedConfig } from '@unchained/sdk'
-import { mainnet, sepolia } from 'wagmi/chains'
+'use client'
+
+import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
+import { mainnet } from 'wagmi/chains'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useAccount, useConnect, useDisconnect, useSendTransaction } from 'wagmi'
-import { injected } from '@wagmi/connectors/injected'
+import { useAccount, useSendTransaction, useBalance } from 'wagmi'
+import { parseEther, formatEther } from 'viem'
 
 // 1. Create config
 const wagmiConfig = createUnchainedConfig({
-  projectId: 'your-project-id',
-  chains: [mainnet, sepolia],
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+  chains: [mainnet],
 })
 
 const queryClient = new QueryClient()
@@ -142,57 +255,47 @@ function App() {
   )
 }
 
-// 3. Use in components
+// 3. Your dApp component
 function DApp() {
   const { address, isConnected } = useAccount()
-  const { connect } = useConnect()
-  const { disconnect } = useDisconnect()
-  const { sendTransaction } = useSendTransaction()
+  const { data: balance } = useBalance({ address })
+  const { sendTransaction, isPending } = useSendTransaction()
 
   const handleSend = async () => {
     await sendTransaction({
-      to: '0x...',
-      value: parseEther('0.1'),
+      to: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+      value: parseEther('0.001'),
     })
   }
 
-  if (!isConnected) {
-    return (
-      <button onClick={() => connect({ connector: injected() })}>
-        Connect Wallet
-      </button>
-    )
-  }
-
   return (
-    <div>
-      <p>Address: {address}</p>
-      <button onClick={handleSend}>Send Transaction</button>
-      <button onClick={() => disconnect()}>Disconnect</button>
+    <div style={{ padding: '2rem' }}>
+      <h1>My dApp</h1>
+      
+      {/* Wallet Selector UI */}
+      <div style={{ marginBottom: '2rem' }}>
+        <WalletSelector 
+          onConnect={(address, walletType) => {
+            console.log(`Connected to ${walletType}: ${address}`)
+          }}
+        />
+      </div>
+
+      {/* Transaction UI (only shown when connected) */}
+      {isConnected && (
+        <div>
+          <p>Address: {address}</p>
+          <p>Balance: {balance ? formatEther(balance.value) : '0'} ETH</p>
+          <button onClick={handleSend} disabled={isPending}>
+            {isPending ? 'Sending...' : 'Send 0.001 ETH'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 ```
 
-## Detection
-
-The SDK automatically detects Unchained wallet by checking for `window.ethereum.isUnchained === true`.
-
-If Unchained is installed, it will be prioritized in the connector list.
-
-## WalletConnect Support
-
-To enable WalletConnect support (for mobile dApps), provide a Project ID:
-
-```typescript
-const config = createUnchainedConfig({
-  projectId: 'your-walletconnect-project-id',
-})
-```
-
-Get your Project ID from [WalletConnect Cloud](https://cloud.walletconnect.com).
-
 ## License
 
 MIT
-

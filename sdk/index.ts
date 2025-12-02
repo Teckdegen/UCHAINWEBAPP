@@ -1,14 +1,26 @@
 /**
  * Unchained Wallet SDK
  * 
- * A simple SDK for dApps to connect to Unchained Wallet using wagmi and viem.
- * Automatically detects Unchained wallet via window.ethereum.isUnchained
+ * A simple SDK for dApps to connect to Unchained Wallet, MetaMask, and Coinbase Wallet
+ * using wagmi and viem. Automatically detects and prioritizes Unchained wallet.
  */
 
-import { injected } from '@wagmi/connectors/injected'
-import { walletConnect } from '@wagmi/connectors/walletConnect'
+import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors'
 import { createConfig, http } from 'wagmi'
-import { mainnet } from 'wagmi/chains'
+import { mainnet, type Chain } from 'wagmi/chains'
+
+// Extend Window interface for TypeScript
+declare global {
+  interface Window {
+    ethereum?: {
+      isUnchained?: boolean
+      isMetaMask?: boolean
+      isCoinbaseWallet?: boolean
+      request?: (args: { method: string; params?: any[] }) => Promise<any>
+      [key: string]: any
+    }
+  }
+}
 
 /**
  * Check if Unchained wallet is installed
@@ -19,50 +31,126 @@ export function isUnchainedInstalled(): boolean {
 }
 
 /**
- * Get the Unchained provider
+ * Check if MetaMask is installed
  */
-export function getUnchainedProvider() {
+export function isMetaMaskInstalled(): boolean {
+  if (typeof window === 'undefined') return false
+  const ethereum = window.ethereum as any
+  return !!(ethereum?.isMetaMask && !ethereum?.isUnchained) // Exclude Unchained
+}
+
+/**
+ * Check if Coinbase Wallet is installed
+ */
+export function isCoinbaseWalletInstalled(): boolean {
+  if (typeof window === 'undefined') return false
+  const ethereum = window.ethereum as any
+  return !!(ethereum?.isCoinbaseWallet && !ethereum?.isUnchained) // Exclude Unchained
+}
+
+/**
+ * Get the detected wallet provider
+ */
+export function getWalletProvider() {
   if (typeof window === 'undefined') return null
   const ethereum = window.ethereum as any
+  
+  // Prioritize Unchained
   if (ethereum?.isUnchained) {
-    return ethereum
+    return { provider: ethereum, type: 'unchained' as const }
   }
+  
+  // Fallback to MetaMask
+  if (ethereum?.isMetaMask) {
+    return { provider: ethereum, type: 'metamask' as const }
+  }
+  
+  // Fallback to Coinbase Wallet
+  if (ethereum?.isCoinbaseWallet) {
+    return { provider: ethereum, type: 'coinbase' as const }
+  }
+  
+  // Generic injected provider
+  if (ethereum) {
+    return { provider: ethereum, type: 'injected' as const }
+  }
+  
   return null
 }
 
 /**
- * Create a wagmi config optimized for Unchained Wallet
+ * Get the Unchained provider (legacy function for backwards compatibility)
+ */
+export function getUnchainedProvider() {
+  const wallet = getWalletProvider()
+  return wallet?.type === 'unchained' ? wallet.provider : null
+}
+
+/**
+ * Create a wagmi config optimized for Unchained Wallet, MetaMask, and Coinbase Wallet
+ * 
+ * Automatically detects and prioritizes wallets in this order:
+ * 1. Unchained Wallet (if window.ethereum.isUnchained === true)
+ * 2. MetaMask (if window.ethereum.isMetaMask === true)
+ * 3. Coinbase Wallet (if window.ethereum.isCoinbaseWallet === true)
+ * 4. Generic injected provider
+ * 5. WalletConnect (if projectId provided)
  * 
  * @param projectId - WalletConnect Project ID (optional, for WalletConnect support)
  * @param chains - Array of chains to support (defaults to mainnet)
  * @param rpcUrls - Custom RPC URLs for chains (optional)
+ * @param enableMetaMask - Enable MetaMask connector (default: true)
+ * @param enableCoinbase - Enable Coinbase Wallet connector (default: true)
+ * @param enableWalletConnect - Enable WalletConnect connector (default: true if projectId provided)
  */
 export function createUnchainedConfig(options?: {
   projectId?: string
-  chains?: any[]
+  chains?: Chain[]
   rpcUrls?: Record<number, string>
+  enableMetaMask?: boolean
+  enableCoinbase?: boolean
+  enableWalletConnect?: boolean
 }) {
-  const chains = options?.chains || [mainnet]
+  const chains: [Chain, ...Chain[]] = (options?.chains && options.chains.length > 0 
+    ? options.chains 
+    : [mainnet]) as [Chain, ...Chain[]]
   const projectId = options?.projectId
   const rpcUrls = options?.rpcUrls || {}
+  const enableMetaMask = options?.enableMetaMask !== false
+  const enableCoinbase = options?.enableCoinbase !== false
+  const enableWalletConnect = options?.enableWalletConnect !== false && !!projectId
 
   const connectors: any[] = []
 
-  // Injected connector (detects Unchained automatically via window.ethereum.isUnchained)
+  // 1. Injected connector (detects Unchained, MetaMask, Coinbase automatically)
+  // This will prioritize Unchained if window.ethereum.isUnchained === true
   connectors.push(
     injected({
       shimDisconnect: true,
     })
   )
 
-  // WalletConnect connector (optional, if projectId provided)
-  if (projectId) {
+  // 2. Coinbase Wallet connector (if enabled and not Unchained)
+  if (enableCoinbase && typeof window !== 'undefined') {
+    const isUnchained = isUnchainedInstalled()
+    if (!isUnchained) {
+      connectors.push(
+        coinbaseWallet({
+          appName: 'Unchained Wallet',
+          appLogoUrl: typeof window !== 'undefined' ? `${window.location.origin}/icon.png` : undefined,
+        })
+      )
+    }
+  }
+
+  // 3. WalletConnect connector (optional, if projectId provided)
+  if (enableWalletConnect && projectId) {
     connectors.push(
       walletConnect({
         projectId,
         metadata: {
           name: 'Unchained Wallet',
-          description: 'Connect with Unchained Wallet',
+          description: 'Connect with Unchained Wallet, MetaMask, or Coinbase Wallet',
           url: typeof window !== 'undefined' ? window.location.origin : '',
           icons: [],
         },
@@ -84,6 +172,43 @@ export function createUnchainedConfig(options?: {
 }
 
 /**
+ * Get detected wallet information
+ */
+export function getDetectedWallet() {
+  if (typeof window === 'undefined') {
+    return {
+      isInstalled: false,
+      type: null,
+      name: null,
+    }
+  }
+
+  const wallet = getWalletProvider()
+  
+  if (!wallet) {
+    return {
+      isInstalled: false,
+      type: null,
+      name: null,
+    }
+  }
+
+  const names: Record<string, string> = {
+    unchained: 'Unchained Wallet',
+    metamask: 'MetaMask',
+    coinbase: 'Coinbase Wallet',
+    injected: 'Injected Wallet',
+  }
+
+  return {
+    isInstalled: true,
+    type: wallet.type,
+    name: names[wallet.type] || 'Unknown Wallet',
+    provider: wallet.provider,
+  }
+}
+
+/**
  * Simple hook wrapper for common wagmi operations
  * Use this if you want a simpler API than raw wagmi hooks
  */
@@ -91,6 +216,8 @@ export function useUnchainedWallet() {
   if (typeof window === 'undefined') {
     return {
       isInstalled: false,
+      walletType: null,
+      walletName: null,
       isConnected: false,
       address: null,
       chainId: null,
@@ -101,11 +228,13 @@ export function useUnchainedWallet() {
 
   // This would be used in a React component with wagmi hooks
   // For now, return a simple interface
-  const provider = getUnchainedProvider()
-  const isInstalled = !!provider
+  const detected = getDetectedWallet()
+  const provider = detected.provider
 
   return {
-    isInstalled,
+    isInstalled: detected.isInstalled,
+    walletType: detected.type,
+    walletName: detected.name,
     isConnected: false, // Would use useAccount from wagmi
     address: null, // Would use useAccount from wagmi
     chainId: null, // Would use useChainId from wagmi
@@ -113,7 +242,7 @@ export function useUnchainedWallet() {
       if (provider) {
         return await provider.request({ method: 'eth_requestAccounts' })
       }
-      throw new Error('Unchained wallet not installed')
+      throw new Error('No wallet detected')
     },
     disconnect: async () => {
       // Disconnect logic
@@ -123,4 +252,7 @@ export function useUnchainedWallet() {
 
 // Export types
 export type { Config } from 'wagmi'
+
+// Export components
+export { WalletSelector } from './components/WalletSelector'
 
