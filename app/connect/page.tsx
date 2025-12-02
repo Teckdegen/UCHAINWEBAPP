@@ -4,6 +4,11 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getWalletState, getWallets, getCurrentWalletId, setCurrentWalletId } from "@/lib/wallet"
 import { getUnchainedProvider } from "@/lib/provider"
+import {
+  approveSessionProposal,
+  rejectSessionProposal,
+  getStoredProposal,
+} from "@/lib/walletConnect"
 import { AlertCircle, CheckCircle, XCircle, Globe } from "lucide-react"
 
 export default function ConnectPage() {
@@ -17,6 +22,8 @@ export default function ConnectPage() {
   const [error, setError] = useState("")
   const [wallets, setWallets] = useState<any[]>([])
   const [selectedWalletId, setSelectedWalletId] = useState<string>("")
+  const [isWalletConnect, setIsWalletConnect] = useState(false)
+  const [wcProposal, setWcProposal] = useState<any>(null)
 
   useEffect(() => {
     const state = getWalletState()
@@ -25,10 +32,25 @@ export default function ConnectPage() {
       return
     }
 
-    const originParam = searchParams.get("origin") || "Unknown App"
-    const methodParam = searchParams.get("method") || "eth_requestAccounts"
-    setOrigin(originParam)
-    setMethod(methodParam)
+    // Check if this is a WalletConnect proposal
+    const wcProposalId = searchParams.get("wc_proposal")
+    if (wcProposalId) {
+      setIsWalletConnect(true)
+      const proposal = getStoredProposal(wcProposalId)
+      if (proposal) {
+        setWcProposal(proposal)
+        const dappName = proposal.params.proposer.metadata?.name || "Unknown dApp"
+        const dappUrl = proposal.params.proposer.metadata?.url || ""
+        setOrigin(dappUrl || dappName)
+        setMethod("WalletConnect Session")
+      }
+    } else {
+      // Regular injected provider flow
+      const originParam = searchParams.get("origin") || "Unknown App"
+      const methodParam = searchParams.get("method") || "eth_requestAccounts"
+      setOrigin(originParam)
+      setMethod(methodParam)
+    }
 
     const allWallets = getWallets()
     setWallets(allWallets)
@@ -45,53 +67,96 @@ export default function ConnectPage() {
     try {
       if (wallets.length === 0) {
         setError("No wallet found")
+        setLoading(false)
         return
       }
 
       const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
       setCurrentWalletId(wallet.id)
 
-      // Track connection
-      const provider = getUnchainedProvider()
-      const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
-      const dappName = new URL(returnOrigin).hostname
-      provider.addConnectedDApp(returnOrigin, dappName)
+      if (isWalletConnect && wcProposal) {
+        // Handle WalletConnect session proposal
+        const chainId = 1 // Ethereum mainnet
+        await approveSessionProposal(wcProposal.id, [wallet.address.toLowerCase()], chainId)
+        
+        // Track connection
+        const provider = getUnchainedProvider()
+        const dappUrl = wcProposal.params.proposer.metadata?.url || origin
+        const dappName = wcProposal.params.proposer.metadata?.name || "Unknown dApp"
+        provider.addConnectedDApp(dappUrl, dappName)
 
-      const result = {
-        approved: true,
-        accounts: [wallet.address.toLowerCase()],
-        chainId: "0x1",
-        timestamp: Date.now(),
-      }
-
-      // Redirect back to dApp with result (like OAuth callback)
-      const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
-      const returnUrlObj = new URL(returnUrl)
-      returnUrlObj.searchParams.set("wallet_result", encodeURIComponent(JSON.stringify(result)))
-      returnUrlObj.searchParams.set("wallet_status", "approved")
-      
         setApproved(true)
-      setTimeout(() => {
-        window.location.href = returnUrlObj.toString()
-      }, 1000)
+        // WalletConnect handles the response internally, just close after a delay
+        setTimeout(() => {
+          window.close() // Close popup if opened in popup, or navigate back
+          if (window.opener) {
+            window.close()
+          } else {
+            router.push("/dashboard")
+          }
+        }, 1500)
+      } else {
+        // Regular injected provider flow
+        const provider = getUnchainedProvider()
+        const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
+        const dappName = new URL(returnOrigin).hostname
+        provider.addConnectedDApp(returnOrigin, dappName)
+
+        const result = {
+          approved: true,
+          accounts: [wallet.address.toLowerCase()],
+          chainId: "0x1",
+          timestamp: Date.now(),
+        }
+
+        // Redirect back to dApp with result (like OAuth callback)
+        const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+        const returnUrlObj = new URL(returnUrl)
+        returnUrlObj.searchParams.set("wallet_result", encodeURIComponent(JSON.stringify(result)))
+        returnUrlObj.searchParams.set("wallet_status", "approved")
+        
+        setApproved(true)
+        setTimeout(() => {
+          window.location.href = returnUrlObj.toString()
+        }, 1000)
+      }
     } catch (err: any) {
       setError(err.message || "Connection failed")
       setLoading(false)
     }
   }
 
-  const handleReject = () => {
-    const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
-    const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
-    
-    const returnUrlObj = new URL(returnUrl)
-    returnUrlObj.searchParams.set("wallet_error", "User rejected connection")
-    returnUrlObj.searchParams.set("wallet_status", "rejected")
-    
+  const handleReject = async () => {
+    if (isWalletConnect && wcProposal) {
+      // Handle WalletConnect rejection
+      try {
+        await rejectSessionProposal(wcProposal.id, "USER_REJECTED")
+        setRejected(true)
+        setTimeout(() => {
+          window.close()
+          if (window.opener) {
+            window.close()
+          } else {
+            router.push("/dashboard")
+          }
+        }, 1500)
+      } catch (err: any) {
+        setError(err.message || "Failed to reject")
+      }
+    } else {
+      // Regular injected provider flow
+      const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
+      const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+      
+      const returnUrlObj = new URL(returnUrl)
+      returnUrlObj.searchParams.set("wallet_error", "User rejected connection")
+      returnUrlObj.searchParams.set("wallet_status", "rejected")
+      
       setRejected(true)
-    setTimeout(() => {
-      window.location.href = returnUrlObj.toString()
-    }, 1000)
+      setTimeout(() => {
+        window.location.href = returnUrlObj.toString()
+      }, 1000)
+    }
   }
 
   const getDomainName = (origin: string) => {
@@ -151,8 +216,24 @@ export default function ConnectPage() {
             {/* Origin */}
             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
               <p className="text-xs text-gray-400 mb-2">Requesting App</p>
-              <p className="text-sm font-mono text-green-400 break-all">{getDomainName(origin)}</p>
-              <p className="text-xs text-gray-500 mt-1">{origin}</p>
+              {isWalletConnect && wcProposal ? (
+                <>
+                  <p className="text-sm font-semibold text-green-400">
+                    {wcProposal.params.proposer.metadata?.name || "Unknown dApp"}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {wcProposal.params.proposer.metadata?.url || ""}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    {wcProposal.params.proposer.metadata?.description || ""}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-mono text-green-400 break-all">{getDomainName(origin)}</p>
+                  <p className="text-xs text-gray-500 mt-1">{origin}</p>
+                </>
+              )}
             </div>
 
             {/* Method */}

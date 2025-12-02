@@ -7,14 +7,33 @@ const nextConfig = {
     unoptimized: true,
   },
   /**
-   * Turbopack config
-   *
-   * WalletConnect's logger/sign-client depends on `pino` which bundles a
-   * `thread-stream` package that includes a lot of test and bench files
-   * (tap tests, zip fixtures, shell scripts, etc.). Turbopack tries to parse
-   * those as app code and fails. Here we tell Turbopack to treat those
-   * patterns as raw/assets so they don't break the build.
+   * Externalize problematic packages to avoid Turbopack parsing issues.
+   * WalletConnect's dependencies (pino, thread-stream) contain test files
+   * that Turbopack tries to parse. By externalizing them, we let Node.js
+   * handle them at runtime instead of bundling them.
    */
+  serverComponentsExternalPackages: [
+    "@walletconnect/sign-client",
+    "pino",
+    "thread-stream",
+  ],
+  /**
+   * Use webpack for WalletConnect packages to avoid Turbopack issues.
+   * This ensures problematic dependencies are handled by webpack's
+   * more mature module resolution.
+   */
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Client-side: externalize problematic packages
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      }
+    }
+    return config
+  },
 }
 
 export default nextConfig

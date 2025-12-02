@@ -6,6 +6,11 @@ import { getWalletState, getWallets, getPrivateKey, getCurrentWalletId, setCurre
 import { getProvider, getChainName } from "@/lib/rpc"
 import { getUnchainedProvider } from "@/lib/provider"
 import {
+  approveSessionRequest,
+  rejectSessionRequest,
+  getStoredRequest,
+} from "@/lib/walletConnect"
+import {
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -34,6 +39,8 @@ export default function SignPage() {
   const [selectedChainId, setSelectedChainId] = useState<number>(1) // Default to Ethereum
   const [wallets, setWallets] = useState<any[]>([])
   const [selectedWalletId, setSelectedWalletId] = useState<string>("")
+  const [isWalletConnect, setIsWalletConnect] = useState(false)
+  const [wcRequest, setWcRequest] = useState<any>(null)
 
   useEffect(() => {
     const state = getWalletState()
@@ -46,9 +53,37 @@ export default function SignPage() {
     const provider = getUnchainedProvider()
     setSelectedChainId(provider.getChainId())
 
-    const methodParam = searchParams.get("method") || ""
-    const originParam = searchParams.get("origin") || "Unknown"
-    const paramsParam = searchParams.get("params")
+    // Check if this is a WalletConnect request
+    const wcRequestId = searchParams.get("wc_request")
+    if (wcRequestId) {
+      setIsWalletConnect(true)
+      const request = getStoredRequest(wcRequestId)
+      if (request) {
+        setWcRequest(request)
+        const requestMethod = request.params.request.method
+        const requestParams = request.params.request.params || []
+        
+        setMethod(requestMethod)
+        
+        // Extract origin from WalletConnect request metadata
+        const session = request.session
+        const dappUrl = session?.peer?.metadata?.url || "Unknown dApp"
+        setOrigin(dappUrl)
+        
+        // Parse WalletConnect request params based on method
+        if (requestMethod === "eth_sendTransaction") {
+          setParams(requestParams)
+        } else if (requestMethod === "personal_sign" || requestMethod === "eth_sign") {
+          setParams([requestParams[0], requestParams[1]]) // message, address
+        } else if (requestMethod === "eth_signTypedData" || requestMethod === "eth_signTypedData_v4") {
+          setParams(requestParams)
+        }
+      }
+    } else {
+      // Regular injected provider flow
+      const methodParam = searchParams.get("method") || ""
+      const originParam = searchParams.get("origin") || "Unknown"
+      const paramsParam = searchParams.get("params")
 
     setMethod(methodParam)
     setOrigin(originParam)
@@ -144,40 +179,73 @@ export default function SignPage() {
 
       setApproved(true)
 
-      // Redirect back to dApp with result (like OAuth callback)
-      const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
-      const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
-      const requestId = searchParams.get("requestId") || localStorage.getItem("unchained_request_id") || ""
-      
-      const returnUrlObj = new URL(returnUrl)
-      returnUrlObj.searchParams.set("wallet_result", encodeURIComponent(result))
-      returnUrlObj.searchParams.set("wallet_request_id", requestId)
-      returnUrlObj.searchParams.set("wallet_status", "approved")
-      
-      setTimeout(() => {
-        window.location.href = returnUrlObj.toString()
-      }, 1500)
+      if (isWalletConnect && wcRequest) {
+        // Handle WalletConnect request response
+        await approveSessionRequest(wcRequest.id, result)
+        
+        setTimeout(() => {
+          window.close() // Close popup if opened in popup
+          if (window.opener) {
+            window.close()
+          } else {
+            router.push("/dashboard")
+          }
+        }, 1500)
+      } else {
+        // Regular injected provider flow - Redirect back to dApp with result
+        const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
+        const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+        const requestId = searchParams.get("requestId") || localStorage.getItem("unchained_request_id") || ""
+        
+        const returnUrlObj = new URL(returnUrl)
+        returnUrlObj.searchParams.set("wallet_result", encodeURIComponent(result))
+        returnUrlObj.searchParams.set("wallet_request_id", requestId)
+        returnUrlObj.searchParams.set("wallet_status", "approved")
+        
+        setTimeout(() => {
+          window.location.href = returnUrlObj.toString()
+        }, 1500)
+      }
     } catch (err: any) {
       setError(err.message || "Signing failed")
       setLoading(false)
     }
   }
 
-  const handleReject = () => {
-    setRejected(true)
+  const handleReject = async () => {
+    if (isWalletConnect && wcRequest) {
+      // Handle WalletConnect rejection
+      try {
+        await rejectSessionRequest(wcRequest.id, "USER_REJECTED")
+        setRejected(true)
+        setTimeout(() => {
+          window.close()
+          if (window.opener) {
+            window.close()
+          } else {
+            router.push("/dashboard")
+          }
+        }, 1500)
+      } catch (err: any) {
+        setError(err.message || "Failed to reject")
+      }
+    } else {
+      // Regular injected provider flow
+      setRejected(true)
 
-    const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
-    const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
-    const requestId = searchParams.get("requestId") || localStorage.getItem("unchained_request_id") || ""
-    
-    const returnUrlObj = new URL(returnUrl)
-    returnUrlObj.searchParams.set("wallet_error", "User rejected transaction")
-    returnUrlObj.searchParams.set("wallet_request_id", requestId)
-    returnUrlObj.searchParams.set("wallet_status", "rejected")
-    
-    setTimeout(() => {
-      window.location.href = returnUrlObj.toString()
-    }, 1000)
+      const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
+      const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+      const requestId = searchParams.get("requestId") || localStorage.getItem("unchained_request_id") || ""
+      
+      const returnUrlObj = new URL(returnUrl)
+      returnUrlObj.searchParams.set("wallet_error", "User rejected transaction")
+      returnUrlObj.searchParams.set("wallet_request_id", requestId)
+      returnUrlObj.searchParams.set("wallet_status", "rejected")
+      
+      setTimeout(() => {
+        window.location.href = returnUrlObj.toString()
+      }, 1000)
+    }
   }
 
   const getDomainName = (url: string) => {
