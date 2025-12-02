@@ -131,68 +131,75 @@ export default function BrowserPage() {
 
   return (
     <div className="h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
-      {/* Header - Fixed at top, can be hidden */}
+      {/* Header - Fixed at top, can be hidden - Compact design */}
       <div
-        className={`glass-card rounded-none border-b border-white/10 p-3 md:p-4 z-50 transition-transform duration-300 ${
+        className={`glass-card rounded-none border-b border-white/10 z-50 transition-transform duration-300 ${
           showHeader ? "translate-y-0" : "-translate-y-full"
         }`}
       >
-        <div className="flex items-center gap-3 mb-3 justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-              <ArrowLeft className="w-5 h-5" />
+        {/* Compact header - only show title when no URL */}
+        {!currentUrl && (
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
+            <Link href="/dashboard" className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+              <ArrowLeft className="w-4 h-4" />
             </Link>
-            <h1 className="text-lg md:text-xl font-bold">Unchained Browser</h1>
+            <h1 className="text-sm font-bold">Unchained Browser</h1>
+          </div>
+        )}
+
+        {/* Address Bar - Compact */}
+        <div className="flex gap-2 items-center px-3 py-2">
+          {currentUrl && (
+            <Link href="/dashboard" className="p-1.5 hover:bg-white/10 rounded transition-colors flex-shrink-0">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+          )}
+          <div className="flex gap-2 items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex-1 min-w-0">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleNavigate(url)
+                }
+              }}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => {
+                setTimeout(() => {
+                  if (url.length === 0) {
+                    setIsSearchFocused(false)
+                  }
+                }, 200)
+              }}
+              placeholder="Enter URL..."
+              className="flex-1 bg-transparent outline-none text-sm min-w-0"
+            />
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                handleNavigate(url)
+              }} 
+              className="p-1 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+            >
+              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Home className="w-4 h-4" />}
+            </button>
           </div>
           {currentUrl && (
             <button
               onClick={() => setDesktopMode(!desktopMode)}
-              className={`p-2 rounded-lg transition-colors flex items-center gap-1 text-xs md:text-sm ${
+              className={`p-1.5 rounded transition-colors flex items-center gap-1 text-xs flex-shrink-0 ${
                 desktopMode ? "bg-green-500/20 text-green-400" : "hover:bg-white/10"
               }`}
             >
               <Monitor className="w-4 h-4" />
-              <span className="hidden sm:inline">{desktopMode ? "Desktop" : "Mobile"}</span>
             </button>
           )}
         </div>
 
-        {/* Address Bar */}
-        <div className="flex gap-2 items-center bg-white/5 border border-white/10 rounded-lg px-3 py-2 mb-3">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                handleNavigate(url)
-              }
-            }}
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => {
-              // Don't immediately hide, wait a bit to allow clicking buttons
-              setTimeout(() => {
-                if (url.length === 0) {
-                  setIsSearchFocused(false)
-                }
-              }, 200)
-            }}
-            placeholder="Enter URL..."
-            className="flex-1 bg-transparent outline-none text-sm"
-          />
-          <button 
-            onClick={(e) => {
-              e.stopPropagation()
-              handleNavigate(url)
-            }} 
-            className="p-1 hover:bg-white/10 rounded transition-colors"
-          >
-            {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Home className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        {/* Tabs - Compact, only show if there are tabs */}
+        {tabs.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto px-3 pb-2">
           {tabs.map((tab) => (
             <div
               key={tab.id}
@@ -218,21 +225,20 @@ export default function BrowserPage() {
           ))}
           <button
             onClick={() => openNewTab("")}
-            className="px-3 py-1 rounded-lg text-xs bg-white/5 hover:bg-white/10 flex items-center gap-1 flex-shrink-0"
+            className="px-2 py-1 rounded text-xs bg-white/5 hover:bg-white/10 flex items-center gap-1 flex-shrink-0"
           >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New</span>
+            <Plus className="w-3 h-3" />
           </button>
           {currentUrl && (
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="px-3 py-1 rounded-lg text-xs bg-white/5 hover:bg-white/10 flex items-center gap-1 flex-shrink-0"
+              className="px-2 py-1 rounded text-xs bg-white/5 hover:bg-white/10 flex items-center gap-1 flex-shrink-0"
             >
-              <History className="w-4 h-4" />
-              <span className="hidden sm:inline">History</span>
+              <History className="w-3 h-3" />
             </button>
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Floating Search Bar - Shows when header is hidden */}
