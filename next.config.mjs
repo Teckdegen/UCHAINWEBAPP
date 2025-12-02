@@ -7,23 +7,39 @@ const nextConfig = {
     unoptimized: true,
   },
   /**
-   * Disable Turbopack and use webpack instead.
-   * This allows us to externalize WalletConnect packages to prevent
-   * build errors from thread-stream test files.
+   * Use webpack to ignore problematic test files in thread-stream.
+   * This prevents build errors from non-code assets in WalletConnect dependencies.
    */
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Externalize WalletConnect packages on client-side
-      // This prevents webpack from bundling them and analyzing test files
-      config.externals = config.externals || []
-      config.externals.push({
-        '@walletconnect/sign-client': 'commonjs @walletconnect/sign-client',
-        '@walletconnect/utils': 'commonjs @walletconnect/utils',
-        '@walletconnect/logger': 'commonjs @walletconnect/logger',
-        'pino': 'commonjs pino',
-        'thread-stream': 'commonjs thread-stream',
+  webpack: (config, { webpack }) => {
+    // Ignore test files and non-code assets in thread-stream
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /thread-stream\/test/,
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /thread-stream\/bench/,
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /\.md$/,
+        contextRegExp: /thread-stream/,
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /\.zip$/,
+        contextRegExp: /thread-stream/,
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /\.sh$/,
+        contextRegExp: /thread-stream/,
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /\.yml$/,
+        contextRegExp: /thread-stream/,
+      }),
+      new webpack.IgnorePlugin({
+        resourceRegExp: /LICENSE$/,
+        contextRegExp: /thread-stream/,
       })
-    }
+    )
     return config
   },
 }
