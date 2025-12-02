@@ -7,15 +7,24 @@ const nextConfig = {
     unoptimized: true,
   },
   /**
-   * Transpile WalletConnect packages to handle any compatibility issues.
-   * These packages are loaded via dynamic imports (client-side only) to
-   * avoid Turbopack parsing test files during SSR.
+   * Use webpack to externalize WalletConnect packages.
+   * This prevents Turbopack from analyzing them during build.
+   * They will be loaded at runtime via dynamic imports.
    */
-  transpilePackages: [
-    "@walletconnect/sign-client",
-    "@walletconnect/utils",
-    "@walletconnect/logger",
-  ],
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Externalize WalletConnect packages on client-side
+      config.externals = config.externals || []
+      config.externals.push({
+        '@walletconnect/sign-client': 'commonjs @walletconnect/sign-client',
+        '@walletconnect/utils': 'commonjs @walletconnect/utils',
+        '@walletconnect/logger': 'commonjs @walletconnect/logger',
+        'pino': 'commonjs pino',
+        'thread-stream': 'commonjs thread-stream',
+      })
+    }
+    return config
+  },
 }
 
 export default nextConfig
