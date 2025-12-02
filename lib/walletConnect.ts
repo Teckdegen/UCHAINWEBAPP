@@ -7,7 +7,7 @@
 
 import type { SignClient } from "@walletconnect/sign-client"
 import type { SessionTypes } from "@walletconnect/types"
-import { getSdkError } from "@walletconnect/utils"
+// getSdkError is imported dynamically to avoid Turbopack build issues
 
 const projectId = "c4999d9eb922d2b83794b896c6abea5a" // User's provided Project ID
 
@@ -204,6 +204,9 @@ export async function rejectSessionProposal(proposalId: number, reason?: string)
     throw new Error("Proposal not found")
   }
 
+  // Dynamic import to avoid Turbopack build issues
+  const { getSdkError } = await import("@walletconnect/utils")
+
   await client.reject({
     id: proposal.id,
     reason: reason ? getSdkError(reason as any) : getSdkError("USER_REJECTED"),
@@ -251,6 +254,9 @@ export async function rejectSessionRequest(
   if (!request) {
     throw new Error("Request not found")
   }
+
+  // Dynamic import to avoid Turbopack build issues
+  const { getSdkError } = await import("@walletconnect/utils")
 
   await client.respond({
     topic: request.topic,
