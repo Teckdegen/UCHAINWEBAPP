@@ -3,22 +3,22 @@
  * 
  * This module provides a Turbopack-safe implementation of WalletConnect
  * by using dynamic imports to only load the SDK client-side.
+ * 
+ * NOTE: No type imports from WalletConnect packages to avoid Turbopack
+ * analyzing dependencies during SSR. All types are inferred or use `any`.
  */
-
-import type { SignClient } from "@walletconnect/sign-client"
-import type { SessionTypes } from "@walletconnect/types"
-// getSdkError is imported dynamically to avoid Turbopack build issues
 
 const projectId = "c4999d9eb922d2b83794b896c6abea5a" // User's provided Project ID
 
-let signClient: SignClient | undefined = undefined
-let initPromise: Promise<SignClient> | null = null
+// Use any to avoid type imports that trigger Turbopack analysis
+let signClient: any = undefined
+let initPromise: Promise<any> | null = null
 
 /**
  * Dynamically imports and initializes the WalletConnect SignClient.
  * This is done client-side only to avoid Turbopack build issues.
  */
-async function getWalletConnectClient(): Promise<SignClient> {
+async function getWalletConnectClient(): Promise<any> {
   if (signClient) return signClient
 
   if (initPromise) return initPromise
@@ -97,7 +97,7 @@ function setupWalletConnectEventListeners(client: SignClient) {
 /**
  * Get stored WalletConnect sessions from localStorage
  */
-export function getStoredSessions(): SessionTypes.Struct[] {
+export function getStoredSessions(): any[] {
   if (typeof window === "undefined") return []
   const stored = localStorage.getItem("wc_sessions")
   return stored ? JSON.parse(stored) : []
@@ -106,10 +106,10 @@ export function getStoredSessions(): SessionTypes.Struct[] {
 /**
  * Store a WalletConnect session
  */
-export function storeSession(session: SessionTypes.Struct) {
+export function storeSession(session: any) {
   if (typeof window === "undefined") return
   const sessions = getStoredSessions()
-  const existing = sessions.findIndex((s) => s.topic === session.topic)
+  const existing = sessions.findIndex((s: any) => s.topic === session.topic)
   if (existing >= 0) {
     sessions[existing] = session
   } else {
@@ -163,17 +163,17 @@ export async function approveSessionProposal(
 
   const { id, params } = proposal
 
-  const namespaces: SessionTypes.Namespaces = {}
+  const namespaces: any = {}
   const requiredChains = params.requiredNamespaces.eip155?.chains || []
   const optionalChains = params.optionalNamespaces?.eip155?.chains || []
   const allChains = [...requiredChains, ...optionalChains]
 
   // Support Ethereum mainnet (eip155:1) and PEPU if needed
   const supportedChains = ["eip155:1"] // Add PEPU chain ID if you have one
-  const chains = allChains.filter((chain) => supportedChains.includes(chain))
+  const chains = allChains.filter((chain: string) => supportedChains.includes(chain))
 
   namespaces.eip155 = {
-    accounts: accounts.map((addr) => `eip155:${chainId}:${addr}`),
+    accounts: accounts.map((addr: string) => `eip155:${chainId}:${addr}`),
     chains: chains.length > 0 ? chains : ["eip155:1"],
     methods: params.requiredNamespaces.eip155?.methods || [
       "eth_sendTransaction",
