@@ -24,16 +24,29 @@ pnpm add wagmi viem @tanstack/react-query wagmi/connectors
 
 ## Quick Start
 
-### Option 1: Simple Connect Button (No UI - Recommended for Quick Integration)
+### Option 1: Simple Connect Button (No UI - Auto-connects to Unchained)
 
 ```typescript
 import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { mainnet, polygon } from 'wagmi/chains'
 
+// IMPORTANT: Provide RPC URLs for WalletConnect chains
 const wagmiConfig = createUnchainedConfig({
   projectId: 'your-walletconnect-project-id',
-  chains: [mainnet],
+  chains: [mainnet, polygon],
+  // RPCs are REQUIRED for WalletConnect - pick your chains and provide RPCs
+  walletConnectRPCs: [
+    {
+      chainId: 1, // Ethereum
+      rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY',
+    },
+    {
+      chainId: 137, // Polygon
+      rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY',
+    },
+  ],
 })
 
 const queryClient = new QueryClient()
@@ -43,7 +56,14 @@ function App() {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         {/* Simple button - automatically connects to Unchained if available */}
-        <WalletSelector showUI={false} />
+        {/* Set showUI={false} to disable wallet selection UI */}
+        <WalletSelector 
+          showUI={false} 
+          walletConnectRPCs={[
+            { chainId: 1, rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY' },
+            { chainId: 137, rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY' },
+          ]}
+        />
       </QueryClientProvider>
     </WagmiProvider>
   )
@@ -75,7 +95,7 @@ function ConnectButton() {
 }
 ```
 
-### Option 2: With UI Component (Shows Wallet Selection)
+### Option 2: With UI Component (Shows Wallet Selection - Default)
 
 ```typescript
 import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
@@ -83,19 +103,19 @@ import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { mainnet, polygon } from 'wagmi/chains'
 
-// Create config with custom WalletConnect RPCs (like RainbowKit)
+// IMPORTANT: RPCs are REQUIRED for WalletConnect - pick your chains and provide RPCs
 const wagmiConfig = createUnchainedConfig({
   projectId: 'your-walletconnect-project-id',
   chains: [mainnet, polygon],
-  // Custom RPC URLs for WalletConnect
+  // RPCs are REQUIRED for WalletConnect chains
   walletConnectRPCs: [
     {
-      chainId: 1,
+      chainId: 1, // Ethereum
       rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY',
       name: 'Ethereum',
     },
     {
-      chainId: 137,
+      chainId: 137, // Polygon
       rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY',
       name: 'Polygon',
     },
@@ -108,7 +128,9 @@ function App() {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
+        {/* Default: showUI={true} - Shows wallet selection UI */}
         <WalletSelector 
+          showUI={true} // Default - shows wallet selection UI
           onlyUnchained={false} // Set to true to only show Unchained
           disableMetaMask={false} // Set to true to hide MetaMask
           disableCoinbase={false} // Set to true to hide Coinbase

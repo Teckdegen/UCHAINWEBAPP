@@ -162,21 +162,41 @@ export function createUnchainedConfig(options?: {
   }
 
   // 3. WalletConnect connector with custom RPCs (like RainbowKit)
+  // RPCs are REQUIRED for WalletConnect - users must provide them
   if (enableWalletConnect && projectId) {
-    // Build RPC map from walletConnectRPCs or chains
+    // Build RPC map from walletConnectRPCs or rpcUrls
     const rpcMap: Record<number, string> = {}
     
-    // Add custom WalletConnect RPCs
+    // Add custom WalletConnect RPCs (preferred method)
     walletConnectRPCs.forEach((rpc) => {
       rpcMap[rpc.chainId] = rpc.rpcUrl
     })
     
-    // Add chain RPCs (if not already in custom RPCs)
-    chains.forEach((chain) => {
-      if (!rpcMap[chain.id]) {
-        rpcMap[chain.id] = rpcUrls[chain.id] || (chain.rpcUrls?.default?.http?.[0] || '')
+    // Add RPCs from rpcUrls option (fallback)
+    Object.entries(rpcUrls).forEach(([chainId, url]) => {
+      const chainIdNum = parseInt(chainId, 10)
+      if (!rpcMap[chainIdNum] && url) {
+        rpcMap[chainIdNum] = url
       }
     })
+    
+    // Add chain RPCs as last resort (if not already provided)
+    chains.forEach((chain) => {
+      if (!rpcMap[chain.id]) {
+        const chainRpc = chain.rpcUrls?.default?.http?.[0] || chain.rpcUrls?.public?.http?.[0]
+        if (chainRpc) {
+          rpcMap[chain.id] = chainRpc
+        }
+      }
+    })
+
+    // Warn if no RPCs provided for WalletConnect chains
+    if (Object.keys(rpcMap).length === 0) {
+      console.warn(
+        '[Unchained SDK] Warning: No RPC URLs provided for WalletConnect. ' +
+        'Please provide walletConnectRPCs or rpcUrls in the config.'
+      )
+    }
 
     connectors.push(
       walletConnect({
@@ -188,7 +208,7 @@ export function createUnchainedConfig(options?: {
           icons: [],
         },
         showQrModal: true,
-        // Pass RPC map to WalletConnect
+        // Pass RPC map to WalletConnect (required for custom chains)
         rpcMap: Object.keys(rpcMap).length > 0 ? rpcMap : undefined,
       })
     )
@@ -256,6 +276,10 @@ export async function connectWallet(): Promise<string> {
 
   if (!window.ethereum) {
     throw new Error('No wallet detected. Please install Unchained Wallet, MetaMask, or Coinbase Wallet.')
+  }
+
+  if (!window.ethereum.request) {
+    throw new Error('Wallet provider does not support request method')
   }
 
   try {
@@ -334,11 +358,9 @@ export function useUnchainedWallet() {
 
 // Export types
 export type { Config } from 'wagmi'
-export type { WalletConnectRPC } from './index'
 
 // Export components
 export { WalletSelector } from './components/WalletSelector'
-export type { WalletSelectorProps } from './components/WalletSelector'
 
 // Export React hooks
 export { useConnectWallet } from './hooks/useConnectWallet'

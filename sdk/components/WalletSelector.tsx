@@ -167,7 +167,7 @@ export function WalletSelector({
     }
   }
 
-  // Simple connect button (no UI)
+  // Simple connect button (no UI) - auto-connects to detected wallet
   if (!showUI) {
     if (isConnected && address) {
       const detected = getDetectedWallet()
@@ -184,6 +184,13 @@ export function WalletSelector({
             cursor: 'pointer',
             fontSize: '0.875rem',
             fontWeight: 500,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#444'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#333'
           }}
         >
           Disconnect {detected.name}
@@ -191,18 +198,30 @@ export function WalletSelector({
       )
     }
 
+    // Auto-connect button - connects to Unchained if available, otherwise first available wallet
     return (
       <button
         onClick={async () => {
           try {
-            const account = await connectWallet()
+            // Try to connect via wagmi first (handles WalletConnect properly)
             const injectedConn = connectors.find(c => c.id === 'injected')
             if (injectedConn) {
-              connect({ connector: injectedConn })
-            }
-            if (onConnect) {
-              const detected = getDetectedWallet()
-              onConnect(account, detected.name || 'Wallet')
+              connect({ 
+                connector: injectedConn,
+                onSuccess: (data) => {
+                  if (onConnect && data.account) {
+                    const detected = getDetectedWallet()
+                    onConnect(data.account, detected.name || 'Wallet')
+                  }
+                },
+              })
+            } else {
+              // Fallback to direct connection
+              const account = await connectWallet()
+              if (onConnect) {
+                const detected = getDetectedWallet()
+                onConnect(account, detected.name || 'Wallet')
+              }
             }
           } catch (err: any) {
             console.error('Connection failed:', err)
@@ -220,6 +239,17 @@ export function WalletSelector({
           fontSize: '0.875rem',
           fontWeight: 500,
           opacity: isPending || isAutoConnecting ? 0.6 : 1,
+          transition: 'all 0.2s',
+        }}
+        onMouseEnter={(e) => {
+          if (!isPending && !isAutoConnecting) {
+            e.currentTarget.style.background = '#5aaeff'
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isPending && !isAutoConnecting) {
+            e.currentTarget.style.background = '#4a9eff'
+          }
         }}
       >
         {isPending || isAutoConnecting ? 'Connecting...' : 'Connect Wallet'}
