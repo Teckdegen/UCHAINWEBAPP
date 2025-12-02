@@ -2,7 +2,6 @@
 
 import { useEffect } from "react"
 import { getOrCreateUserId } from "@/lib/userId"
-import { getWalletConnectClient } from "@/lib/walletConnect"
 
 /**
  * Lightweight init component.
@@ -14,10 +13,6 @@ import { getWalletConnectClient } from "@/lib/walletConnect"
 export default function ProviderInit() {
   useEffect(() => {
     getOrCreateUserId()
-    // Initialize WalletConnect wallet client (uses your Cloud projectId)
-    getWalletConnectClient().catch((err) => {
-      console.error("[Unchained][WalletConnect] init error", err)
-    })
   }, [])
 
   return null

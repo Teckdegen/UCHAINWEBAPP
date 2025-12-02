@@ -15,23 +15,6 @@ const nextConfig = {
    * those as app code and fails. Here we tell Turbopack to treat those
    * patterns as raw/assets so they don't break the build.
    */
-  experimental: {
-    turbo: {
-      rules: {
-        // Treat markdown/license as raw text
-        "*.md": { as: "raw" },
-        "LICENSE": { as: "raw" },
-        // Test files from node modules (including thread-stream)
-        "*.test.js": { as: "raw" },
-        "*.test.mjs": { as: "raw" },
-        "*.test.ts": { as: "raw" },
-        // Misc fixtures used only in tests/benchmarks
-        "*.zip": { as: "asset" },
-        "*.sh": { as: "raw" },
-        "*.yml": { as: "raw" },
-      },
-    },
-  },
 }
 
 export default nextConfig
