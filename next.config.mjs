@@ -7,15 +7,15 @@ const nextConfig = {
     unoptimized: true,
   },
   /**
-   * Turbopack configuration for Next.js 16.
-   * WalletConnect SDK is loaded via dynamic imports (client-side only),
-   * so we don't need to externalize packages here. Turbopack should handle
-   * the dynamic imports correctly.
+   * Transpile WalletConnect packages to handle any compatibility issues.
+   * These packages are loaded via dynamic imports (client-side only) to
+   * avoid Turbopack parsing test files during SSR.
    */
-  experimental: {
-    // Empty turbopack config to explicitly use Turbopack
-    turbo: {},
-  },
+  transpilePackages: [
+    "@walletconnect/sign-client",
+    "@walletconnect/utils",
+    "@walletconnect/logger",
+  ],
 }
 
 export default nextConfig

@@ -6,11 +6,6 @@ import { getWalletState, getWallets, getPrivateKey, getCurrentWalletId, setCurre
 import { getProvider, getChainName } from "@/lib/rpc"
 import { getUnchainedProvider } from "@/lib/provider"
 import {
-  approveSessionRequest,
-  rejectSessionRequest,
-  getStoredRequest,
-} from "@/lib/walletConnect"
-import {
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -57,55 +52,59 @@ export default function SignPage() {
     const wcRequestId = searchParams.get("wc_request")
     if (wcRequestId) {
       setIsWalletConnect(true)
-      const request = getStoredRequest(wcRequestId)
-      if (request) {
-        setWcRequest(request)
-        const requestMethod = request.params.request.method
-        const requestParams = request.params.request.params || []
-        
-        setMethod(requestMethod)
-        
-        // Extract origin from WalletConnect request metadata
-        const session = request.session
-        const dappUrl = session?.peer?.metadata?.url || "Unknown dApp"
-        setOrigin(dappUrl)
-        
-        // Parse WalletConnect request params based on method
-        if (requestMethod === "eth_sendTransaction") {
-          setParams(requestParams)
-        } else if (requestMethod === "personal_sign" || requestMethod === "eth_sign") {
-          setParams([requestParams[0], requestParams[1]]) // message, address
-        } else if (requestMethod === "eth_signTypedData" || requestMethod === "eth_signTypedData_v4") {
-          setParams(requestParams)
+      // Dynamic import to avoid SSR analysis
+      import("@/lib/walletConnect").then((mod) => {
+        const request = mod.getStoredRequest(wcRequestId)
+        if (request) {
+          setWcRequest(request)
+          const requestMethod = request.params.request.method
+          const requestParams = request.params.request.params || []
+          
+          setMethod(requestMethod)
+          
+          // Extract origin from WalletConnect request metadata
+          const session = request.session
+          const dappUrl = session?.peer?.metadata?.url || "Unknown dApp"
+          setOrigin(dappUrl)
+          
+          // Parse WalletConnect request params based on method
+          if (requestMethod === "eth_sendTransaction") {
+            setParams(requestParams)
+          } else if (requestMethod === "personal_sign" || requestMethod === "eth_sign") {
+            setParams([requestParams[0], requestParams[1]]) // message, address
+          } else if (requestMethod === "eth_signTypedData" || requestMethod === "eth_signTypedData_v4") {
+            setParams(requestParams)
+          }
         }
-      }
+      }).catch(console.error)
     } else {
       // Regular injected provider flow
       const methodParam = searchParams.get("method") || ""
       const originParam = searchParams.get("origin") || "Unknown"
       const paramsParam = searchParams.get("params")
 
-    setMethod(methodParam)
-    setOrigin(originParam)
+      setMethod(methodParam)
+      setOrigin(originParam)
 
-    if (paramsParam) {
-      try {
-        const parsedParams = JSON.parse(decodeURIComponent(paramsParam))
-        setParams(parsedParams)
+      if (paramsParam) {
+        try {
+          const parsedParams = JSON.parse(decodeURIComponent(paramsParam))
+          setParams(parsedParams)
 
-        // Assess risk
-        if (methodParam === "eth_sendTransaction") {
-          const tx = parsedParams[0] || parsedParams
-          const value = tx.value ? ethers.toBeHex(tx.value) : "0x0"
-          const valueNum = Number.parseFloat(ethers.formatEther(value))
-          if (valueNum > 1 || (tx.data && tx.data.length > 100)) {
-            setRiskLevel("high")
-          } else if (tx.data && tx.data !== "0x") {
-            setRiskLevel("medium")
+          // Assess risk
+          if (methodParam === "eth_sendTransaction") {
+            const tx = parsedParams[0] || parsedParams
+            const value = tx.value ? ethers.toBeHex(tx.value) : "0x0"
+            const valueNum = Number.parseFloat(ethers.formatEther(value))
+            if (valueNum > 1 || (tx.data && tx.data.length > 100)) {
+              setRiskLevel("high")
+            } else if (tx.data && tx.data !== "0x") {
+              setRiskLevel("medium")
+            }
           }
+        } catch (e) {
+          console.error("[v0] Error parsing params:", e)
         }
-      } catch (e) {
-        console.error("[v0] Error parsing params:", e)
       }
     }
 
@@ -181,7 +180,8 @@ export default function SignPage() {
 
       if (isWalletConnect && wcRequest) {
         // Handle WalletConnect request response
-        await approveSessionRequest(wcRequest.id, result)
+        const wcMod = await import("@/lib/walletConnect")
+        await wcMod.approveSessionRequest(wcRequest.id, result)
         
         setTimeout(() => {
           window.close() // Close popup if opened in popup
@@ -216,7 +216,8 @@ export default function SignPage() {
     if (isWalletConnect && wcRequest) {
       // Handle WalletConnect rejection
       try {
-        await rejectSessionRequest(wcRequest.id, "USER_REJECTED")
+        const wcMod = await import("@/lib/walletConnect")
+        await wcMod.rejectSessionRequest(wcRequest.id, "USER_REJECTED")
         setRejected(true)
         setTimeout(() => {
           window.close()

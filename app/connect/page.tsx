@@ -4,11 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getWalletState, getWallets, getCurrentWalletId, setCurrentWalletId } from "@/lib/wallet"
 import { getUnchainedProvider } from "@/lib/provider"
-import {
-  approveSessionProposal,
-  rejectSessionProposal,
-  getStoredProposal,
-} from "@/lib/walletConnect"
 import { AlertCircle, CheckCircle, XCircle, Globe } from "lucide-react"
 
 export default function ConnectPage() {
@@ -36,14 +31,17 @@ export default function ConnectPage() {
     const wcProposalId = searchParams.get("wc_proposal")
     if (wcProposalId) {
       setIsWalletConnect(true)
-      const proposal = getStoredProposal(wcProposalId)
-      if (proposal) {
-        setWcProposal(proposal)
-        const dappName = proposal.params.proposer.metadata?.name || "Unknown dApp"
-        const dappUrl = proposal.params.proposer.metadata?.url || ""
-        setOrigin(dappUrl || dappName)
-        setMethod("WalletConnect Session")
-      }
+      // Dynamic import to avoid SSR analysis
+      import("@/lib/walletConnect").then((mod) => {
+        const proposal = mod.getStoredProposal(wcProposalId)
+        if (proposal) {
+          setWcProposal(proposal)
+          const dappName = proposal.params.proposer.metadata?.name || "Unknown dApp"
+          const dappUrl = proposal.params.proposer.metadata?.url || ""
+          setOrigin(dappUrl || dappName)
+          setMethod("WalletConnect Session")
+        }
+      }).catch(console.error)
     } else {
       // Regular injected provider flow
       const originParam = searchParams.get("origin") || "Unknown App"
@@ -77,7 +75,8 @@ export default function ConnectPage() {
       if (isWalletConnect && wcProposal) {
         // Handle WalletConnect session proposal
         const chainId = 1 // Ethereum mainnet
-        await approveSessionProposal(wcProposal.id, [wallet.address.toLowerCase()], chainId)
+        const wcMod = await import("@/lib/walletConnect")
+        await wcMod.approveSessionProposal(wcProposal.id, [wallet.address.toLowerCase()], chainId)
         
         // Track connection
         const provider = getUnchainedProvider()
@@ -130,7 +129,8 @@ export default function ConnectPage() {
     if (isWalletConnect && wcProposal) {
       // Handle WalletConnect rejection
       try {
-        await rejectSessionProposal(wcProposal.id, "USER_REJECTED")
+        const wcMod = await import("@/lib/walletConnect")
+        await wcMod.rejectSessionProposal(wcProposal.id, "USER_REJECTED")
         setRejected(true)
         setTimeout(() => {
           window.close()
