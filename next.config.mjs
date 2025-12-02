@@ -7,13 +7,17 @@ const nextConfig = {
     unoptimized: true,
   },
   /**
-   * Disable Turbopack and use webpack instead.
-   * This allows us to use IgnorePlugin to skip problematic test files
-   * in thread-stream (WalletConnect dependency).
+   * Externalize WalletConnect packages to prevent Turbopack from analyzing
+   * problematic dependencies (thread-stream test files).
+   * These packages are loaded at runtime via dynamic imports.
    */
-  experimental: {
-    turbo: false,
-  },
+  serverComponentsExternalPackages: [
+    '@walletconnect/sign-client',
+    '@walletconnect/utils',
+    '@walletconnect/logger',
+    'pino',
+    'thread-stream',
+  ],
   /**
    * Use webpack to ignore problematic test files in thread-stream.
    * This prevents build errors from non-code assets in WalletConnect dependencies.
