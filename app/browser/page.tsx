@@ -49,12 +49,11 @@ export default function BrowserPage() {
     }
   }, [history])
 
-  // Hide nav bar when searching
+  // Hide both header and nav bar when searching
   useEffect(() => {
     if (isSearchFocused || url.length > 0) {
       setShowNavBar(false)
-    } else {
-      setShowNavBar(true)
+      setShowHeader(false)
     }
   }, [isSearchFocused, url])
 
@@ -67,6 +66,7 @@ export default function BrowserPage() {
     setUrl(targetUrl)
     setLoading(true)
     setShowHistory(false)
+    setIsSearchFocused(false) // Reset search focus after navigation
 
     const newEntry = {
       url: targetUrl,
@@ -95,12 +95,18 @@ export default function BrowserPage() {
     } else if (newTabs.length === 0) {
       setCurrentUrl("")
       setUrl("")
+      setIsSearchFocused(false)
+      setShowHeader(true)
+      setShowNavBar(true)
     }
   }
 
   const goHome = () => {
     setCurrentUrl("")
     setUrl("")
+    setIsSearchFocused(false)
+    setShowHeader(true)
+    setShowNavBar(true)
   }
 
   const clearHistory = () => {
@@ -111,8 +117,15 @@ export default function BrowserPage() {
   }
 
   const toggleHeader = () => {
-    if (currentUrl) {
-      setShowHeader(!showHeader)
+    // When clicking screen, show both header and nav bar if they're hidden
+    if (!showHeader || !showNavBar) {
+      setShowHeader(true)
+      setShowNavBar(true)
+      setIsSearchFocused(false)
+    } else if (currentUrl) {
+      // If both are visible and we have a URL, hide them
+      setShowHeader(false)
+      setShowNavBar(false)
     }
   }
 
@@ -150,13 +163,30 @@ export default function BrowserPage() {
             type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleNavigate(url)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                handleNavigate(url)
+              }
+            }}
             onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
+            onBlur={() => {
+              // Don't immediately hide, wait a bit to allow clicking buttons
+              setTimeout(() => {
+                if (url.length === 0) {
+                  setIsSearchFocused(false)
+                }
+              }, 200)
+            }}
             placeholder="Enter URL..."
             className="flex-1 bg-transparent outline-none text-sm"
           />
-          <button onClick={() => handleNavigate(url)} className="p-1 hover:bg-white/10 rounded transition-colors">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation()
+              handleNavigate(url)
+            }} 
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+          >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Home className="w-4 h-4" />}
           </button>
         </div>
@@ -205,20 +235,83 @@ export default function BrowserPage() {
         </div>
       </div>
 
+      {/* Floating Search Bar - Shows when header is hidden */}
+      {!showHeader && (
+        <div className="fixed top-4 left-4 right-4 z-[60] max-w-2xl mx-auto">
+          <div className="flex gap-2 items-center glass-card border border-white/10 rounded-lg px-3 py-2 shadow-2xl">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleNavigate(url)
+                }
+              }}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => {
+                setTimeout(() => {
+                  if (url.length === 0) {
+                    setIsSearchFocused(false)
+                  }
+                }, 200)
+              }}
+              placeholder="Enter URL..."
+              className="flex-1 bg-transparent outline-none text-sm"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button 
+              onClick={(e) => {
+                e.stopPropagation()
+                handleNavigate(url)
+              }} 
+              className="p-1 hover:bg-white/10 rounded transition-colors"
+            >
+              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Home className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={`flex-1 w-full overflow-hidden transition-all duration-300 ${!showHeader ? "pt-0" : ""} ${!showNavBar ? "pb-0" : ""}`}>
         {currentUrl ? (
-          <div 
-            className="w-full h-full bg-white/5 overflow-hidden relative cursor-pointer"
-            onClick={toggleHeader}
-            onTouchStart={toggleHeader}
-          >
+          <div className="w-full h-full bg-white/5 overflow-hidden relative">
+            {/* Clickable areas to show header/nav when hidden - larger areas for easier clicking */}
+            {!showHeader && (
+              <div 
+                className="absolute top-0 left-0 right-0 h-24 z-50"
+                onClick={toggleHeader}
+                onTouchStart={toggleHeader}
+              />
+            )}
+            {!showNavBar && (
+              <div 
+                className="absolute bottom-0 left-0 right-0 h-24 z-50"
+                onClick={toggleHeader}
+                onTouchStart={toggleHeader}
+              />
+            )}
+            {/* Floating button to show UI when hidden */}
+            {(!showHeader || !showNavBar) && (
+              <button
+                onClick={toggleHeader}
+                className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[60] glass-card border border-white/20 rounded-full p-3 shadow-2xl hover:bg-white/10 transition-all"
+                style={{ pointerEvents: 'auto' }}
+              >
+                <Monitor className="w-5 h-5 text-white" />
+              </button>
+            )}
+            
             {showHistory && (
               <div className="absolute top-0 left-0 right-0 bg-black border-b border-white/10 z-40 max-h-96 overflow-y-auto">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-sm">History</h3>
                     <button
-                      onClick={clearHistory}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        clearHistory()
+                      }}
                       className="p-1 hover:bg-white/10 rounded text-xs flex items-center gap-1"
                     >
                       <Trash2 className="w-3 h-3" />
@@ -252,10 +345,9 @@ export default function BrowserPage() {
               key={`${currentUrl}-${desktopMode}`}
               ref={iframeRef}
               src={currentUrl}
-              className="w-full h-full border-0 bg-white pointer-events-auto"
+              className="w-full h-full border-0 bg-white"
               title="Unchained Browser"
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-presentation allow-pointer-lock"
-              onClick={(e) => e.stopPropagation()}
             />
           </div>
         ) : (
