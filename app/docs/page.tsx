@@ -55,7 +55,7 @@ export default function DocsPage() {
             Or use the Unchained SDK (includes everything):
           </p>
           <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
-            <code>pnpm add @unchained/sdk</code>
+            <code>pnpm add unchainedwallet</code>
           </pre>
         </section>
 
@@ -69,7 +69,7 @@ export default function DocsPage() {
             Option 1: Simple Connect Button (No UI - Auto-connects to Unchained)
           </p>
           <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
-            <code>{`import { createUnchainedConfig, WalletSelector } from "@unchained/sdk"
+            <code>{`import { createUnchainedConfig, WalletSelector } from "unchainedwallet"
 import { WagmiProvider } from "wagmi"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { mainnet, polygon } from "wagmi/chains"
@@ -159,7 +159,7 @@ function SendTransaction() {
             Use the <code>useConnectWallet</code> hook for custom implementations:
           </p>
           <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
-            <code>{`import { useConnectWallet } from "@unchained/sdk"
+            <code>{`import { useConnectWallet } from "unchainedwallet"
 
 function ConnectButton() {
   const { connect, disconnect, isConnected, address, isUnchained } = useConnectWallet()

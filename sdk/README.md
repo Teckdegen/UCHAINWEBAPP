@@ -17,9 +17,9 @@ The SDK detects wallets through `window.ethereum` flags:
 ## Installation
 
 ```bash
-npm install wagmi viem @tanstack/react-query wagmi/connectors
+npm install unchainedwallet wagmi viem @tanstack/react-query wagmi/connectors
 # or
-pnpm add wagmi viem @tanstack/react-query wagmi/connectors
+pnpm add unchainedwallet wagmi viem @tanstack/react-query wagmi/connectors
 ```
 
 ## Quick Start
@@ -27,7 +27,7 @@ pnpm add wagmi viem @tanstack/react-query wagmi/connectors
 ### Option 1: Simple Connect Button (No UI - Auto-connects to Unchained)
 
 ```typescript
-import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
+import { createUnchainedConfig, WalletSelector } from 'unchainedwallet'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { mainnet, polygon } from 'wagmi/chains'
@@ -73,7 +73,7 @@ function App() {
 **Or use the hook directly:**
 
 ```typescript
-import { useConnectWallet } from '@unchained/sdk'
+import { useConnectWallet } from 'unchainedwallet'
 
 function ConnectButton() {
   const { connect, disconnect, isConnected, address, isUnchained } = useConnectWallet()
@@ -98,7 +98,7 @@ function ConnectButton() {
 ### Option 2: With UI Component (Shows Wallet Selection - Default)
 
 ```typescript
-import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
+import { createUnchainedConfig, WalletSelector } from 'unchainedwallet'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { mainnet, polygon } from 'wagmi/chains'
@@ -155,7 +155,7 @@ function App() {
 ### Option 2: Vanilla JavaScript (No React)
 
 ```typescript
-import { createWalletManager } from '@unchained/sdk'
+import { createWalletManager } from 'unchainedwallet'
 
 // Create wallet manager
 const wallet = createWalletManager({
@@ -224,7 +224,7 @@ document.getElementById('send-btn')?.addEventListener('click', async () => {
 ### Option 3: Without UI (Custom Implementation)
 
 ```typescript
-import { createUnchainedConfig } from '@unchained/sdk'
+import { createUnchainedConfig } from 'unchainedwallet'
 import { useConnect, useAccount } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 
@@ -344,7 +344,7 @@ function SendTransaction() {
 Check if Unchained wallet is installed.
 
 ```typescript
-import { isUnchainedInstalled } from '@unchained/sdk'
+import { isUnchainedInstalled } from 'unchainedwallet'
 
 if (isUnchainedInstalled()) {
   console.log('Unchained wallet is available!')
@@ -356,7 +356,7 @@ if (isUnchainedInstalled()) {
 Get information about the currently detected wallet.
 
 ```typescript
-import { getDetectedWallet } from '@unchained/sdk'
+import { getDetectedWallet } from 'unchainedwallet'
 
 const wallet = getDetectedWallet()
 console.log(wallet.name) // "Unchained Wallet", "MetaMask", "Coinbase Wallet", etc.
@@ -392,7 +392,7 @@ The SDK automatically detects wallets in this priority order:
 ```typescript
 'use client'
 
-import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
+import { createUnchainedConfig, WalletSelector } from 'unchainedwallet'
 import { mainnet } from 'wagmi/chains'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

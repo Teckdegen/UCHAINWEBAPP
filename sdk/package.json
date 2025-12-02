@@ -1,5 +1,5 @@
 {
-  "name": "@unchained/sdk",
+  "name": "unchainedwallet",
   "version": "1.0.0",
   "description": "Simple SDK for connecting to Unchained Wallet with wagmi and viem",
   "main": "index.ts",
@@ -12,7 +12,8 @@
     "ethereum",
     "wagmi",
     "viem",
-    "unchained"
+    "unchained",
+    "unchainedwallet"
   ],
   "author": "",
   "license": "MIT",
