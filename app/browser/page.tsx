@@ -27,6 +27,9 @@ export default function BrowserPage() {
   const [desktopMode, setDesktopMode] = useState(false)
   const [history, setHistory] = useState<{ url: string; title: string; timestamp: number }[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [showHeader, setShowHeader] = useState(true)
+  const [showNavBar, setShowNavBar] = useState(true)
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
 
   useEffect(() => {
     const state = getWalletState()
@@ -45,6 +48,15 @@ export default function BrowserPage() {
       localStorage.setItem("browser_history", JSON.stringify(history.slice(0, 50)))
     }
   }, [history])
+
+  // Hide nav bar when searching
+  useEffect(() => {
+    if (isSearchFocused || url.length > 0) {
+      setShowNavBar(false)
+    } else {
+      setShowNavBar(true)
+    }
+  }, [isSearchFocused, url])
 
   const handleNavigate = (targetUrl: string) => {
     if (!targetUrl.startsWith("http")) {
@@ -98,10 +110,20 @@ export default function BrowserPage() {
     }
   }
 
+  const toggleHeader = () => {
+    if (currentUrl) {
+      setShowHeader(!showHeader)
+    }
+  }
+
   return (
     <div className="h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
-      {/* Header - Fixed at top */}
-      <div className="glass-card rounded-none border-b border-white/10 p-3 md:p-4 z-50">
+      {/* Header - Fixed at top, can be hidden */}
+      <div
+        className={`glass-card rounded-none border-b border-white/10 p-3 md:p-4 z-50 transition-transform duration-300 ${
+          showHeader ? "translate-y-0" : "-translate-y-full"
+        }`}
+      >
         <div className="flex items-center gap-3 mb-3 justify-between">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
@@ -129,6 +151,8 @@ export default function BrowserPage() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleNavigate(url)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
             placeholder="Enter URL..."
             className="flex-1 bg-transparent outline-none text-sm"
           />
@@ -181,9 +205,13 @@ export default function BrowserPage() {
         </div>
       </div>
 
-      <div className="flex-1 w-full overflow-hidden">
+      <div className={`flex-1 w-full overflow-hidden transition-all duration-300 ${!showHeader ? "pt-0" : ""} ${!showNavBar ? "pb-0" : ""}`}>
         {currentUrl ? (
-          <div className="w-full h-full bg-white/5 overflow-hidden relative">
+          <div 
+            className="w-full h-full bg-white/5 overflow-hidden relative cursor-pointer"
+            onClick={toggleHeader}
+            onTouchStart={toggleHeader}
+          >
             {showHistory && (
               <div className="absolute top-0 left-0 right-0 bg-black border-b border-white/10 z-40 max-h-96 overflow-y-auto">
                 <div className="p-4">
@@ -204,7 +232,8 @@ export default function BrowserPage() {
                       {history.map((item, idx) => (
                         <button
                           key={idx}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             handleNavigate(item.url)
                             setShowHistory(false)
                           }}
@@ -223,9 +252,10 @@ export default function BrowserPage() {
               key={`${currentUrl}-${desktopMode}`}
               ref={iframeRef}
               src={currentUrl}
-              className="w-full h-full border-0 bg-white"
+              className="w-full h-full border-0 bg-white pointer-events-auto"
               title="Unchained Browser"
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-presentation allow-pointer-lock"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
         ) : (
@@ -263,8 +293,12 @@ export default function BrowserPage() {
         )}
       </div>
 
-      {/* Bottom Nav - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
+      {/* Bottom Nav - Fixed at bottom, can be hidden */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
+          showNavBar ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
         <BottomNav active="browser" />
       </div>
     </div>
