@@ -147,18 +147,22 @@ export function WalletSelector({
     setAvailableWallets(wallets)
   }, [connectors, onlyUnchained, disableMetaMask, disableCoinbase, disableWalletConnect, walletConnectProjectId])
 
-  const handleConnect = (connector: any, walletName: string) => {
-    connect(
-      { connector },
-      {
-        onSuccess: (data) => {
-          if (onConnect && data.account) {
-            onConnect(data.account, walletName)
-          }
-        },
-      }
-    )
+  const handleConnect = async (connector: any, walletName: string) => {
+    try {
+      await connect({ connector })
+      // Connection success will be handled by useEffect watching isConnected
+    } catch (error) {
+      console.error('Connection failed:', error)
+    }
   }
+
+  // Call onConnect when connection succeeds
+  useEffect(() => {
+    if (isConnected && address && onConnect) {
+      const detected = getDetectedWallet()
+      onConnect(address, detected.name || 'Wallet')
+    }
+  }, [isConnected, address, onConnect])
 
   const handleDisconnect = () => {
     disconnect()
@@ -206,23 +210,12 @@ export function WalletSelector({
             // Try to connect via wagmi first (handles WalletConnect properly)
             const injectedConn = connectors.find(c => c.id === 'injected')
             if (injectedConn) {
-              connect({ 
-                connector: injectedConn,
-                onSuccess: (data) => {
-                  if (onConnect && data.account) {
-                    const detected = getDetectedWallet()
-                    onConnect(data.account, detected.name || 'Wallet')
-                  }
-                },
-              })
+              await connect({ connector: injectedConn })
             } else {
               // Fallback to direct connection
-              const account = await connectWallet()
-              if (onConnect) {
-                const detected = getDetectedWallet()
-                onConnect(account, detected.name || 'Wallet')
-              }
+              await connectWallet()
             }
+            // Connection success will be handled by useEffect watching isConnected
           } catch (err: any) {
             console.error('Connection failed:', err)
           }

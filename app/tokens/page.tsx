@@ -229,7 +229,15 @@ export default function TokensPage() {
             {tokens.map((token) => (
               <div
                 key={token.address}
-                className="glass-card p-4 flex items-center justify-between transition-all w-full"
+                onClick={() => {
+                  if (chainId === 97741) {
+                    setSelectedToken(token)
+                    setShowTokenModal(true)
+                  }
+                }}
+                className={`glass-card p-4 flex items-center justify-between transition-all w-full ${
+                  chainId === 97741 ? "cursor-pointer hover:bg-white/10" : ""
+                }`}
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">

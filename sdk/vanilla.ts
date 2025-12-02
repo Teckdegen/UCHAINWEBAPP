@@ -77,18 +77,21 @@ export class UnchainedWalletManager {
       }
 
       // Connect using wagmi's connector
-      const accounts = await window.ethereum?.request({
+      if (!window.ethereum?.request) {
+        throw new Error('Wallet provider does not support request method')
+      }
+
+      const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
       })
 
       if (accounts && accounts[0]) {
-        this.account = accounts[0]
-        this.chainId = parseInt(
-          await window.ethereum?.request({ method: 'eth_chainId' }) || '0x1',
-          16
-        )
-        this.emit('connect', { account: this.account, chainId: this.chainId })
-        return this.account
+        const account = accounts[0]
+        this.account = account
+        const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' }) || '0x1'
+        this.chainId = parseInt(chainIdHex, 16)
+        this.emit('connect', { account, chainId: this.chainId })
+        return account
       }
 
       throw new Error('No accounts returned')
@@ -119,7 +122,7 @@ export class UnchainedWalletManager {
    * Get current account
    */
   getAccount(): string | null {
-    return this.account
+    return this.account || null
   }
 
   /**
@@ -148,8 +151,12 @@ export class UnchainedWalletManager {
       throw new Error('Transaction requires browser environment')
     }
 
+    if (!window.ethereum?.request) {
+      throw new Error('Wallet provider does not support request method')
+    }
+
     try {
-      const txHash = await window.ethereum?.request({
+      const txHash = await window.ethereum.request({
         method: 'eth_sendTransaction',
         params: [{
           from: this.account,
@@ -179,8 +186,12 @@ export class UnchainedWalletManager {
       throw new Error('Signing requires browser environment')
     }
 
+    if (!window.ethereum?.request) {
+      throw new Error('Wallet provider does not support request method')
+    }
+
     try {
-      const signature = await window.ethereum?.request({
+      const signature = await window.ethereum.request({
         method: 'personal_sign',
         params: [message, this.account],
       })
