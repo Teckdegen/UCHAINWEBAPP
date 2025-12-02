@@ -1,4 +1,4 @@
-// User ID management for API identification
+// Simple local userId helper (no backend registration)
 
 const USER_ID_KEY = "unchained_user_id"
 const USER_ID_COOKIE = "unchained_user_id"
@@ -65,28 +65,6 @@ export function setUserIdCookie(userId: string) {
   }
 }
 
-/**
- * Register user ID with API (stores mapping on server)
- */
-export async function registerUserId(userId: string, address: string): Promise<void> {
-  try {
-    const response = await fetch("/api/wallet/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId,
-        address,
-      }),
-    })
-
-    if (!response.ok) {
-      console.error("Failed to register userId with API")
-    }
-  } catch (error) {
-    console.error("Error registering userId:", error)
-    // Don't throw - this is non-critical
-  }
-}
-
+// Note: previously this file also registered the userId with a REST API at
+// /api/wallet/register. That flow has been removed in favor of direct
+// WalletConnect + wagmi usage on the dApp side.
