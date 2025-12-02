@@ -7,6 +7,14 @@ const nextConfig = {
     unoptimized: true,
   },
   /**
+   * Disable Turbopack and use webpack instead.
+   * This allows us to use IgnorePlugin to skip problematic test files
+   * in thread-stream (WalletConnect dependency).
+   */
+  experimental: {
+    turbo: false,
+  },
+  /**
    * Use webpack to ignore problematic test files in thread-stream.
    * This prevents build errors from non-code assets in WalletConnect dependencies.
    */
