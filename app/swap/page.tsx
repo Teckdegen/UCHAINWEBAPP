@@ -2,12 +2,20 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { ethers } from "ethers"
 import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
 import { TrendingUp, Loader, ArrowRightLeft, ChevronDown } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import TokenDetailsModal from "@/components/TokenDetailsModal"
+
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
+  "function name() view returns (string)",
+]
 
 interface Token {
   address: string
@@ -112,7 +120,7 @@ export default function SwapPage() {
       }
 
       // Process tokens from API
-      const tokens: Token[] = allApiTokens
+      const apiTokens: Token[] = allApiTokens
         .filter((item: any) => item.type === "ERC-20" && item.decimals)
         .map((item: any) => ({
           address: item.address_hash.toLowerCase(),
@@ -122,8 +130,64 @@ export default function SwapPage() {
           isNative: false,
         }))
 
+      // Also scan via RPC to find tokens user actually holds (like dashboard does)
+      const rpcDiscoveredTokens: Token[] = []
+      try {
+        const provider = new ethers.JsonRpcProvider("https://rpc-pepu-v2-mainnet-0.t.conduit.xyz")
+        const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        const currentBlock = await provider.getBlockNumber()
+        const fromBlock = Math.max(0, currentBlock - 10000)
+        const addressTopic = ethers.zeroPadValue(walletAddress, 32)
+
+        const [logsFrom, logsTo] = await Promise.all([
+          provider.getLogs({
+            fromBlock,
+            toBlock: "latest",
+            topics: [transferTopic, addressTopic],
+          }),
+          provider.getLogs({
+            fromBlock,
+            toBlock: "latest",
+            topics: [transferTopic, null, addressTopic],
+          }),
+        ])
+
+        const allLogs = [...logsFrom, ...logsTo]
+        const tokenAddresses = [...new Set(allLogs.map((log) => log.address.toLowerCase()))]
+
+        // Fetch token info for RPC-discovered tokens
+        for (const tokenAddress of tokenAddresses) {
+          try {
+            const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
+            const [decimals, symbol, name] = await Promise.all([
+              contract.decimals().catch(() => 18),
+              contract.symbol().catch(() => "???"),
+              contract.name().catch(() => "Unknown Token"),
+            ])
+
+            // Only add if not already in API tokens
+            const exists = apiTokens.some((t) => t.address.toLowerCase() === tokenAddress.toLowerCase())
+            if (!exists) {
+              rpcDiscoveredTokens.push({
+                address: tokenAddress,
+                decimals: Number(decimals),
+                symbol: symbol as string,
+                name: name as string,
+                isNative: false,
+              })
+            }
+          } catch (error) {
+            console.error(`Error fetching RPC token ${tokenAddress}:`, error)
+          }
+        }
+      } catch (error) {
+        console.error("Error scanning RPC for tokens:", error)
+      }
+
+      // Merge API tokens + RPC discovered tokens
+      const allTokensList = [...apiTokens, ...rpcDiscoveredTokens]
       // Add native PEPU at the beginning
-      const tokensWithNative = [PEPU_NATIVE, ...tokens]
+      const tokensWithNative = [PEPU_NATIVE, ...allTokensList]
 
       // Fetch balances for all tokens
       const tokensWithBalances = await Promise.all(
@@ -454,7 +518,7 @@ export default function SwapPage() {
               </button>
 
               {showToSelector && (
-                <div className="absolute z-[100] w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/10 rounded-lg shadow-2xl bg-black/95 backdrop-blur-xl">
+                <div className="absolute z-[100] w-full mt-2 glass-card max-h-[500px] overflow-y-auto border border-white/10 rounded-lg shadow-2xl bg-black/95 backdrop-blur-xl">
                   {loadingTokens ? (
                     <div className="p-4 text-center text-gray-400">Loading tokens...</div>
                   ) : (
