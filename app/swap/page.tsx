@@ -79,6 +79,33 @@ export default function SwapPage() {
     loadTokens()
   }, [router, chainId])
 
+  // Refresh balance for selected token periodically
+  useEffect(() => {
+    if (!fromToken || !walletAddress) return
+    
+    const refreshBalance = async () => {
+      try {
+        let balance = "0"
+        if (fromToken.isNative) {
+          balance = await getNativeBalance(walletAddress, chainId)
+        } else {
+          balance = await getTokenBalance(fromToken.address, walletAddress, chainId)
+        }
+        // Only update if balance changed
+        if (balance !== fromToken.balance) {
+          setFromToken({ ...fromToken, balance })
+        }
+      } catch (error) {
+        console.error("Error refreshing balance:", error)
+      }
+    }
+
+    // Refresh immediately and then every 30 seconds
+    refreshBalance()
+    const interval = setInterval(refreshBalance, 30000)
+    return () => clearInterval(interval)
+  }, [fromToken?.address, walletAddress, chainId, fromToken?.isNative])
+
   // Close selectors when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -214,6 +241,20 @@ export default function SwapPage() {
 
       setAllTokens(tokensWithBalances)
 
+      // Update fromToken balance - find matching token and update with balance
+      const pepuToken = tokensWithBalances.find((t) => t.isNative)
+      const matchingToken = tokensWithBalances.find(
+        (t) => t.address.toLowerCase() === fromToken.address.toLowerCase()
+      )
+      
+      // Always update fromToken with the latest balance from loaded tokens
+      if (matchingToken) {
+        setFromToken(matchingToken)
+      } else if (pepuToken && fromToken.isNative) {
+        // If fromToken is native but not found, use PEPU token
+        setFromToken(pepuToken)
+      }
+
       // Filter tokens with balance > 0 for "from" selector
       // PEPU native should be included if user has balance, and always at top
       const tokensWithBalance = tokensWithBalances.filter(
@@ -292,7 +333,11 @@ export default function SwapPage() {
   }, [amountIn, fromToken, toToken, chainId])
 
   const handleFromTokenSelect = (token: Token) => {
-    setFromToken(token)
+    // Ensure token has balance from the loaded tokens list
+    const tokenWithBalance = allTokens.find(
+      (t) => t.address.toLowerCase() === token.address.toLowerCase()
+    ) || token
+    setFromToken(tokenWithBalance)
     setShowFromSelector(false)
     setAmountIn("")
     setAmountOut("")
