@@ -10,6 +10,8 @@ import {
   getDetectedWallet 
 } from '../index'
 
+import type { WalletConnectRPC } from '../index'
+
 interface WalletSelectorProps {
   /** Show only Unchained Wallet */
   onlyUnchained?: boolean
@@ -21,6 +23,8 @@ interface WalletSelectorProps {
   disableWalletConnect?: boolean
   /** WalletConnect Project ID (required if WalletConnect enabled) */
   walletConnectProjectId?: string
+  /** Custom RPC configurations for WalletConnect (like RainbowKit) */
+  walletConnectRPCs?: WalletConnectRPC[]
   /** Custom styling */
   className?: string
   /** Callback when wallet is connected */

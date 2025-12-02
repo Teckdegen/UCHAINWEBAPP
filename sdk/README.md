@@ -24,17 +24,31 @@ pnpm add wagmi viem @tanstack/react-query wagmi/connectors
 
 ## Quick Start
 
-### Option 1: With UI Component (Recommended)
+### Option 1: With UI Component (React - Recommended)
 
 ```typescript
 import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
 import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { mainnet, polygon } from 'wagmi/chains'
 
-// Create config
+// Create config with custom WalletConnect RPCs (like RainbowKit)
 const wagmiConfig = createUnchainedConfig({
-  projectId: 'your-walletconnect-project-id', // Optional
-  chains: [mainnet],
+  projectId: 'your-walletconnect-project-id',
+  chains: [mainnet, polygon],
+  // Custom RPC URLs for WalletConnect
+  walletConnectRPCs: [
+    {
+      chainId: 1,
+      rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY',
+      name: 'Ethereum',
+    },
+    {
+      chainId: 137,
+      rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY',
+      name: 'Polygon',
+    },
+  ],
 })
 
 const queryClient = new QueryClient()
@@ -47,15 +61,91 @@ function App() {
           onlyUnchained={false} // Set to true to only show Unchained
           disableMetaMask={false} // Set to true to hide MetaMask
           disableCoinbase={false} // Set to true to hide Coinbase
-          walletConnectProjectId="your-project-id" // Optional
+          walletConnectProjectId="your-project-id"
+          walletConnectRPCs={[
+            { chainId: 1, rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY' },
+            { chainId: 137, rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY' },
+          ]}
           onConnect={(address, walletType) => {
             console.log('Connected:', address, walletType)
+          }}
+          onDisconnect={() => {
+            console.log('Disconnected')
           }}
         />
       </QueryClientProvider>
     </WagmiProvider>
   )
 }
+```
+
+### Option 2: Vanilla JavaScript (No React)
+
+```typescript
+import { createWalletManager } from '@unchained/sdk'
+
+// Create wallet manager
+const wallet = createWalletManager({
+  projectId: 'your-walletconnect-project-id',
+  walletConnectRPCs: [
+    {
+      chainId: 1,
+      rpcUrl: 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY',
+      name: 'Ethereum',
+    },
+    {
+      chainId: 137,
+      rpcUrl: 'https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY',
+      name: 'Polygon',
+    },
+  ],
+})
+
+// Listen to events
+wallet.on('connect', ({ account, chainId }) => {
+  console.log('Connected:', account, chainId)
+})
+
+wallet.on('disconnect', () => {
+  console.log('Disconnected')
+})
+
+wallet.on('accountsChanged', (accounts) => {
+  console.log('Accounts changed:', accounts)
+})
+
+// Connect
+document.getElementById('connect-btn')?.addEventListener('click', async () => {
+  try {
+    const address = await wallet.connect()
+    console.log('Connected to:', address)
+  } catch (error) {
+    console.error('Connection failed:', error)
+  }
+})
+
+// Disconnect
+document.getElementById('disconnect-btn')?.addEventListener('click', async () => {
+  await wallet.disconnect()
+})
+
+// Send transaction
+document.getElementById('send-btn')?.addEventListener('click', async () => {
+  if (!wallet.isConnected()) {
+    alert('Please connect wallet first')
+    return
+  }
+  
+  try {
+    const txHash = await wallet.sendTransaction(
+      '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+      '0x2386f26fc10000', // 0.01 ETH in wei
+    )
+    console.log('Transaction sent:', txHash)
+  } catch (error) {
+    console.error('Transaction failed:', error)
+  }
+})
 ```
 
 ### Option 2: Without UI (Custom Implementation)

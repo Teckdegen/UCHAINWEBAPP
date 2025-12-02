@@ -87,6 +87,21 @@ export function getUnchainedProvider() {
 }
 
 /**
+ * WalletConnect RPC configuration (like RainbowKit)
+ * Users can specify custom RPC URLs and chain IDs for WalletConnect
+ */
+export interface WalletConnectRPC {
+  chainId: number
+  rpcUrl: string
+  name?: string
+  nativeCurrency?: {
+    name: string
+    symbol: string
+    decimals: number
+  }
+}
+
+/**
  * Create a wagmi config optimized for Unchained Wallet, MetaMask, and Coinbase Wallet
  * 
  * Automatically detects and prioritizes wallets in this order:
@@ -96,9 +111,10 @@ export function getUnchainedProvider() {
  * 4. Generic injected provider
  * 5. WalletConnect (if projectId provided)
  * 
- * @param projectId - WalletConnect Project ID (optional, for WalletConnect support)
+ * @param projectId - WalletConnect Project ID (required for WalletConnect support)
  * @param chains - Array of chains to support (defaults to mainnet)
- * @param rpcUrls - Custom RPC URLs for chains (optional)
+ * @param rpcUrls - Custom RPC URLs for chains (optional, overrides chain RPC)
+ * @param walletConnectRPCs - Custom RPC configurations for WalletConnect (like RainbowKit)
  * @param enableMetaMask - Enable MetaMask connector (default: true)
  * @param enableCoinbase - Enable Coinbase Wallet connector (default: true)
  * @param enableWalletConnect - Enable WalletConnect connector (default: true if projectId provided)
@@ -107,6 +123,7 @@ export function createUnchainedConfig(options?: {
   projectId?: string
   chains?: Chain[]
   rpcUrls?: Record<number, string>
+  walletConnectRPCs?: WalletConnectRPC[]
   enableMetaMask?: boolean
   enableCoinbase?: boolean
   enableWalletConnect?: boolean
@@ -116,6 +133,7 @@ export function createUnchainedConfig(options?: {
     : [mainnet]) as [Chain, ...Chain[]]
   const projectId = options?.projectId
   const rpcUrls = options?.rpcUrls || {}
+  const walletConnectRPCs = options?.walletConnectRPCs || []
   const enableMetaMask = options?.enableMetaMask !== false
   const enableCoinbase = options?.enableCoinbase !== false
   const enableWalletConnect = options?.enableWalletConnect !== false && !!projectId
@@ -143,8 +161,23 @@ export function createUnchainedConfig(options?: {
     }
   }
 
-  // 3. WalletConnect connector (optional, if projectId provided)
+  // 3. WalletConnect connector with custom RPCs (like RainbowKit)
   if (enableWalletConnect && projectId) {
+    // Build RPC map from walletConnectRPCs or chains
+    const rpcMap: Record<number, string> = {}
+    
+    // Add custom WalletConnect RPCs
+    walletConnectRPCs.forEach((rpc) => {
+      rpcMap[rpc.chainId] = rpc.rpcUrl
+    })
+    
+    // Add chain RPCs (if not already in custom RPCs)
+    chains.forEach((chain) => {
+      if (!rpcMap[chain.id]) {
+        rpcMap[chain.id] = rpcUrls[chain.id] || (chain.rpcUrls?.default?.http?.[0] || '')
+      }
+    })
+
     connectors.push(
       walletConnect({
         projectId,
@@ -155,6 +188,8 @@ export function createUnchainedConfig(options?: {
           icons: [],
         },
         showQrModal: true,
+        // Pass RPC map to WalletConnect
+        rpcMap: Object.keys(rpcMap).length > 0 ? rpcMap : undefined,
       })
     )
   }
@@ -252,7 +287,12 @@ export function useUnchainedWallet() {
 
 // Export types
 export type { Config } from 'wagmi'
+export type { WalletConnectRPC } from './index'
 
 // Export components
 export { WalletSelector } from './components/WalletSelector'
+export type { WalletSelectorProps } from './components/WalletSelector'
+
+// Export vanilla JS version
+export { UnchainedWalletManager, createWalletManager } from './vanilla'
 
