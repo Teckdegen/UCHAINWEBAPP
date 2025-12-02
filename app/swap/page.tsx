@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { ethers } from "ethers"
 import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
-import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
+import { getNativeBalance, getTokenBalance, getProviderWithFallback, getTokenInfo } from "@/lib/rpc"
 import { TrendingUp, Loader, ArrowRightLeft, ChevronDown } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import TokenDetailsModal from "@/components/TokenDetailsModal"
@@ -57,11 +57,15 @@ export default function SwapPage() {
   const [allTokens, setAllTokens] = useState<Token[]>([])
   const [fromTokens, setFromTokens] = useState<Token[]>([])
   const [toTokens, setToTokens] = useState<Token[]>([])
+  const [walletAddress, setWalletAddress] = useState<string>("")
   const [loadingTokens, setLoadingTokens] = useState(true)
   const [showFromSelector, setShowFromSelector] = useState(false)
   const [showToSelector, setShowToSelector] = useState(false)
   const [selectedTokenForDetails, setSelectedTokenForDetails] = useState<Token | null>(null)
   const [showTokenModal, setShowTokenModal] = useState(false)
+  const [customToAddress, setCustomToAddress] = useState("")
+  const [customToError, setCustomToError] = useState("")
+  const [customToLoading, setCustomToLoading] = useState(false)
   const fromSelectorRef = useRef<HTMLDivElement>(null)
   const toSelectorRef = useRef<HTMLDivElement>(null)
 
@@ -97,6 +101,7 @@ export default function SwapPage() {
       if (wallets.length === 0) return
 
       const walletAddress = wallets[0].address
+      setWalletAddress(walletAddress)
 
       // Fetch all tokens from API (handle pagination)
       let allApiTokens: any[] = []
@@ -522,7 +527,78 @@ export default function SwapPage() {
                   {loadingTokens ? (
                     <div className="p-4 text-center text-gray-400">Loading tokens...</div>
                   ) : (
-                    <div className="p-2">
+                    <div className="p-2 space-y-3">
+                      {/* Custom CA input for target token */}
+                      <div className="p-3 mb-1 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-xs text-gray-400 mb-2">Paste PEPU token contract to swap to</p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={customToAddress}
+                            onChange={(e) => {
+                              setCustomToAddress(e.target.value)
+                              setCustomToError("")
+                            }}
+                            placeholder="0x..."
+                            className="input-field flex-1 text-xs"
+                          />
+                          <button
+                            disabled={customToLoading || !customToAddress.trim()}
+                            onClick={async () => {
+                              try {
+                                setCustomToLoading(true)
+                                setCustomToError("")
+
+                                const addr = customToAddress.trim()
+                                if (!addr) {
+                                  setCustomToError("Enter a contract address")
+                                  return
+                                }
+
+                                const info = await getTokenInfo(addr, chainId)
+                                if (!info) {
+                                  setCustomToError("Could not load token info")
+                                  return
+                                }
+
+                                let balance = "0"
+                                try {
+                                  const wa = walletAddress || getWallets()[0]?.address || ""
+                                  if (wa) {
+                                    balance = await getTokenBalance(addr, wa, chainId)
+                                  }
+                                } catch {
+                                  // ignore balance error, keep 0
+                                }
+
+                                const customToken: Token = {
+                                  address: addr.toLowerCase(),
+                                  decimals: info.decimals,
+                                  symbol: info.symbol,
+                                  name: info.name,
+                                  balance,
+                                  isNative: false,
+                                }
+
+                                setToToken(customToken)
+                                setShowToSelector(false)
+                                setCustomToAddress("")
+                                setCustomToError("")
+                              } catch (err: any) {
+                                setCustomToError(err.message || "Failed to load token")
+                              } finally {
+                                setCustomToLoading(false)
+                              }
+                            }}
+                            className="px-3 py-2 rounded-lg bg-green-500 text-black text-xs font-semibold hover:bg-green-400 disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {customToLoading ? "Loading..." : "Use"}
+                          </button>
+                        </div>
+                        {customToError && <p className="mt-1 text-[11px] text-red-400">{customToError}</p>}
+                      </div>
+
+                      {/* Discovered tokens list */}
                       {toTokens.map((token: Token) => (
                         <div
                           key={token.address}
@@ -543,6 +619,13 @@ export default function SwapPage() {
                                 <p className="text-xs text-gray-400">{token.name}</p>
                               </div>
                             </div>
+                            {typeof token.balance !== "undefined" && (
+                              <div className="text-right">
+                                <p className="text-[11px] text-gray-400">
+                                  Bal: {Number.parseFloat(token.balance || "0").toFixed(4)}
+                                </p>
+                              </div>
+                            )}
                           </button>
                           {!token.isNative && (
                             <button

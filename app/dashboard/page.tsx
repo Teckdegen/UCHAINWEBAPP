@@ -332,7 +332,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Chain Selector + Add Token (ETH) */}
+          {/* Chain Selector (ETH / PEPU) */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
             <div className="flex gap-2">
               <button
@@ -352,43 +352,47 @@ export default function DashboardPage() {
                 PEPU
               </button>
             </div>
-
-            {chainId === 1 && (
-              <button
-                onClick={() => {
-                  setShowAddToken(true)
-                  setCustomTokenAddress("")
-                  setCustomTokenError("")
-                }}
-                className="self-start px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 text-xs md:text-sm font-semibold transition-all"
-              >
-                + Add Custom ETH Token
-              </button>
-            )}
           </div>
 
           {/* Quick Actions */}
           {chainId === 1 ? (
-            // Ethereum: Send + Receive
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Send className="w-5 h-5 text-green-500" />
-                </div>
-              </div>
-              <p className="text-sm font-semibold">Send</p>
-            </Link>
-
-            <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <ArrowDownLeft className="w-5 h-5 text-green-500" />
-                </div>
-              </div>
-              <p className="text-sm font-semibold">Receive</p>
-            </Link>
+            // Ethereum: Send + Receive + Add Custom Token (+)
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                  <div className="flex justify-center mb-2">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <Send className="w-5 h-5 text-green-500" />
+                    </div>
                   </div>
+                  <p className="text-sm font-semibold">Send</p>
+                </Link>
+
+                <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                  <div className="flex justify-center mb-2">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold">Receive</p>
+                </Link>
+              </div>
+
+              {/* ETH Add Custom Token "+" button under Send/Receive */}
+              <div className="flex justify-center">
+                <button
+                  onClick={() => {
+                    setShowAddToken(true)
+                    setCustomTokenAddress("")
+                    setCustomTokenError("")
+                  }}
+                  className="w-10 h-10 rounded-full bg-green-500 text-black flex items-center justify-center text-xl font-bold hover:bg-green-400 transition-colors"
+                  aria-label="Add custom token"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           ) : (
             // PEPU: Bridge + Swap + Receive (no Send)
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
