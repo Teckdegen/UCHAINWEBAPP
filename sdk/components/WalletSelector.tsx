@@ -7,7 +7,8 @@ import {
   isUnchainedInstalled, 
   isMetaMaskInstalled, 
   isCoinbaseWalletInstalled,
-  getDetectedWallet 
+  getDetectedWallet,
+  connectWallet
 } from '../index'
 
 import type { WalletConnectRPC } from '../index'
@@ -25,6 +26,10 @@ interface WalletSelectorProps {
   walletConnectProjectId?: string
   /** Custom RPC configurations for WalletConnect (like RainbowKit) */
   walletConnectRPCs?: WalletConnectRPC[]
+  /** Auto-connect to Unchained on mount (no UI, just connect directly) */
+  autoConnect?: boolean
+  /** Show UI or just a simple connect button */
+  showUI?: boolean
   /** Custom styling */
   className?: string
   /** Callback when wallet is connected */
@@ -39,6 +44,8 @@ export function WalletSelector({
   disableCoinbase = false,
   disableWalletConnect = true,
   walletConnectProjectId,
+  autoConnect = false,
+  showUI = true,
   className = '',
   onConnect,
   onDisconnect,
@@ -53,6 +60,18 @@ export function WalletSelector({
     installed: boolean
     connector: any
   }>>([])
+  const [isAutoConnecting, setIsAutoConnecting] = useState(false)
+
+  // Auto-connect on mount if enabled
+  useEffect(() => {
+    if (autoConnect && !isConnected && !isAutoConnecting) {
+      setIsAutoConnecting(true)
+      const injectedConn = connectors.find(c => c.id === 'injected')
+      if (injectedConn) {
+        connect({ connector: injectedConn })
+      }
+    }
+  }, [autoConnect, isConnected, isAutoConnecting, connect, connectors])
 
   useEffect(() => {
     // Build list of available wallets
@@ -146,6 +165,66 @@ export function WalletSelector({
     if (onDisconnect) {
       onDisconnect()
     }
+  }
+
+  // Simple connect button (no UI)
+  if (!showUI) {
+    if (isConnected && address) {
+      const detected = getDetectedWallet()
+      return (
+        <button
+          onClick={handleDisconnect}
+          className={`wallet-selector-simple disconnect ${className}`}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: '#333',
+            border: '1px solid #444',
+            borderRadius: '8px',
+            color: 'white',
+            cursor: 'pointer',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+          }}
+        >
+          Disconnect {detected.name}
+        </button>
+      )
+    }
+
+    return (
+      <button
+        onClick={async () => {
+          try {
+            const account = await connectWallet()
+            const injectedConn = connectors.find(c => c.id === 'injected')
+            if (injectedConn) {
+              connect({ connector: injectedConn })
+            }
+            if (onConnect) {
+              const detected = getDetectedWallet()
+              onConnect(account, detected.name || 'Wallet')
+            }
+          } catch (err: any) {
+            console.error('Connection failed:', err)
+          }
+        }}
+        disabled={isPending || isAutoConnecting}
+        className={`wallet-selector-simple connect ${className}`}
+        style={{
+          padding: '0.75rem 1.5rem',
+          background: '#4a9eff',
+          border: 'none',
+          borderRadius: '8px',
+          color: 'white',
+          cursor: isPending || isAutoConnecting ? 'not-allowed' : 'pointer',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          opacity: isPending || isAutoConnecting ? 0.6 : 1,
+        }}
+      >
+        {isPending || isAutoConnecting ? 'Connecting...' : 'Connect Wallet'}
+      </button>
+    )
   }
 
   if (isConnected && address) {

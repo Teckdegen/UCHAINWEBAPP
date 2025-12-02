@@ -53,12 +53,10 @@ function DAppContent() {
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h1>My dApp</h1>
       
-      {/* Wallet Selector UI - Shows available wallets */}
+      {/* Option 1: Simple Connect Button (No UI - Auto-connects to Unchained) */}
       <div style={{ marginBottom: '2rem' }}>
         <WalletSelector 
-          // onlyUnchained={true} // Uncomment to only show Unchained
-          // disableMetaMask={true} // Uncomment to hide MetaMask
-          // disableCoinbase={true} // Uncomment to hide Coinbase
+          showUI={false} // Simple button, no wallet selection UI
           walletConnectProjectId={process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID}
           onConnect={(address, walletType) => {
             console.log(`Connected to ${walletType}: ${address}`)
@@ -68,6 +66,23 @@ function DAppContent() {
           }}
         />
       </div>
+
+      {/* Option 2: Full UI with Wallet Selection (uncomment to use) */}
+      {/* <div style={{ marginBottom: '2rem' }}>
+        <WalletSelector 
+          showUI={true} // Shows wallet selection UI
+          onlyUnchained={false} // Set to true to only show Unchained
+          disableMetaMask={false} // Set to true to hide MetaMask
+          disableCoinbase={false} // Set to true to hide Coinbase
+          walletConnectProjectId={process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID}
+          onConnect={(address, walletType) => {
+            console.log(`Connected to ${walletType}: ${address}`)
+          }}
+          onDisconnect={() => {
+            console.log('Disconnected')
+          }}
+        />
+      </div> */}
 
       {/* Transaction UI (only shown when connected) */}
       {isConnected && address && (

@@ -244,6 +244,53 @@ export function getDetectedWallet() {
 }
 
 /**
+ * Connect to wallet directly without UI
+ * Automatically connects to Unchained if available, otherwise falls back to other wallets
+ * 
+ * @returns Promise<string> - Connected wallet address
+ */
+export async function connectWallet(): Promise<string> {
+  if (typeof window === 'undefined') {
+    throw new Error('Wallet connection requires browser environment')
+  }
+
+  if (!window.ethereum) {
+    throw new Error('No wallet detected. Please install Unchained Wallet, MetaMask, or Coinbase Wallet.')
+  }
+
+  try {
+    // Request connection
+    const accounts = await window.ethereum.request({
+      method: 'eth_requestAccounts',
+    })
+
+    if (accounts && accounts[0]) {
+      return accounts[0]
+    }
+
+    throw new Error('No accounts returned')
+  } catch (error: any) {
+    if (error.code === 4001) {
+      throw new Error('User rejected connection request')
+    }
+    throw error
+  }
+}
+
+/**
+ * Disconnect wallet
+ */
+export async function disconnectWallet(): Promise<void> {
+  if (typeof window === 'undefined') return
+  
+  // Reset connection state
+  // Note: Most wallets don't have a disconnect method, so we just clear local state
+  if (window.ethereum && (window.ethereum as any).removeAllListeners) {
+    (window.ethereum as any).removeAllListeners()
+  }
+}
+
+/**
  * Simple hook wrapper for common wagmi operations
  * Use this if you want a simpler API than raw wagmi hooks
  */
@@ -292,6 +339,9 @@ export type { WalletConnectRPC } from './index'
 // Export components
 export { WalletSelector } from './components/WalletSelector'
 export type { WalletSelectorProps } from './components/WalletSelector'
+
+// Export React hooks
+export { useConnectWallet } from './hooks/useConnectWallet'
 
 // Export vanilla JS version
 export { UnchainedWalletManager, createWalletManager } from './vanilla'

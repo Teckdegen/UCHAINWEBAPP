@@ -24,7 +24,58 @@ pnpm add wagmi viem @tanstack/react-query wagmi/connectors
 
 ## Quick Start
 
-### Option 1: With UI Component (React - Recommended)
+### Option 1: Simple Connect Button (No UI - Recommended for Quick Integration)
+
+```typescript
+import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
+import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const wagmiConfig = createUnchainedConfig({
+  projectId: 'your-walletconnect-project-id',
+  chains: [mainnet],
+})
+
+const queryClient = new QueryClient()
+
+function App() {
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        {/* Simple button - automatically connects to Unchained if available */}
+        <WalletSelector showUI={false} />
+      </QueryClientProvider>
+    </WagmiProvider>
+  )
+}
+```
+
+**Or use the hook directly:**
+
+```typescript
+import { useConnectWallet } from '@unchained/sdk'
+
+function ConnectButton() {
+  const { connect, disconnect, isConnected, address, isUnchained } = useConnectWallet()
+
+  if (isConnected) {
+    return (
+      <div>
+        <p>Connected: {address}</p>
+        <button onClick={disconnect}>Disconnect</button>
+      </div>
+    )
+  }
+
+  return (
+    <button onClick={connect}>
+      {isUnchained ? 'Connect Unchained' : 'Connect Wallet'}
+    </button>
+  )
+}
+```
+
+### Option 2: With UI Component (Shows Wallet Selection)
 
 ```typescript
 import { createUnchainedConfig, WalletSelector } from '@unchained/sdk'
@@ -148,7 +199,7 @@ document.getElementById('send-btn')?.addEventListener('click', async () => {
 })
 ```
 
-### Option 2: Without UI (Custom Implementation)
+### Option 3: Without UI (Custom Implementation)
 
 ```typescript
 import { createUnchainedConfig } from '@unchained/sdk'
