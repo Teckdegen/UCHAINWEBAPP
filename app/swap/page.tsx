@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { ethers } from "ethers"
-import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
+import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback, getTokenInfo } from "@/lib/rpc"
 import { TrendingUp, Loader, ArrowRightLeft, ChevronDown } from "lucide-react"
@@ -100,7 +100,8 @@ export default function SwapPage() {
       const wallets = getWallets()
       if (wallets.length === 0) return
 
-      const walletAddress = wallets[0].address
+      const active = getCurrentWallet() || wallets[0]
+      const walletAddress = active.address
       setWalletAddress(walletAddress)
 
       // Fetch all tokens from API (handle pagination)
