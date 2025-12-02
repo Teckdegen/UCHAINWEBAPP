@@ -1,0 +1,29 @@
+{
+  "name": "@unchained/sdk",
+  "version": "1.0.0",
+  "description": "Simple SDK for connecting to Unchained Wallet with wagmi and viem",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "wallet",
+    "ethereum",
+    "wagmi",
+    "viem",
+    "unchained"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "wagmi": "^2.0.0",
+    "viem": "^2.0.0",
+    "@wagmi/connectors": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+

@@ -31,6 +31,9 @@ async function getWalletConnectClient(): Promise<any> {
     // Dynamic import to avoid Turbopack parsing issues
     const { SignClient } = await import("@walletconnect/sign-client")
 
+    // Restore existing sessions from storage
+    const storedSessions = getStoredSessions()
+    
     signClient = await SignClient.init({
       projectId,
       metadata: {
@@ -39,9 +42,12 @@ async function getWalletConnectClient(): Promise<any> {
         url: window.location.origin,
         icons: [`${window.location.origin}/icon.png`],
       },
+      // Restore sessions if available
+      storage: typeof window !== "undefined" ? window.localStorage : undefined,
     })
 
     console.log("[WalletConnect] SignClient initialized:", signClient)
+    console.log("[WalletConnect] Restored sessions:", signClient.session.getAll().length)
 
     // Setup event listeners
     setupWalletConnectEventListeners(signClient)
@@ -52,29 +58,33 @@ async function getWalletConnectClient(): Promise<any> {
   return initPromise
 }
 
-function setupWalletConnectEventListeners(client: SignClient) {
-  client.on("session_proposal", async (proposal) => {
-    console.log("[WalletConnect] session_proposal:", proposal)
+function setupWalletConnectEventListeners(client: any) {
+  client.on("session_proposal", async (proposal: any) => {
+    console.log("[WalletConnect] session_proposal received:", proposal)
 
     // Store proposal in localStorage for /connect page to pick up
     const proposalKey = `wc_proposal_${proposal.id}`
     localStorage.setItem(proposalKey, JSON.stringify(proposal))
     localStorage.setItem("wc_proposal_id", proposal.id.toString())
 
-    // Redirect to connect page with WalletConnect proposal
-    window.location.href = `/connect?wc_proposal=${proposal.id}`
+    // Only redirect if we're not already on the connect page
+    if (!window.location.pathname.includes("/connect")) {
+      window.location.href = `/connect?wc_proposal=${proposal.id}`
+    }
   })
 
-  client.on("session_request", async (request) => {
-    console.log("[WalletConnect] session_request:", request)
+  client.on("session_request", async (request: any) => {
+    console.log("[WalletConnect] session_request received:", request)
 
     // Store request in localStorage for /sign page to pick up
     const requestKey = `wc_request_${request.id}`
     localStorage.setItem(requestKey, JSON.stringify(request))
     localStorage.setItem("wc_request_id", request.id.toString())
 
-    // Redirect to sign page with WalletConnect request
-    window.location.href = `/sign?wc_request=${request.id}`
+    // Only redirect if we're not already on the sign page
+    if (!window.location.pathname.includes("/sign")) {
+      window.location.href = `/sign?wc_request=${request.id}`
+    }
   })
 
   client.on("session_delete", ({ id, topic }) => {
@@ -119,15 +129,18 @@ export function storeSession(session: any) {
 }
 
 /**
- * Get a stored WalletConnect proposal by ID
+ * Get a stored WalletConnect proposal by ID (without removing it)
  */
-export function getStoredProposal(id: string): any | null {
+export function getStoredProposal(id: string, remove: boolean = false): any | null {
   if (typeof window === "undefined") return null
   const key = `wc_proposal_${id}`
   const stored = localStorage.getItem(key)
   if (stored) {
-    localStorage.removeItem(key) // Clean up after reading
-    return JSON.parse(stored)
+    const proposal = JSON.parse(stored)
+    if (remove) {
+      localStorage.removeItem(key) // Only remove if explicitly requested
+    }
+    return proposal
   }
   return null
 }
@@ -155,42 +168,74 @@ export async function approveSessionProposal(
   chainId: number = 1
 ): Promise<void> {
   const client = await getWalletConnectClient()
-  const proposal = getStoredProposal(proposalId.toString())
+  
+  // Try to get proposal from storage first
+  let proposal = getStoredProposal(proposalId.toString(), false)
+  
+  // If not in storage, try to get it from the client's pending proposals
+  if (!proposal) {
+    try {
+      const pendingProposals = client.session.proposal.getAll()
+      proposal = pendingProposals.find((p: any) => p.id === proposalId)
+    } catch (e) {
+      console.warn("[WalletConnect] Could not get proposal from client:", e)
+    }
+  }
 
   if (!proposal) {
-    throw new Error("Proposal not found")
+    throw new Error(`Proposal ${proposalId} not found`)
   }
 
   const { id, params } = proposal
+  console.log("[WalletConnect] Approving proposal:", { id, params })
 
   const namespaces: any = {}
-  const requiredChains = params.requiredNamespaces.eip155?.chains || []
-  const optionalChains = params.optionalNamespaces?.eip155?.chains || []
+  
+  // Handle required and optional namespaces
+  const requiredNamespaces = params.requiredNamespaces || {}
+  const optionalNamespaces = params.optionalNamespaces || {}
+  
+  // Get EIP155 chains from required and optional
+  const eip155Required = requiredNamespaces.eip155 || {}
+  const eip155Optional = optionalNamespaces.eip155 || {}
+  const requiredChains = eip155Required.chains || []
+  const optionalChains = eip155Optional.chains || []
   const allChains = [...requiredChains, ...optionalChains]
 
-  // Support Ethereum mainnet (eip155:1) and PEPU if needed
-  const supportedChains = ["eip155:1"] // Add PEPU chain ID if you have one
+  // Support Ethereum mainnet (eip155:1)
+  const supportedChains = ["eip155:1"]
   const chains = allChains.filter((chain: string) => supportedChains.includes(chain))
 
   namespaces.eip155 = {
     accounts: accounts.map((addr: string) => `eip155:${chainId}:${addr}`),
     chains: chains.length > 0 ? chains : ["eip155:1"],
-    methods: params.requiredNamespaces.eip155?.methods || [
+    methods: eip155Required.methods || [
       "eth_sendTransaction",
       "eth_signTransaction",
       "eth_sign",
       "personal_sign",
       "eth_signTypedData",
     ],
-    events: params.requiredNamespaces.eip155?.events || ["chainChanged", "accountsChanged"],
+    events: eip155Required.events || ["chainChanged", "accountsChanged"],
   }
 
-  await client.approve({
-    id,
-    namespaces,
-  })
+  try {
+    const session = await client.approve({
+      id,
+      namespaces,
+    })
 
-  console.log("[WalletConnect] Session approved:", { id, accounts, chainId })
+    // Store the approved session
+    storeSession(session)
+    
+    // Remove proposal from storage after successful approval
+    getStoredProposal(proposalId.toString(), true)
+    
+    console.log("[WalletConnect] Session approved successfully:", { id, accounts, chainId, topic: session.topic })
+  } catch (error) {
+    console.error("[WalletConnect] Error approving session:", error)
+    throw error
+  }
 }
 
 /**
@@ -277,7 +322,17 @@ export async function initWalletConnect(): Promise<void> {
   if (typeof window === "undefined") return
 
   try {
-    await getWalletConnectClient()
+    const client = await getWalletConnectClient()
+    console.log("[WalletConnect] Initialization complete. Active sessions:", client.session.getAll().length)
+    
+    // Log any existing sessions
+    const sessions = client.session.getAll()
+    if (sessions.length > 0) {
+      console.log("[WalletConnect] Restored sessions:", sessions.map((s: any) => ({
+        topic: s.topic,
+        peer: s.peer.metadata?.name || "Unknown",
+      })))
+    }
   } catch (error) {
     console.error("[WalletConnect] Failed to initialize:", error)
   }
