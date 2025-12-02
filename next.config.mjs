@@ -7,13 +7,14 @@ const nextConfig = {
     unoptimized: true,
   },
   /**
-   * Use webpack to externalize WalletConnect packages.
-   * This prevents Turbopack from analyzing them during build.
-   * They will be loaded at runtime via dynamic imports.
+   * Disable Turbopack and use webpack instead.
+   * This allows us to externalize WalletConnect packages to prevent
+   * build errors from thread-stream test files.
    */
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Externalize WalletConnect packages on client-side
+      // This prevents webpack from bundling them and analyzing test files
       config.externals = config.externals || []
       config.externals.push({
         '@walletconnect/sign-client': 'commonjs @walletconnect/sign-client',
