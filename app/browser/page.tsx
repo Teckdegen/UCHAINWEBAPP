@@ -131,30 +131,20 @@ export default function BrowserPage() {
 
   return (
     <div className="h-screen w-screen bg-black text-white flex flex-col overflow-hidden">
-      {/* Header - Fixed at top, can be hidden - Compact design */}
+      {/* Header - Just the search bar, no extra space */}
       <div
-        className={`glass-card rounded-none border-b border-white/10 z-50 transition-transform duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${
           showHeader ? "translate-y-0" : "-translate-y-full"
         }`}
       >
-        {/* Compact header - only show title when no URL */}
-        {!currentUrl && (
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
-            <Link href="/dashboard" className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <h1 className="text-sm font-bold">Unchained Browser</h1>
-          </div>
-        )}
-
-        {/* Address Bar - Compact */}
-        <div className="flex gap-2 items-center px-3 py-2">
+        {/* Just the search bar - minimal padding */}
+        <div className="flex gap-2 items-center px-2 py-1.5 bg-black/80 backdrop-blur-sm">
           {currentUrl && (
-            <Link href="/dashboard" className="p-1.5 hover:bg-white/10 rounded transition-colors flex-shrink-0">
+            <Link href="/dashboard" className="p-1 hover:bg-white/10 rounded transition-colors flex-shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Link>
           )}
-          <div className="flex gap-2 items-center bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex-1 min-w-0">
+          <div className="flex gap-1 items-center bg-white/10 border border-white/20 rounded-lg px-2 py-1.5 flex-1 min-w-0">
             <input
               type="text"
               value={url}
@@ -173,23 +163,23 @@ export default function BrowserPage() {
                 }, 200)
               }}
               placeholder="Enter URL..."
-              className="flex-1 bg-transparent outline-none text-sm min-w-0"
+              className="flex-1 bg-transparent outline-none text-sm text-white placeholder:text-white/60 min-w-0"
             />
             <button 
               onClick={(e) => {
                 e.stopPropagation()
                 handleNavigate(url)
               }} 
-              className="p-1 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+              className="p-1 hover:bg-white/20 rounded transition-colors flex-shrink-0"
             >
-              {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Home className="w-4 h-4" />}
+              {loading ? <RefreshCw className="w-4 h-4 text-white" /> : <Home className="w-4 h-4 text-white" />}
             </button>
           </div>
           {currentUrl && (
             <button
               onClick={() => setDesktopMode(!desktopMode)}
-              className={`p-1.5 rounded transition-colors flex items-center gap-1 text-xs flex-shrink-0 ${
-                desktopMode ? "bg-green-500/20 text-green-400" : "hover:bg-white/10"
+              className={`p-1.5 rounded transition-colors flex items-center flex-shrink-0 ${
+                desktopMode ? "bg-green-500/30 text-green-400" : "hover:bg-white/10 text-white"
               }`}
             >
               <Monitor className="w-4 h-4" />
@@ -197,9 +187,9 @@ export default function BrowserPage() {
           )}
         </div>
 
-        {/* Tabs - Compact, only show if there are tabs */}
+        {/* Tabs - Only show if there are tabs, minimal space */}
         {tabs.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto px-3 pb-2">
+          <div className="flex gap-1 overflow-x-auto px-2 pb-1 bg-black/80 backdrop-blur-sm">
           {tabs.map((tab) => (
             <div
               key={tab.id}
@@ -207,8 +197,8 @@ export default function BrowserPage() {
                 setActiveTab(tab.id)
                 handleNavigate(tab.url)
               }}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs whitespace-nowrap cursor-pointer transition-colors flex-shrink-0 ${
-                activeTab === tab.id ? "bg-green-500/20 text-green-400" : "bg-white/5 hover:bg-white/10"
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs whitespace-nowrap cursor-pointer transition-colors flex-shrink-0 ${
+                activeTab === tab.id ? "bg-green-500/30 text-green-400" : "bg-white/10 hover:bg-white/20 text-white"
               }`}
             >
               <span className="truncate max-w-xs">{tab.title}</span>
@@ -225,14 +215,14 @@ export default function BrowserPage() {
           ))}
           <button
             onClick={() => openNewTab("")}
-            className="px-2 py-1 rounded text-xs bg-white/5 hover:bg-white/10 flex items-center gap-1 flex-shrink-0"
+            className="px-2 py-0.5 rounded text-xs bg-white/10 hover:bg-white/20 flex items-center flex-shrink-0 text-white"
           >
             <Plus className="w-3 h-3" />
           </button>
           {currentUrl && (
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="px-2 py-1 rounded text-xs bg-white/5 hover:bg-white/10 flex items-center gap-1 flex-shrink-0"
+              className="px-2 py-0.5 rounded text-xs bg-white/10 hover:bg-white/20 flex items-center flex-shrink-0 text-white"
             >
               <History className="w-3 h-3" />
             </button>
@@ -279,7 +269,7 @@ export default function BrowserPage() {
         </div>
       )}
 
-      <div className={`flex-1 w-full overflow-hidden transition-all duration-300 ${!showHeader ? "pt-0" : ""} ${!showNavBar ? "pb-0" : ""}`}>
+      <div className={`flex-1 w-full overflow-hidden transition-all duration-300 ${!showHeader ? "pt-0" : tabs.length > 0 ? "pt-20" : "pt-12"} ${!showNavBar ? "pb-0" : ""}`}>
         {currentUrl ? (
           <div className="w-full h-full bg-white/5 overflow-hidden relative">
             {/* Clickable areas to show header/nav when hidden - larger areas for easier clicking */}
