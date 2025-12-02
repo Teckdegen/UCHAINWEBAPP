@@ -1,6 +1,6 @@
 "use client"
 
-import { Code, Book, Globe, Wallet } from "lucide-react"
+import { Code, Book, Globe, Wallet, CheckCircle, AlertCircle, Zap, Settings } from "lucide-react"
 
 export default function DocsPage() {
   return (
@@ -220,6 +220,297 @@ function ConnectButton() {
   // Add more chains as needed
 ]}`}</code>
           </pre>
+        </section>
+
+        {/* Vanilla JavaScript */}
+        <section className="glass-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Code className="w-4 h-4 text-green-500" />
+            Vanilla JavaScript (No React)
+          </h2>
+          <p className="text-xs text-gray-300">
+            Use the SDK without React for vanilla JavaScript or other frameworks:
+          </p>
+          <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+            <code>{`import { createWalletManager } from "unchainedwallet"
+
+const walletManager = createWalletManager({
+  projectId: "your-walletconnect-project-id",
+  chains: [mainnet, polygon],
+  walletConnectRPCs: [
+    { chainId: 1, rpcUrl: "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY" },
+  ],
+})
+
+// Connect
+const address = await walletManager.connect()
+
+// Get account
+const account = walletManager.getAccount()
+
+// Send transaction
+const txHash = await walletManager.sendTransaction(
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "0x16345785D8A0000", // 0.1 ETH in hex
+)
+
+// Listen to events
+walletManager.on("connect", (data) => {
+  console.log("Connected:", data.account)
+})
+
+walletManager.on("disconnect", () => {
+  console.log("Disconnected")
+})`}</code>
+          </pre>
+        </section>
+
+        {/* API Reference */}
+        <section className="glass-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Book className="w-4 h-4 text-green-500" />
+            API Reference
+          </h2>
+          
+          <div className="space-y-4 text-xs">
+            <div>
+              <h3 className="font-semibold text-green-400 mb-2">createUnchainedConfig(options?)</h3>
+              <p className="text-gray-300 mb-2">Creates a wagmi config optimized for Unchained Wallet detection.</p>
+              <div className="bg-black/50 rounded p-3 space-y-1">
+                <p className="text-gray-400"><span className="text-green-400">projectId</span>: string (optional) - WalletConnect Project ID</p>
+                <p className="text-gray-400"><span className="text-green-400">chains</span>: Chain[] (optional) - Array of chains to support (default: [mainnet])</p>
+                <p className="text-gray-400"><span className="text-green-400">rpcUrls</span>: Record&lt;number, string&gt; (optional) - Custom RPC URLs for chains</p>
+                <p className="text-gray-400"><span className="text-green-400">walletConnectRPCs</span>: WalletConnectRPC[] (optional) - Custom RPC configs for WalletConnect</p>
+                <p className="text-gray-400"><span className="text-green-400">enableMetaMask</span>: boolean (optional, default: true) - Enable MetaMask connector</p>
+                <p className="text-gray-400"><span className="text-green-400">enableCoinbase</span>: boolean (optional, default: true) - Enable Coinbase Wallet connector</p>
+                <p className="text-gray-400"><span className="text-green-400">enableWalletConnect</span>: boolean (optional, default: true if projectId provided) - Enable WalletConnect</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-green-400 mb-2">WalletSelector Component</h3>
+              <p className="text-gray-300 mb-2">React component for wallet selection UI or simple connect button.</p>
+              <div className="bg-black/50 rounded p-3 space-y-1">
+                <p className="text-gray-400"><span className="text-green-400">showUI</span>: boolean (optional, default: true) - Show wallet selection UI</p>
+                <p className="text-gray-400"><span className="text-green-400">onlyUnchained</span>: boolean (optional) - Show only Unchained Wallet</p>
+                <p className="text-gray-400"><span className="text-green-400">disableMetaMask</span>: boolean (optional) - Disable MetaMask option</p>
+                <p className="text-gray-400"><span className="text-green-400">disableCoinbase</span>: boolean (optional) - Disable Coinbase Wallet option</p>
+                <p className="text-gray-400"><span className="text-green-400">disableWalletConnect</span>: boolean (optional) - Disable WalletConnect option</p>
+                <p className="text-gray-400"><span className="text-green-400">walletConnectRPCs</span>: WalletConnectRPC[] (optional) - Custom RPCs for WalletConnect</p>
+                <p className="text-gray-400"><span className="text-green-400">onConnect</span>: (address: string, walletType: string) =&gt; void (optional) - Callback on connect</p>
+                <p className="text-gray-400"><span className="text-green-400">onDisconnect</span>: () =&gt; void (optional) - Callback on disconnect</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-green-400 mb-2">useConnectWallet()</h3>
+              <p className="text-gray-300 mb-2">React hook for direct wallet connection without UI.</p>
+              <div className="bg-black/50 rounded p-3 space-y-1">
+                <p className="text-gray-400">Returns: <span className="text-green-400">{`{ connect, disconnect, isConnected, address, isConnecting, error, detectedWallet, isUnchained }`}</span></p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-green-400 mb-2">Utility Functions</h3>
+              <div className="bg-black/50 rounded p-3 space-y-1">
+                <p className="text-gray-400"><span className="text-green-400">isUnchainedInstalled()</span>: boolean - Check if Unchained Wallet is installed</p>
+                <p className="text-gray-400"><span className="text-green-400">isMetaMaskInstalled()</span>: boolean - Check if MetaMask is installed</p>
+                <p className="text-gray-400"><span className="text-green-400">isCoinbaseWalletInstalled()</span>: boolean - Check if Coinbase Wallet is installed</p>
+                <p className="text-gray-400"><span className="text-green-400">getDetectedWallet()</span>: object - Get detected wallet information</p>
+                <p className="text-gray-400"><span className="text-green-400">connectWallet()</span>: Promise&lt;string&gt; - Connect to wallet directly</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Best Practices */}
+        <section className="glass-card p-6 space-y-3 text-xs">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            Best Practices
+          </h2>
+          <ul className="text-gray-300 space-y-2 ml-4 list-disc">
+            <li>
+              <span className="font-semibold">Always provide RPC URLs for WalletConnect:</span> WalletConnect requires RPC URLs for each chain. 
+              Use services like Alchemy, Infura, or QuickNode to get reliable RPC endpoints.
+            </li>
+            <li>
+              <span className="font-semibold">Handle connection errors gracefully:</span> Users may reject connection requests or have no wallet installed.
+            </li>
+            <li>
+              <span className="font-semibold">Use the simple button for better UX:</span> Set <code>showUI={false}</code> for a cleaner, 
+              one-click connection experience that auto-connects to Unchained if available.
+            </li>
+            <li>
+              <span className="font-semibold">Test with multiple wallets:</span> Ensure your dApp works with Unchained, MetaMask, and Coinbase Wallet.
+            </li>
+            <li>
+              <span className="font-semibold">Use standard wagmi hooks:</span> Once connected, use <code>useSendTransaction</code>, 
+              <code>useBalance</code>, and other wagmi hooks for a consistent experience.
+            </li>
+          </ul>
+        </section>
+
+        {/* Common Issues */}
+        <section className="glass-card p-6 space-y-3 text-xs">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-yellow-500" />
+            Troubleshooting
+          </h2>
+          <div className="space-y-3">
+            <div>
+              <p className="font-semibold text-yellow-400 mb-1">WalletConnect not working</p>
+              <p className="text-gray-300">
+                Make sure you've provided RPC URLs in <code>walletConnectRPCs</code> for all chains you want to support. 
+                WalletConnect requires RPC URLs to function properly.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-yellow-400 mb-1">Unchained Wallet not detected</p>
+              <p className="text-gray-300">
+                Ensure <code>window.ethereum.isUnchained === true</code>. The SDK automatically prioritizes Unchained when this flag is present.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-yellow-400 mb-1">Transaction fails</p>
+              <p className="text-gray-300">
+                Use standard wagmi hooks like <code>useSendTransaction</code> after connecting. The SDK handles connection, 
+                but transactions use normal wagmi/viem patterns.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-yellow-400 mb-1">TypeScript errors</p>
+              <p className="text-gray-300">
+                Make sure you have <code>wagmi</code>, <code>viem</code>, and <code>@wagmi/connectors</code> installed as peer dependencies.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Examples */}
+        <section className="glass-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Zap className="w-4 h-4 text-green-500" />
+            Complete Examples
+          </h2>
+          
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-green-400 mb-2">Example 1: Full dApp with Send Transaction</h3>
+              <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+                <code>{`import { createUnchainedConfig, WalletSelector } from "unchainedwallet"
+import { WagmiProvider } from "wagmi"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { useAccount, useSendTransaction, useBalance } from "wagmi"
+import { parseEther } from "viem"
+import { mainnet } from "wagmi/chains"
+
+const config = createUnchainedConfig({
+  projectId: "your-project-id",
+  chains: [mainnet],
+  walletConnectRPCs: [
+    { chainId: 1, rpcUrl: "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY" },
+  ],
+})
+
+const queryClient = new QueryClient()
+
+function App() {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <WalletSelector showUI={false} />
+        <SendTransaction />
+      </QueryClientProvider>
+    </WagmiProvider>
+  )
+}
+
+function SendTransaction() {
+  const { address, isConnected } = useAccount()
+  const { data: balance } = useBalance({ address })
+  const { sendTransaction, isPending } = useSendTransaction()
+
+  if (!isConnected) return null
+
+  return (
+    <div>
+      <p>Balance: {balance?.formatted} ETH</p>
+      <button 
+        onClick={() => sendTransaction({
+          to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+          value: parseEther("0.1"),
+        })}
+        disabled={isPending}
+      >
+        {isPending ? "Sending..." : "Send 0.1 ETH"}
+      </button>
+    </div>
+  )
+}`}</code>
+              </pre>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-green-400 mb-2">Example 2: Custom UI with Hook</h3>
+              <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+                <code>{`import { useConnectWallet } from "unchainedwallet"
+import { useAccount, useBalance } from "wagmi"
+
+function CustomWalletButton() {
+  const { connect, disconnect, isConnected, address, isUnchained } = useConnectWallet()
+  const { data: balance } = useBalance({ address })
+
+  if (isConnected) {
+    return (
+      <div className="wallet-info">
+        <p>Connected to {isUnchained ? "Unchained" : "Wallet"}</p>
+        <p>Address: {address}</p>
+        <p>Balance: {balance?.formatted} {balance?.symbol}</p>
+        <button onClick={disconnect}>Disconnect</button>
+      </div>
+    )
+  }
+
+  return (
+    <button onClick={connect} className="connect-btn">
+      {isUnchained ? "Connect Unchained Wallet" : "Connect Wallet"}
+    </button>
+  )
+}`}</code>
+              </pre>
+            </div>
+          </div>
+        </section>
+
+        {/* Resources */}
+        <section className="glass-card p-6 space-y-3 text-xs">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Globe className="w-4 h-4 text-blue-400" />
+            Resources
+          </h2>
+          <ul className="text-gray-300 space-y-1">
+            <li>
+              <a href="https://wagmi.sh" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
+                wagmi Documentation
+              </a> - Complete wagmi API reference
+            </li>
+            <li>
+              <a href="https://viem.sh" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
+                viem Documentation
+              </a> - Ethereum TypeScript interface
+            </li>
+            <li>
+              <a href="https://docs.walletconnect.com" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
+                WalletConnect Docs
+              </a> - WalletConnect integration guide
+            </li>
+            <li>
+              <a href="https://www.npmjs.com/package/unchainedwallet" target="_blank" rel="noopener noreferrer" className="text-green-400 hover:underline">
+                NPM Package
+              </a> - View on npmjs.com
+            </li>
+          </ul>
         </section>
       </div>
     </div>

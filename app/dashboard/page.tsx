@@ -18,7 +18,7 @@ import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
-import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon } from "lucide-react"
+import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
@@ -394,8 +394,8 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            // PEPU: Bridge + Swap + Receive (no Send)
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            // PEPU: Bridge + Swap + Receive + Tokens
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link href="/bridge" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
                   <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -412,6 +412,15 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <p className="text-sm font-semibold">Unchained Swap</p>
+              </Link>
+
+              <Link href="/tokens" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Coins className="w-5 h-5 text-green-500" />
+                  </div>
+                </div>
+                <p className="text-sm font-semibold">Tokens</p>
               </Link>
 
               <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
