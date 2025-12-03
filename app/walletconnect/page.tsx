@@ -151,10 +151,48 @@ function WalletConnectContent() {
         </div>
 
         <div className="glass-card p-6 space-y-4">
-          <h3 className="font-semibold">How to use:</h3>
+          <h3 className="font-semibold">How to get a WalletConnect URI:</h3>
+          <div className="space-y-4 text-sm text-gray-400">
+            <div>
+              <strong className="text-white">Method 1: From a dApp (Most Common)</strong>
+              <ol className="list-decimal list-inside mt-2 space-y-1 ml-2">
+                <li>Go to any dApp that supports WalletConnect (Uniswap, Aave, OpenSea, etc.)</li>
+                <li>Click "Connect Wallet" or "WalletConnect" button</li>
+                <li>The dApp will show a QR code or a connection link</li>
+                <li>Copy the WalletConnect URI (starts with <code className="bg-black/50 px-1 rounded">wc:</code>)</li>
+                <li>Paste it here to connect</li>
+              </ol>
+            </div>
+            
+            <div>
+              <strong className="text-white">Method 2: From a QR Code</strong>
+              <ol className="list-decimal list-inside mt-2 space-y-1 ml-2">
+                <li>Scan a WalletConnect QR code with your phone</li>
+                <li>The QR code contains a WalletConnect URI</li>
+                <li>Copy the URI from the scanned result</li>
+                <li>Paste it here</li>
+              </ol>
+            </div>
+            
+            <div>
+              <strong className="text-white">Method 3: Direct Link</strong>
+              <p className="mt-2 ml-2">
+                Some dApps provide direct links. If you see a link like:
+              </p>
+              <code className="block bg-black/50 p-2 rounded text-xs break-all mt-2 ml-2">
+                https://app.uniswap.org/connect?uri=wc:...
+              </code>
+              <p className="mt-2 ml-2">
+                Copy the part after <code className="bg-black/50 px-1 rounded">uri=</code> (the <code className="bg-black/50 px-1 rounded">wc:...</code> part)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-card p-6 space-y-4">
+          <h3 className="font-semibold">How to use the URI:</h3>
           <ol className="space-y-2 text-sm text-gray-400 list-decimal list-inside">
-            <li>Get a WalletConnect URI from a dApp (usually shown as QR code or link)</li>
-            <li>Paste it here or use a deeplink: <code className="bg-black/50 px-1 rounded">/walletconnect?uri=wc:...</code></li>
+            <li>Paste the WalletConnect URI in the input field above</li>
             <li>Click "Connect" to pair</li>
             <li>You'll be redirected to approve the connection</li>
             <li>After approval, you're connected!</li>
@@ -162,10 +200,26 @@ function WalletConnectContent() {
         </div>
 
         <div className="glass-card p-6 space-y-4">
-          <h3 className="font-semibold">Example Deeplink:</h3>
+          <h3 className="font-semibold">Example WalletConnect URI Format:</h3>
           <code className="block bg-black/50 p-3 rounded text-xs break-all">
-            {typeof window !== 'undefined' ? window.location.origin : ''}/walletconnect?uri=wc:1234567890abcdef@1?bridge=https%3A%2F%2Fbridge.walletconnect.org&key=abc123
+            wc:1234567890abcdef@1?bridge=https%3A%2F%2Fbridge.walletconnect.org&key=abc123def456
           </code>
+          <p className="text-xs text-gray-500 mt-2">
+            Note: This is just an example format. Real URIs are longer and unique for each connection.
+          </p>
+        </div>
+
+        <div className="glass-card p-6 space-y-4 border border-yellow-500/30 bg-yellow-500/10">
+          <h3 className="font-semibold text-yellow-400">💡 Quick Test:</h3>
+          <p className="text-sm text-gray-300">
+            To test WalletConnect, you can:
+          </p>
+          <ol className="list-decimal list-inside mt-2 space-y-1 text-sm text-gray-400 ml-2">
+            <li>Visit a dApp like <a href="https://app.uniswap.org" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Uniswap</a> or <a href="https://opensea.io" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">OpenSea</a></li>
+            <li>Click "Connect Wallet" → Choose "WalletConnect"</li>
+            <li>They'll show a QR code or connection link</li>
+            <li>Copy the URI and paste it here!</li>
+          </ol>
         </div>
       </div>
     </div>
