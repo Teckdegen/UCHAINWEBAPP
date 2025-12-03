@@ -147,37 +147,63 @@ export default function SwapPage() {
       const walletAddress = active.address
       setWalletAddress(walletAddress)
 
-      // Fetch all tokens from API (handle pagination)
+      // Fetch all tokens from API (handle pagination) - gracefully handle CORS errors
       let allApiTokens: any[] = []
-      let nextPageParams: any = null
-      let hasMore = true
+      let apiTokens: Token[] = []
+      
+      try {
+        let nextPageParams: any = null
+        let hasMore = true
+        let pageCount = 0
+        const maxPages = 5 // Limit pages to avoid infinite loops
 
-      while (hasMore) {
-        const url = nextPageParams
-          ? `${TOKENS_API}?${new URLSearchParams(nextPageParams).toString()}`
-          : TOKENS_API
-        const response = await fetch(url)
-        const data = await response.json()
+        while (hasMore && pageCount < maxPages) {
+          try {
+            const url = nextPageParams
+              ? `${TOKENS_API}?${new URLSearchParams(nextPageParams).toString()}`
+              : TOKENS_API
+            const response = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+              },
+            })
+            
+            if (!response.ok) {
+              throw new Error(`API returned ${response.status}`)
+            }
+            
+            const data = await response.json()
 
-        allApiTokens = [...allApiTokens, ...data.items]
+            allApiTokens = [...allApiTokens, ...data.items]
 
-        if (data.next_page_params) {
-          nextPageParams = data.next_page_params
-        } else {
-          hasMore = false
+            if (data.next_page_params) {
+              nextPageParams = data.next_page_params
+              pageCount++
+            } else {
+              hasMore = false
+            }
+          } catch (fetchError) {
+            console.warn("[Swap] API fetch error (CORS or network):", fetchError)
+            hasMore = false // Stop trying to fetch more pages
+          }
         }
-      }
 
-      // Process tokens from API
-      const apiTokens: Token[] = allApiTokens
-        .filter((item: any) => item.type === "ERC-20" && item.decimals)
-        .map((item: any) => ({
-          address: item.address_hash.toLowerCase(),
-          decimals: Number.parseInt(item.decimals),
-          symbol: item.symbol,
-          name: item.name,
-          isNative: false,
-        }))
+        // Process tokens from API
+        apiTokens = allApiTokens
+          .filter((item: any) => item.type === "ERC-20" && item.decimals)
+          .map((item: any) => ({
+            address: item.address_hash.toLowerCase(),
+            decimals: Number.parseInt(item.decimals),
+            symbol: item.symbol,
+            name: item.name,
+            isNative: false,
+          }))
+      } catch (apiError) {
+        console.warn("[Swap] Failed to fetch tokens from API (CORS blocked):", apiError)
+        // Continue without API tokens - we'll use RPC discovery instead
+        apiTokens = []
+      }
 
       // Also scan via RPC to find tokens user actually holds (like dashboard does)
       const rpcDiscoveredTokens: Token[] = []
@@ -235,20 +261,25 @@ export default function SwapPage() {
 
       // Merge API tokens + RPC discovered tokens
       const allTokensList = [...apiTokens, ...rpcDiscoveredTokens]
-      // Add native PEPU at the beginning
+      // Add native PEPU at the beginning - ALWAYS include it
       const tokensWithNative = [PEPU_NATIVE, ...allTokensList]
 
-      // Fetch balances for all tokens
+      console.log(`[Swap] Loading balances for ${tokensWithNative.length} tokens (PEPU + ${allTokensList.length} others)`)
+
+      // Fetch balances for all tokens - prioritize PEPU native
       const tokensWithBalances = await Promise.all(
         tokensWithNative.map(async (token) => {
           try {
             let balance = "0"
             if (token.isNative) {
+              // Always fetch PEPU balance first
               balance = await getNativeBalance(walletAddress, chainId)
-              console.log(`[Swap] PEPU balance for ${walletAddress}:`, balance)
+              console.log(`[Swap] PEPU native balance for ${walletAddress}:`, balance)
             } else {
               balance = await getTokenBalance(token.address, walletAddress, chainId)
-              console.log(`[Swap] Token ${token.symbol} balance:`, balance)
+              if (Number.parseFloat(balance) > 0) {
+                console.log(`[Swap] Token ${token.symbol} balance:`, balance)
+              }
             }
             return { ...token, balance }
           } catch (error) {
@@ -257,6 +288,8 @@ export default function SwapPage() {
           }
         }),
       )
+      
+      console.log(`[Swap] Loaded ${tokensWithBalances.length} tokens with balances`)
 
       setAllTokens(tokensWithBalances)
 
