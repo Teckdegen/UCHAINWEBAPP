@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getWallets } from "@/lib/wallet"
 import { CheckCircle, XCircle, Copy } from "lucide-react"
 
-export default function WalletConnectPage() {
+function WalletConnectContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [uri, setUri] = useState("")
@@ -169,6 +169,21 @@ export default function WalletConnectPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function WalletConnectPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading WalletConnect...</p>
+        </div>
+      </div>
+    }>
+      <WalletConnectContent />
+    </Suspense>
   )
 }
 
