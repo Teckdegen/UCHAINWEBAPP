@@ -316,6 +316,35 @@ export async function rejectSessionRequest(
 }
 
 /**
+ * Pair with a WalletConnect URI (deeplink)
+ * This allows connecting to dApps via WalletConnect deeplink
+ */
+export async function pair(uri: string): Promise<void> {
+  if (typeof window === "undefined") {
+    throw new Error("WalletConnect pairing requires browser environment")
+  }
+
+  if (!uri || !uri.startsWith("wc:")) {
+    throw new Error("Invalid WalletConnect URI. Must start with 'wc:'")
+  }
+
+  try {
+    const client = await getWalletConnectClient()
+    
+    // Pair with the URI
+    await client.pair({ uri })
+    
+    console.log("[WalletConnect] Pairing initiated with URI:", uri.substring(0, 50) + "...")
+    
+    // The session_proposal event will be triggered automatically
+    // and handled by setupWalletConnectEventListeners, which will redirect to /connect
+  } catch (error: any) {
+    console.error("[WalletConnect] Pairing failed:", error)
+    throw new Error(error.message || "Failed to pair with WalletConnect URI")
+  }
+}
+
+/**
  * Initialize WalletConnect client (called on app startup)
  */
 export async function initWalletConnect(): Promise<void> {
