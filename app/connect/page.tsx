@@ -46,9 +46,9 @@ export default function ConnectPage() {
     } else {
       // Regular injected provider flow
       const originParam = searchParams.get("origin") || "Unknown App"
-      const methodParam = searchParams.get("method") || "eth_requestAccounts"
-      setOrigin(originParam)
-      setMethod(methodParam)
+    const methodParam = searchParams.get("method") || "eth_requestAccounts"
+    setOrigin(originParam)
+    setMethod(methodParam)
     }
 
     const allWallets = getWallets()
@@ -102,12 +102,12 @@ export default function ConnectPage() {
         const dappName = new URL(returnOrigin).hostname
         provider.addConnectedDApp(returnOrigin, dappName)
 
-        const result = {
-          approved: true,
+      const result = {
+        approved: true,
           accounts: [wallet.address.toLowerCase()],
-          chainId: "0x1",
-          timestamp: Date.now(),
-        }
+        chainId: "0x1",
+        timestamp: Date.now(),
+      }
 
         // Redirect back to dApp with result (like OAuth callback)
         const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
@@ -135,7 +135,7 @@ export default function ConnectPage() {
         setRejected(true)
         setTimeout(() => {
           window.close()
-          if (window.opener) {
+    if (window.opener) {
             window.close()
           } else {
             router.push("/dashboard")
@@ -231,8 +231,8 @@ export default function ConnectPage() {
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-mono text-green-400 break-all">{getDomainName(origin)}</p>
-                  <p className="text-xs text-gray-500 mt-1">{origin}</p>
+              <p className="text-sm font-mono text-green-400 break-all">{getDomainName(origin)}</p>
+              <p className="text-xs text-gray-500 mt-1">{origin}</p>
                 </>
               )}
             </div>
