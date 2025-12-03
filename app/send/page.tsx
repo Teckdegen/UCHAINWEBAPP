@@ -412,7 +412,8 @@ export default function SendPage() {
 
           {/* Send Button */}
           <button
-            onClick={handleS            disabled={loading || !recipient || !amount || !password || !selectedToken}
+            onClick={handleSend}
+            disabled={loading || !recipient || !amount || !password || !selectedToken}
             className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}
