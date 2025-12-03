@@ -38,42 +38,44 @@ export default function BrowserPage() {
       setHistory(JSON.parse(savedHistory))
     }
 
-    // Inject window.ethereum into iframe when it loads
+    // Inject window.ethereum into iframe using script tag (works for cross-origin)
     const injectEthereumProvider = () => {
       if (!iframeRef.current || !currentUrl) return
 
       try {
         const iframe = iframeRef.current
-        const iframeWindow = iframe.contentWindow
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
         
-        if (!iframeWindow) return
+        if (!iframeDoc) {
+          // Cross-origin iframe - can't access document
+          // The script will be loaded via src attribute instead
+          console.log('[Browser] Cross-origin iframe detected, using script src injection');
+          return;
+        }
 
-        // Inject ethereum provider script into iframe
-        const script = `
+        // Check if already injected
+        if (iframeDoc.querySelector('script[data-unchained-inject]')) {
+          return;
+        }
+
+        // Create script element with injector code
+        const script = iframeDoc.createElement('script');
+        script.setAttribute('data-unchained-inject', 'true');
+        script.textContent = `
           (function() {
-            if (window.ethereum && window.ethereum.isUnchained) {
-              return; // Already injected
-            }
-
+            if (window.ethereum && window.ethereum.isUnchained) return;
+            const isInIframe = true;
             const walletOrigin = '${window.location.origin}';
-            
-            // Create ethereum provider
             const provider = {
               isUnchained: true,
               isMetaMask: true,
               isCoinbaseWallet: true,
-              
               request: async (args) => {
                 const { method, params = [] } = args;
                 const requestId = Math.random().toString(36).substring(7);
-                
-                // Send request to parent (browser page)
                 return new Promise((resolve, reject) => {
-                  // Store resolve/reject for later
                   window._unchainedPendingRequests = window._unchainedPendingRequests || {};
                   window._unchainedPendingRequests[requestId] = { resolve, reject };
-                  
-                  // Send message to parent
                   window.parent.postMessage({
                     type: 'UNCHAINED_WALLET_REQUEST',
                     requestId,
@@ -81,14 +83,11 @@ export default function BrowserPage() {
                     params,
                     origin: window.location.origin
                   }, walletOrigin);
-                  
-                  // Listen for response
                   const messageListener = (event) => {
                     if (event.origin !== walletOrigin) return;
                     if (event.data.type === 'UNCHAINED_WALLET_RESPONSE' && event.data.requestId === requestId) {
                       window.removeEventListener('message', messageListener);
                       delete window._unchainedPendingRequests[requestId];
-                      
                       if (event.data.error) {
                         reject(new Error(event.data.error));
                       } else {
@@ -96,10 +95,7 @@ export default function BrowserPage() {
                       }
                     }
                   };
-                  
                   window.addEventListener('message', messageListener);
-                  
-                  // Timeout after 5 minutes
                   setTimeout(() => {
                     window.removeEventListener('message', messageListener);
                     delete window._unchainedPendingRequests[requestId];
@@ -107,59 +103,59 @@ export default function BrowserPage() {
                   }, 300000);
                 });
               },
-              
               on: (event, listener) => {
                 window._unchainedListeners = window._unchainedListeners || {};
                 window._unchainedListeners[event] = window._unchainedListeners[event] || [];
                 window._unchainedListeners[event].push(listener);
               },
-              
               removeListener: (event, listener) => {
                 if (window._unchainedListeners && window._unchainedListeners[event]) {
                   window._unchainedListeners[event] = window._unchainedListeners[event].filter(l => l !== listener);
                 }
               },
-              
-              chainId: '0x1',
-              networkVersion: '1'
+              removeAllListeners: (event) => {
+                if (event) {
+                  if (window._unchainedListeners) delete window._unchainedListeners[event];
+                } else {
+                  window._unchainedListeners = {};
+                }
+              },
+              get chainId() { return '0x1'; },
+              get networkVersion() { return '1'; }
             };
-            
             Object.defineProperty(window, 'ethereum', {
               value: provider,
               writable: false,
               configurable: false
             });
-            
-            // Dispatch initialized event
             window.dispatchEvent(new Event('ethereum#initialized'));
           })();
         `;
-
-        // Try to inject script into iframe
-        // Note: This only works for same-origin iframes
-        // For cross-origin, we'll use postMessage
-        try {
-          iframeWindow.eval(script);
-        } catch (e) {
-          // Cross-origin iframe - can't inject directly
-          // We'll handle via postMessage from iframe
-          console.log('[Browser] Cross-origin iframe, will use postMessage');
+        
+        // Inject into iframe head or body
+        const target = iframeDoc.head || iframeDoc.body || iframeDoc.documentElement;
+        if (target) {
+          target.insertBefore(script, target.firstChild);
+          console.log('[Browser] Ethereum provider injected into iframe');
         }
       } catch (error) {
-        console.error('[Browser] Error injecting ethereum provider:', error);
+        // Cross-origin iframe - can't inject directly
+        console.log('[Browser] Cannot inject into cross-origin iframe, will use postMessage');
       }
     };
 
     // Inject when iframe loads
     if (iframeRef.current) {
       const iframe = iframeRef.current;
-      iframe.onload = () => {
-        setTimeout(injectEthereumProvider, 500); // Wait for iframe to fully load
+      const handleLoad = () => {
+        setTimeout(injectEthereumProvider, 100); // Wait for iframe to load
       };
+      
+      iframe.addEventListener('load', handleLoad);
       
       // Also try immediately if already loaded
       if (iframe.contentDocument?.readyState === 'complete') {
-        injectEthereumProvider();
+        handleLoad();
       }
     }
 

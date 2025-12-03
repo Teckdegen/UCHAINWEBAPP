@@ -31,8 +31,36 @@ async function getWalletConnectClient(): Promise<any> {
     // Dynamic import to avoid Turbopack parsing issues
     const { SignClient } = await import("@walletconnect/sign-client")
 
-    // Restore existing sessions from storage
-    const storedSessions = getStoredSessions()
+    // Ensure localStorage is available and valid
+    if (typeof window === "undefined" || !window.localStorage) {
+      throw new Error("localStorage is not available")
+    }
+
+    // Create a safe storage adapter
+    const storage = {
+      getItem: (key: string) => {
+        try {
+          return window.localStorage.getItem(key) || null
+        } catch (e) {
+          console.warn("[WalletConnect] Error getting item:", e)
+          return null
+        }
+      },
+      setItem: (key: string, value: string) => {
+        try {
+          window.localStorage.setItem(key, value)
+        } catch (e) {
+          console.warn("[WalletConnect] Error setting item:", e)
+        }
+      },
+      removeItem: (key: string) => {
+        try {
+          window.localStorage.removeItem(key)
+        } catch (e) {
+          console.warn("[WalletConnect] Error removing item:", e)
+        }
+      },
+    }
     
     signClient = await SignClient.init({
       projectId,
@@ -42,8 +70,7 @@ async function getWalletConnectClient(): Promise<any> {
         url: window.location.origin,
         icons: [`${window.location.origin}/icon.png`],
       },
-      // Restore sessions if available
-      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+      storage: storage,
     })
 
     console.log("[WalletConnect] SignClient initialized:", signClient)
