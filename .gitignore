@@ -1,3 +1,4 @@
 node_modules
 .next/
 sdk/dist/
+test-wallet-connect.html
