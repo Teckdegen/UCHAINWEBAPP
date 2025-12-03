@@ -48,8 +48,16 @@ export default function BrowserPage() {
         const iframeWindow = iframe.contentWindow
 
         if (!iframeDoc || !iframeWindow) {
-          // Cross-origin iframe - use proxy approach
-          console.log('[Browser] Cross-origin iframe detected - provider will be injected via proxy');
+          // Cross-origin iframe - cannot inject directly due to browser security (Same-Origin Policy)
+          // The iframe should have been loaded through /proxy?url=... which makes it same-origin
+          // If we still can't access it, check if it's actually going through proxy
+          const iframeSrc = iframe.src || '';
+          if (iframeSrc.includes('/proxy?url=')) {
+            console.log('[Browser] Iframe is loaded through proxy - injection should work in proxy page');
+          } else {
+            console.warn('[Browser] Cross-origin iframe detected but NOT using proxy - window.ethereum will NOT be available');
+            console.warn('[Browser] To fix: The URL should be routed through /proxy?url=...');
+          }
           return;
         }
 
@@ -323,18 +331,45 @@ export default function BrowserPage() {
       targetUrl = "https://" + targetUrl
     }
 
+    // Check if URL is cross-origin (different domain)
+    try {
+      const targetOrigin = new URL(targetUrl).origin
+      const currentOrigin = window.location.origin
+      
+      // If cross-origin, use proxy to enable injection
+      if (targetOrigin !== currentOrigin && !targetUrl.includes('/proxy?')) {
+        // Route through proxy for cross-origin URLs
+        const proxyUrl = `${currentOrigin}/proxy?url=${encodeURIComponent(targetUrl)}`
+        targetUrl = proxyUrl
+        console.log('[Browser] Cross-origin detected, routing through proxy:', targetUrl)
+      }
+    } catch (e) {
+      console.error('[Browser] Error checking origin:', e)
+    }
+
     setCurrentUrl(targetUrl)
     setUrl(targetUrl)
     setLoading(true)
     setShowHistory(false)
     setIsSearchFocused(false) // Reset search focus after navigation
 
-    const newEntry = {
-      url: targetUrl,
-      title: new URL(targetUrl).hostname,
-      timestamp: Date.now(),
+    try {
+      const urlObj = new URL(targetUrl.includes('/proxy?') ? new URLSearchParams(targetUrl.split('?')[1]).get('url') || targetUrl : targetUrl)
+      const newEntry = {
+        url: targetUrl.includes('/proxy?') ? new URLSearchParams(targetUrl.split('?')[1]).get('url') || targetUrl : targetUrl,
+        title: urlObj.hostname,
+        timestamp: Date.now(),
+      }
+      setHistory((prev) => [newEntry, ...prev.filter((h) => h.url !== newEntry.url)])
+    } catch (e) {
+      // If URL parsing fails, use original URL
+      const newEntry = {
+        url: targetUrl,
+        title: targetUrl,
+        timestamp: Date.now(),
+      }
+      setHistory((prev) => [newEntry, ...prev.filter((h) => h.url !== targetUrl)])
     }
-    setHistory((prev) => [newEntry, ...prev.filter((h) => h.url !== targetUrl)])
 
     setTimeout(() => setLoading(false), 1000)
   }
