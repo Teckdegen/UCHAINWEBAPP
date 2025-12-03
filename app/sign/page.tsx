@@ -79,32 +79,32 @@ export default function SignPage() {
       }).catch(console.error)
     } else {
       // Regular injected provider flow
-      const methodParam = searchParams.get("method") || ""
-      const originParam = searchParams.get("origin") || "Unknown"
-      const paramsParam = searchParams.get("params")
+    const methodParam = searchParams.get("method") || ""
+    const originParam = searchParams.get("origin") || "Unknown"
+    const paramsParam = searchParams.get("params")
 
-      setMethod(methodParam)
-      setOrigin(originParam)
+    setMethod(methodParam)
+    setOrigin(originParam)
 
-      if (paramsParam) {
-        try {
-          const parsedParams = JSON.parse(decodeURIComponent(paramsParam))
-          setParams(parsedParams)
+    if (paramsParam) {
+      try {
+        const parsedParams = JSON.parse(decodeURIComponent(paramsParam))
+        setParams(parsedParams)
 
-          // Assess risk
-          if (methodParam === "eth_sendTransaction") {
-            const tx = parsedParams[0] || parsedParams
-            const value = tx.value ? ethers.toBeHex(tx.value) : "0x0"
-            const valueNum = Number.parseFloat(ethers.formatEther(value))
-            if (valueNum > 1 || (tx.data && tx.data.length > 100)) {
-              setRiskLevel("high")
-            } else if (tx.data && tx.data !== "0x") {
-              setRiskLevel("medium")
-            }
+        // Assess risk
+        if (methodParam === "eth_sendTransaction") {
+          const tx = parsedParams[0] || parsedParams
+          const value = tx.value ? ethers.toBeHex(tx.value) : "0x0"
+          const valueNum = Number.parseFloat(ethers.formatEther(value))
+          if (valueNum > 1 || (tx.data && tx.data.length > 100)) {
+            setRiskLevel("high")
+          } else if (tx.data && tx.data !== "0x") {
+            setRiskLevel("medium")
           }
-        } catch (e) {
-          console.error("[v0] Error parsing params:", e)
         }
+      } catch (e) {
+        console.error("[v0] Error parsing params:", e)
+      }
       }
     }
 
@@ -185,7 +185,7 @@ export default function SignPage() {
         
         setTimeout(() => {
           window.close() // Close popup if opened in popup
-          if (window.opener) {
+      if (window.opener) {
             window.close()
           } else {
             router.push("/dashboard")
@@ -232,7 +232,7 @@ export default function SignPage() {
       }
     } else {
       // Regular injected provider flow
-      setRejected(true)
+    setRejected(true)
 
       const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
       const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin

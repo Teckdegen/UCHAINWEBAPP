@@ -176,6 +176,8 @@ export function lockWallet() {
   // Clear session password when locking
   if (typeof window !== "undefined") {
     sessionStorage.removeItem(SESSION_PASSWORD_KEY)
+    // Also clear any other session data that might be related
+    // This ensures a clean lock state
   }
 }
 

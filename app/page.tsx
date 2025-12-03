@@ -2,12 +2,14 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getWalletState } from "@/lib/wallet"
+import { getWallets, getWalletState, lockWallet } from "@/lib/wallet"
 
 export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
+    // Wallet is already locked by ProviderInit on page reload
+    // Just check state and redirect accordingly
     const wallets = getWallets()
     const state = getWalletState()
 
