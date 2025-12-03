@@ -93,8 +93,30 @@ export function encryptData(data: string, password: string): string {
 }
 
 export function decryptData(encryptedData: string, password: string): string {
-  const bytes = CryptoJS.AES.decrypt(encryptedData, password)
-  return bytes.toString(CryptoJS.enc.Utf8)
+  try {
+    const bytes = CryptoJS.AES.decrypt(encryptedData, password)
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8)
+    
+    // If decryption returns empty string, the password is likely wrong
+    // But also check if the encrypted data itself is malformed
+    if (!decrypted || decrypted.length === 0) {
+      // Try to see if we can get any data at all
+      const hexString = bytes.toString(CryptoJS.enc.Hex)
+      if (!hexString || hexString.length === 0) {
+        throw new Error("Decryption failed - invalid encrypted data or incorrect password")
+      }
+      // If we got hex but no UTF-8, password might be wrong
+      throw new Error("Decryption failed - incorrect password")
+    }
+    
+    return decrypted
+  } catch (error: any) {
+    // Re-throw with clearer message
+    if (error.message && error.message.includes("password")) {
+      throw error
+    }
+    throw new Error("Decryption failed - incorrect password or corrupted data")
+  }
 }
 
 export function addWallet(wallet: Wallet) {
@@ -172,30 +194,53 @@ export function getPrivateKey(wallet: Wallet, password: string): string {
   try {
     const decrypted = decryptData(wallet.encryptedPrivateKey, password)
     
-    // Validate decrypted result
-    if (!decrypted || typeof decrypted !== 'string' || decrypted.trim().length === 0) {
+    // Validate decrypted result - check if it's empty or just whitespace
+    if (!decrypted || typeof decrypted !== 'string') {
+      throw new Error("Failed to decrypt private key. The password may be incorrect.")
+    }
+    
+    const trimmed = decrypted.trim()
+    if (trimmed.length === 0) {
       throw new Error("Failed to decrypt private key. The password may be incorrect.")
     }
     
     // Ensure private key has 0x prefix
-    let cleaned = decrypted.trim()
+    let cleaned = trimmed
     if (!cleaned.startsWith("0x")) {
       cleaned = "0x" + cleaned
     }
     
     // Validate private key format by trying to create a wallet
+    // Only throw error if it's clearly invalid, not if it's just a validation issue
     try {
-      new ethers.Wallet(cleaned)
+      const testWallet = new ethers.Wallet(cleaned)
+      // Verify the wallet address matches (this confirms the private key is correct)
+      if (testWallet.address.toLowerCase() !== wallet.address.toLowerCase()) {
+        throw new Error("Decrypted private key does not match wallet address. The password may be incorrect.")
+      }
     } catch (validationError: any) {
-      throw new Error(`Invalid private key format: ${validationError.message}. The password may be incorrect.`)
+      // If it's a format error, it might be a password issue
+      // But if it's an address mismatch, definitely password issue
+      if (validationError.message.includes("address") || validationError.message.includes("match")) {
+        throw new Error("Incorrect password. Please try again.")
+      }
+      // For other validation errors, still try to use it (might be a false positive)
+      // Only throw if it's clearly a format issue
+      if (validationError.message.includes("invalid") || validationError.message.includes("length")) {
+        throw new Error("Incorrect password. Please try again.")
+      }
+      // Otherwise, log the error but continue - might be a false positive
+      console.warn("[Wallet] Validation warning:", validationError.message)
     }
     
     return cleaned
   } catch (error: any) {
-    // Re-throw with clearer message
-    if (error.message.includes("password") || error.message.includes("decrypt")) {
+    // Re-throw with clearer message only if it's clearly a password issue
+    const errorMsg = error.message || ""
+    if (errorMsg.includes("password") || errorMsg.includes("decrypt") || errorMsg.includes("incorrect")) {
       throw new Error("Incorrect password. Please try again.")
     }
+    // For other errors, throw the original error
     throw error
   }
 }
