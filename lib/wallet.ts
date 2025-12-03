@@ -317,8 +317,9 @@ export async function createWalletFromExistingMnemonic(
   const nextIndex = maxIndex + 1
 
   const path = `m/44'/60'/0'/0/${nextIndex}`
-  // Ethers v6: derive directly via Wallet.fromPhrase with a custom path
-  const child = ethers.Wallet.fromPhrase(mnemonic, undefined, path)
+  // Ethers v6: use HDNodeWallet to derive from path
+  const hdNode = ethers.HDNodeWallet.fromPhrase(mnemonic)
+  const child = hdNode.derivePath(path)
 
   const encryptedPrivateKey = encryptData(child.privateKey, password)
 
