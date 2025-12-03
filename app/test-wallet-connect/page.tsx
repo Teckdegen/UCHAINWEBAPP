@@ -36,7 +36,123 @@ export default function TestWalletConnectPage() {
     
     // Check wallet type
     checkWallet()
+    
+    // Check if we're returning from /connect page
+    checkReturnFromConnect()
+    
+    // Check if already connected
+    checkConnectionStatus()
+    
+    // Listen for wallet_result events (when returning from /connect)
+    const handleWalletResult = (event: any) => {
+      const { result } = event.detail || {}
+      if (result) {
+        try {
+          const parsed = typeof result === 'string' ? JSON.parse(result) : result
+          if (parsed.accounts && parsed.accounts.length > 0) {
+            setCurrentAccount(parsed.accounts[0])
+            const chainId = parsed.chainId ? parseInt(parsed.chainId, 16) : null
+            setCurrentChainId(chainId)
+            log('Connection approved!', 'success')
+            log(`Connected: ${parsed.accounts[0]}`, 'success')
+          }
+        } catch (e) {
+          // Try to get accounts directly
+          updateConnectionStatus()
+        }
+      }
+    }
+    
+    window.addEventListener('wallet_result', handleWalletResult)
+    
+    // Also listen for accountsChanged events
+    if (typeof window !== 'undefined' && window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+        if (accounts && accounts.length > 0) {
+          setCurrentAccount(accounts[0])
+          log('Account changed', 'info')
+        } else {
+          setCurrentAccount(null)
+        }
+        updateConnectionStatus()
+      })
+      
+      window.ethereum.on('chainChanged', (chainId: string) => {
+        const chainIdNum = parseInt(chainId, 16)
+        setCurrentChainId(chainIdNum)
+        log(`Chain changed: ${chainIdNum}`, 'info')
+      })
+    }
+    
+    return () => {
+      window.removeEventListener('wallet_result', handleWalletResult)
+    }
   }, [router])
+  
+  const checkReturnFromConnect = () => {
+    // Check URL params for return from connect
+    if (typeof window === 'undefined') return
+    
+    const urlParams = new URLSearchParams(window.location.search)
+    const walletStatus = urlParams.get('wallet_status')
+    
+    if (walletStatus === 'approved') {
+      const result = urlParams.get('wallet_result')
+      if (result) {
+        try {
+          const parsed = JSON.parse(decodeURIComponent(result))
+          if (parsed.accounts && parsed.accounts.length > 0) {
+            setCurrentAccount(parsed.accounts[0])
+            const chainId = parsed.chainId ? parseInt(parsed.chainId, 16) : null
+            setCurrentChainId(chainId)
+            log('Connection approved!', 'success')
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname)
+          }
+        } catch (e) {
+          console.error('Error parsing return result:', e)
+        }
+      }
+    }
+  }
+  
+  const checkConnectionStatus = async () => {
+    if (typeof window === 'undefined' || !window.ethereum) return
+    
+    try {
+      // Try to get current accounts
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+      if (accounts && accounts.length > 0) {
+        setCurrentAccount(accounts[0])
+        const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' })
+        const chainId = parseInt(chainIdHex, 16)
+        setCurrentChainId(chainId)
+        log('Already connected', 'success')
+      }
+    } catch (error) {
+      // Not connected yet
+      console.log('Not connected yet')
+    }
+  }
+  
+  const updateConnectionStatus = async () => {
+    if (typeof window === 'undefined' || !window.ethereum) return
+    
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+      if (accounts && accounts.length > 0) {
+        setCurrentAccount(accounts[0])
+        const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' })
+        const chainId = parseInt(chainIdHex, 16)
+        setCurrentChainId(chainId)
+      } else {
+        setCurrentAccount(null)
+        setCurrentChainId(null)
+      }
+    } catch (error) {
+      console.error('Error updating connection status:', error)
+    }
+  }
 
   const log = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
     const entry: LogEntry = {
