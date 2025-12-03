@@ -211,6 +211,44 @@ export default function BrowserPage() {
     }
   }, [history])
 
+  // Check for return from wallet approval and send result to iframe
+  useEffect(() => {
+    if (!currentUrl || !iframeRef.current) return
+
+    // Check URL params for wallet result
+    const urlParams = new URLSearchParams(window.location.search)
+    const walletStatus = urlParams.get("wallet_status")
+    const requestId = urlParams.get("requestId")
+
+    if (walletStatus === "approved" && requestId) {
+      // Get result from localStorage
+      const resultStr = localStorage.getItem(`browser_result_${requestId}`)
+      if (resultStr) {
+        try {
+          const result = JSON.parse(resultStr)
+          
+          // Send result to iframe
+          if (iframeRef.current.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+              type: "UNCHAINED_WALLET_RESPONSE",
+              requestId,
+              result: result.accounts || result
+            }, "*") // Use * for cross-origin, or specific origin if known
+          }
+          
+          // Clean up
+          localStorage.removeItem(`browser_result_${requestId}`)
+          localStorage.removeItem(`browser_request_${requestId}`)
+          
+          // Clean URL
+          window.history.replaceState({}, "", window.location.pathname)
+        } catch (e) {
+          console.error("[Browser] Error parsing result:", e)
+        }
+      }
+    }
+  }, [currentUrl])
+
   // Hide both header and nav bar when searching
   useEffect(() => {
     if (isSearchFocused || url.length > 0) {

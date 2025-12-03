@@ -179,6 +179,21 @@ export default function SignPage() {
 
       setApproved(true)
 
+      // Check if this is from browser iframe
+      const fromBrowser = searchParams.get("from") === "browser"
+      const requestId = searchParams.get("requestId")
+      
+      if (fromBrowser && requestId) {
+        // This is from browser iframe - store result
+        localStorage.setItem(`browser_result_${requestId}`, JSON.stringify(result))
+        
+        // Redirect back to browser
+        setTimeout(() => {
+          router.push("/browser?wallet_status=approved&requestId=" + requestId)
+        }, 1000)
+        return
+      }
+
       if (isWalletConnect && wcRequest) {
         // Handle WalletConnect request response
         const wcMod = await import("@/lib/walletConnect")
