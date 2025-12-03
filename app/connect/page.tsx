@@ -109,16 +109,33 @@ export default function ConnectPage() {
         timestamp: Date.now(),
       }
 
-        // Redirect back to dApp with result (like OAuth callback)
-        const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
-        const returnUrlObj = new URL(returnUrl)
-        returnUrlObj.searchParams.set("wallet_result", encodeURIComponent(JSON.stringify(result)))
-        returnUrlObj.searchParams.set("wallet_status", "approved")
+        // Check if this is from browser iframe
+        const fromBrowser = searchParams.get("from") === "browser"
+        const requestId = searchParams.get("requestId")
         
-        setApproved(true)
-        setTimeout(() => {
-          window.location.href = returnUrlObj.toString()
-        }, 1000)
+        if (fromBrowser && requestId) {
+          // This is from browser iframe - send result back via postMessage
+          setApproved(true)
+          
+          // Store result for iframe to pick up
+          localStorage.setItem(`browser_result_${requestId}`, JSON.stringify(result))
+          
+          // Redirect back to browser
+          setTimeout(() => {
+            router.push("/browser")
+          }, 1000)
+        } else {
+          // Regular redirect back to dApp with result (like OAuth callback)
+          const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+          const returnUrlObj = new URL(returnUrl)
+          returnUrlObj.searchParams.set("wallet_result", encodeURIComponent(JSON.stringify(result)))
+          returnUrlObj.searchParams.set("wallet_status", "approved")
+          
+          setApproved(true)
+          setTimeout(() => {
+            window.location.href = returnUrlObj.toString()
+          }, 1000)
+        }
       }
     } catch (err: any) {
       setError(err.message || "Connection failed")

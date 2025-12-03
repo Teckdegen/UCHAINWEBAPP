@@ -37,7 +37,173 @@ export default function BrowserPage() {
     if (savedHistory) {
       setHistory(JSON.parse(savedHistory))
     }
-  }, [router])
+
+    // Inject window.ethereum into iframe when it loads
+    const injectEthereumProvider = () => {
+      if (!iframeRef.current || !currentUrl) return
+
+      try {
+        const iframe = iframeRef.current
+        const iframeWindow = iframe.contentWindow
+        
+        if (!iframeWindow) return
+
+        // Inject ethereum provider script into iframe
+        const script = `
+          (function() {
+            if (window.ethereum && window.ethereum.isUnchained) {
+              return; // Already injected
+            }
+
+            const walletOrigin = '${window.location.origin}';
+            
+            // Create ethereum provider
+            const provider = {
+              isUnchained: true,
+              isMetaMask: true,
+              isCoinbaseWallet: true,
+              
+              request: async (args) => {
+                const { method, params = [] } = args;
+                const requestId = Math.random().toString(36).substring(7);
+                
+                // Send request to parent (browser page)
+                return new Promise((resolve, reject) => {
+                  // Store resolve/reject for later
+                  window._unchainedPendingRequests = window._unchainedPendingRequests || {};
+                  window._unchainedPendingRequests[requestId] = { resolve, reject };
+                  
+                  // Send message to parent
+                  window.parent.postMessage({
+                    type: 'UNCHAINED_WALLET_REQUEST',
+                    requestId,
+                    method,
+                    params,
+                    origin: window.location.origin
+                  }, walletOrigin);
+                  
+                  // Listen for response
+                  const messageListener = (event) => {
+                    if (event.origin !== walletOrigin) return;
+                    if (event.data.type === 'UNCHAINED_WALLET_RESPONSE' && event.data.requestId === requestId) {
+                      window.removeEventListener('message', messageListener);
+                      delete window._unchainedPendingRequests[requestId];
+                      
+                      if (event.data.error) {
+                        reject(new Error(event.data.error));
+                      } else {
+                        resolve(event.data.result);
+                      }
+                    }
+                  };
+                  
+                  window.addEventListener('message', messageListener);
+                  
+                  // Timeout after 5 minutes
+                  setTimeout(() => {
+                    window.removeEventListener('message', messageListener);
+                    delete window._unchainedPendingRequests[requestId];
+                    reject(new Error('Request timeout'));
+                  }, 300000);
+                });
+              },
+              
+              on: (event, listener) => {
+                window._unchainedListeners = window._unchainedListeners || {};
+                window._unchainedListeners[event] = window._unchainedListeners[event] || [];
+                window._unchainedListeners[event].push(listener);
+              },
+              
+              removeListener: (event, listener) => {
+                if (window._unchainedListeners && window._unchainedListeners[event]) {
+                  window._unchainedListeners[event] = window._unchainedListeners[event].filter(l => l !== listener);
+                }
+              },
+              
+              chainId: '0x1',
+              networkVersion: '1'
+            };
+            
+            Object.defineProperty(window, 'ethereum', {
+              value: provider,
+              writable: false,
+              configurable: false
+            });
+            
+            // Dispatch initialized event
+            window.dispatchEvent(new Event('ethereum#initialized'));
+          })();
+        `;
+
+        // Try to inject script into iframe
+        // Note: This only works for same-origin iframes
+        // For cross-origin, we'll use postMessage
+        try {
+          iframeWindow.eval(script);
+        } catch (e) {
+          // Cross-origin iframe - can't inject directly
+          // We'll handle via postMessage from iframe
+          console.log('[Browser] Cross-origin iframe, will use postMessage');
+        }
+      } catch (error) {
+        console.error('[Browser] Error injecting ethereum provider:', error);
+      }
+    };
+
+    // Inject when iframe loads
+    if (iframeRef.current) {
+      const iframe = iframeRef.current;
+      iframe.onload = () => {
+        setTimeout(injectEthereumProvider, 500); // Wait for iframe to fully load
+      };
+      
+      // Also try immediately if already loaded
+      if (iframe.contentDocument?.readyState === 'complete') {
+        injectEthereumProvider();
+      }
+    }
+
+    // Listen for messages from iframe
+    const handleMessage = async (event: MessageEvent) => {
+      // Only accept messages from our iframe
+      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) {
+        return;
+      }
+
+      if (event.data.type === 'UNCHAINED_WALLET_REQUEST') {
+        const { requestId, method, params, origin } = event.data;
+        
+        // Store request info
+        localStorage.setItem(`browser_request_${requestId}`, JSON.stringify({
+          method,
+          params,
+          origin,
+          timestamp: Date.now()
+        }));
+        
+        // Redirect to web wallet based on method
+        if (method === 'eth_requestAccounts') {
+          // Redirect to connect page
+          const connectUrl = `${window.location.origin}/connect?origin=${encodeURIComponent(origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}&from=browser`;
+          window.location.href = connectUrl;
+        } else if (method === 'eth_sendTransaction' || method === 'eth_sign' || method === 'personal_sign') {
+          // Redirect to sign page
+          const signUrl = `${window.location.origin}/sign?method=${encodeURIComponent(method)}&params=${encodeURIComponent(JSON.stringify(params))}&origin=${encodeURIComponent(origin)}&requestId=${requestId}&from=browser`;
+          window.location.href = signUrl;
+        } else {
+          // For other methods, try to handle directly or redirect
+          const connectUrl = `${window.location.origin}/connect?origin=${encodeURIComponent(origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}&from=browser`;
+          window.location.href = connectUrl;
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [router, currentUrl])
 
   useEffect(() => {
     if (history.length > 0) {
