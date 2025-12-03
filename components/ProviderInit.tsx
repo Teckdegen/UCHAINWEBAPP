@@ -20,8 +20,17 @@ export default function ProviderInit() {
     if (typeof window !== "undefined") {
       // Skip locking if we're on the docs page
       if (pathname === "/docs") {
-        // Don't lock on docs page
+        // Don't lock on docs page, just initialize user ID
         getOrCreateUserId()
+        
+        // Initialize WalletConnect client (client-side only, no SSR)
+        setTimeout(() => {
+          import("@/lib/walletConnect")
+            .then((mod) => mod.initWalletConnect())
+            .catch((error) => {
+              console.error("[ProviderInit] Failed to initialize WalletConnect:", error)
+            })
+        }, 0)
         return
       }
       
