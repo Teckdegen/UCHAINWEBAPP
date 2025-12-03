@@ -46,17 +46,14 @@ export default function DocsPage() {
             Installation
           </h2>
           <p className="text-xs text-gray-300">
-            Install the required packages:
+            Install the Unchained SDK:
           </p>
           <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
-            <code>pnpm add wagmi viem @tanstack/react-query wagmi/connectors</code>
+            <code>npm install unchainedwallet</code>
           </pre>
-          <p className="text-xs text-gray-300">
-            Or use the Unchained SDK (includes everything):
+          <p className="text-xs text-gray-400 mt-2">
+            The SDK includes wagmi, viem, and WalletConnect connectors. No additional packages needed!
           </p>
-          <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
-            <code>pnpm add unchainedwallet</code>
-          </pre>
         </section>
 
         {/* Quick Start with SDK */}
@@ -478,6 +475,112 @@ function CustomWalletButton() {
     </button>
   )
 }`}</code>
+              </pre>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-green-400 mb-2">Example 3: ERC20 Token Transfer</h3>
+              <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+                <code>{`import { useWriteContract, useWaitForTransactionReceipt } from "wagmi"
+import { parseUnits } from "viem"
+
+const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+const USDC_ABI = [{
+  name: "transfer",
+  type: "function",
+  stateMutability: "nonpayable",
+  inputs: [
+    { name: "to", type: "address" },
+    { name: "amount", type: "uint256" }
+  ],
+  outputs: [{ name: "", type: "bool" }]
+}]
+
+function SendUSDC() {
+  const { writeContract, data: hash, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const sendUSDC = () => {
+    writeContract({
+      address: USDC_ADDRESS,
+      abi: USDC_ABI,
+      functionName: "transfer",
+      args: [
+        "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+        parseUnits("100", 6) // 100 USDC (6 decimals)
+      ]
+    })
+  }
+
+  return (
+    <div>
+      <button onClick={sendUSDC} disabled={isPending || isConfirming}>
+        {isPending ? "Confirming..." : isConfirming ? "Sending..." : "Send 100 USDC"}
+      </button>
+      {isSuccess && <p>Transaction successful!</p>}
+    </div>
+  )
+}`}</code>
+              </pre>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-green-400 mb-2">Example 4: Multi-Chain Support</h3>
+              <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+                <code>{`import { createUnchainedConfig, WalletSelector } from "unchainedwallet"
+import { WagmiProvider } from "wagmi"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { mainnet, polygon, arbitrum, optimism } from "wagmi/chains"
+import { useAccount, useSwitchChain } from "wagmi"
+
+const config = createUnchainedConfig({
+  projectId: "your-project-id",
+  chains: [mainnet, polygon, arbitrum, optimism],
+  walletConnectRPCs: [
+    { chainId: 1, rpcUrl: "https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY" },
+    { chainId: 137, rpcUrl: "https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY" },
+    { chainId: 42161, rpcUrl: "https://arb-mainnet.g.alchemy.com/v2/YOUR_KEY" },
+    { chainId: 10, rpcUrl: "https://opt-mainnet.g.alchemy.com/v2/YOUR_KEY" },
+  ],
+})
+
+function ChainSwitcher() {
+  const { chain } = useAccount()
+  const { chains, switchChain } = useSwitchChain()
+
+  return (
+    <select 
+      value={chain?.id} 
+      onChange={(e) => switchChain({ chainId: Number(e.target.value) })}
+    >
+      {chains.map((c) => (
+        <option key={c.id} value={c.id}>
+          {c.name}
+        </option>
+      ))}
+    </select>
+  )
+}`}</code>
+              </pre>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-green-400 mb-2">Example 5: Only Unchained Wallet</h3>
+              <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+                <code>{`import { WalletSelector } from "unchainedwallet"
+
+// Only show Unchained Wallet option
+<WalletSelector 
+  onlyUnchained={true}
+  showUI={false} // Simple button
+/>
+
+// Or disable other wallets
+<WalletSelector 
+  disableMetaMask={true}
+  disableCoinbase={true}
+  disableWalletConnect={true}
+/>`}</code>
               </pre>
             </div>
           </div>
