@@ -88,15 +88,31 @@ export default function SwapPage() {
         let balance = "0"
         if (fromToken.isNative) {
           balance = await getNativeBalance(walletAddress, chainId)
+          console.log(`[Swap] Refreshed PEPU balance:`, balance)
         } else {
           balance = await getTokenBalance(fromToken.address, walletAddress, chainId)
+          console.log(`[Swap] Refreshed ${fromToken.symbol} balance:`, balance)
         }
-        // Only update if balance changed
-        if (balance !== fromToken.balance) {
-          setFromToken({ ...fromToken, balance })
-        }
+        // Always update balance
+        setFromToken((prev) => ({ ...prev, balance }))
+        
+        // Also update in allTokens and fromTokens
+        setAllTokens((prev) =>
+          prev.map((t) =>
+            t.address.toLowerCase() === fromToken.address.toLowerCase()
+              ? { ...t, balance }
+              : t
+          )
+        )
+        setFromTokens((prev) =>
+          prev.map((t) =>
+            t.address.toLowerCase() === fromToken.address.toLowerCase()
+              ? { ...t, balance }
+              : t
+          )
+        )
       } catch (error) {
-        console.error("Error refreshing balance:", error)
+        console.error("[Swap] Error refreshing balance:", error)
       }
     }
 
@@ -229,11 +245,14 @@ export default function SwapPage() {
             let balance = "0"
             if (token.isNative) {
               balance = await getNativeBalance(walletAddress, chainId)
+              console.log(`[Swap] PEPU balance for ${walletAddress}:`, balance)
             } else {
               balance = await getTokenBalance(token.address, walletAddress, chainId)
+              console.log(`[Swap] Token ${token.symbol} balance:`, balance)
             }
             return { ...token, balance }
-          } catch {
+          } catch (error) {
+            console.error(`[Swap] Error fetching balance for ${token.symbol}:`, error)
             return { ...token, balance: "0" }
           }
         }),
@@ -256,17 +275,25 @@ export default function SwapPage() {
       }
 
       // Filter tokens with balance > 0 for "from" selector
-      // PEPU native should be included if user has balance, and always at top
+      // PEPU native should ALWAYS be included (even if balance is 0) so user can see it
       const tokensWithBalance = tokensWithBalances.filter(
-        (token) => Number.parseFloat(token.balance || "0") > 0,
+        (token) => {
+          const balance = Number.parseFloat(token.balance || "0")
+          // Always include native PEPU, or tokens with balance > 0
+          return token.isNative || balance > 0
+        },
       )
 
-      // Sort: PEPU native first if it has balance, then others
+      // Sort: PEPU native first always, then others by balance
       const sortedFromTokens = tokensWithBalance.sort((a, b) => {
         if (a.isNative) return -1
         if (b.isNative) return 1
-        return 0
+        const balanceA = Number.parseFloat(a.balance || "0")
+        const balanceB = Number.parseFloat(b.balance || "0")
+        return balanceB - balanceA // Sort by balance descending
       })
+      
+      console.log(`[Swap] Tokens with balance:`, sortedFromTokens.map(t => ({ symbol: t.symbol, balance: t.balance })))
       setFromTokens(sortedFromTokens)
 
       // For "to" selector, show all tokens (so you can swap into new ones),
