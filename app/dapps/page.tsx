@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWalletState } from "@/lib/wallet"
+import { getWallets } from "@/lib/wallet"
 import { getUnchainedProvider, type ConnectedDApp } from "@/lib/provider"
 import { Trash2, ExternalLink, Plus } from "lucide-react"
 import Link from "next/link"
@@ -14,12 +14,14 @@ export default function DAppsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
       return
     }
 
+    // No password required to enter page
     const provider = getUnchainedProvider()
     setConnectedDApps(provider.getConnectedDApps())
     setLoading(false)

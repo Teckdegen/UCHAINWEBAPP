@@ -8,15 +8,12 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Wallet is already locked by ProviderInit on page reload
-    // Just check state and redirect accordingly
+    // Check if wallet exists and redirect accordingly
+    // No password required to access pages
     const wallets = getWallets()
-    const state = getWalletState()
 
     if (wallets.length === 0) {
       router.push("/setup")
-    } else if (state.isLocked) {
-      router.push("/unlock")
     } else {
       router.push("/dashboard")
     }

@@ -50,14 +50,7 @@ export default function SendPage() {
       return
     }
 
-    // Check if wallet is locked
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
-      return
-    }
-    
-    // No password required to enter page - only when sending
+    // No password required to enter page - only when sending transactions
     updateActivity()
     loadTokens()
   }, [router, chainId])

@@ -21,9 +21,10 @@ export default function ConnectPage() {
   const [wcProposal, setWcProposal] = useState<any>(null)
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
       return
     }
 

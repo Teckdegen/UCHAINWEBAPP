@@ -35,13 +35,7 @@ export default function BridgePage() {
       return
     }
 
-    // Check if wallet is locked
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
-      return
-    }
-
+    // No password required to enter page
     updateActivity()
     loadBridgeData()
   }, [router])

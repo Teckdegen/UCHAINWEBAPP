@@ -38,9 +38,10 @@ export default function SignPage() {
   const [wcRequest, setWcRequest] = useState<any>(null)
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
       return
     }
 
