@@ -114,15 +114,32 @@ export default function ConnectPage() {
         const requestId = searchParams.get("requestId")
         
         if (fromBrowser && requestId) {
-          // This is from browser iframe - send result back via postMessage
+          // This is from browser iframe - store result and redirect back
           setApproved(true)
           
-          // Store result for iframe to pick up
-          localStorage.setItem(`browser_result_${requestId}`, JSON.stringify(result))
+          // Store result in localStorage (iframe will check for it)
+          localStorage.setItem(`unchained_result_${requestId}`, JSON.stringify(result))
           
-          // Redirect back to browser
+          // Get iframe URL from request storage
+          const requestStr = localStorage.getItem(`browser_request_${requestId}`)
+          let iframeUrl = currentUrl
+          if (requestStr) {
+            try {
+              const requestData = JSON.parse(requestStr)
+              iframeUrl = requestData.iframeUrl || currentUrl
+            } catch (e) {
+              // Use currentUrl
+            }
+          }
+          
+          // Redirect back to browser with iframe URL
           setTimeout(() => {
-            router.push("/browser")
+            if (iframeUrl && iframeUrl !== window.location.origin + '/browser') {
+              // Redirect to browser and restore iframe
+              window.location.href = `/browser?url=${encodeURIComponent(iframeUrl)}&wallet_status=approved&requestId=${requestId}`
+            } else {
+              router.push("/browser?wallet_status=approved&requestId=" + requestId)
+            }
           }, 1000)
         } else {
           // Regular redirect back to dApp with result (like OAuth callback)

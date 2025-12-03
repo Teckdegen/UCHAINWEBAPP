@@ -31,26 +31,71 @@
       const { method, params = [] } = args;
       const requestId = Math.random().toString(36).substring(7);
       
-      // If in iframe, send to parent
+      // Store request info in parent's localStorage (via postMessage)
+      // Then redirect parent window to wallet
       if (isInIframe) {
+        // Send request info to parent first
+        window.parent.postMessage({
+          type: 'UNCHAINED_STORE_REQUEST',
+          requestId,
+          method,
+          params,
+          origin: window.location.origin,
+          iframeUrl: window.location.href
+        }, walletOrigin);
+        
+        // Redirect parent window to wallet (like extension does)
+        const redirectUrl = method === 'eth_requestAccounts'
+          ? `${walletOrigin}/connect?origin=${encodeURIComponent(window.location.origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}&from=browser&iframeUrl=${encodeURIComponent(window.location.href)}`
+          : `${walletOrigin}/sign?method=${encodeURIComponent(method)}&params=${encodeURIComponent(JSON.stringify(params))}&origin=${encodeURIComponent(window.location.origin)}&requestId=${requestId}&from=browser&iframeUrl=${encodeURIComponent(window.location.href)}`;
+        
+        // Redirect parent window
+        try {
+          window.top.location.href = redirectUrl;
+        } catch (e) {
+          // If can't access top, try parent
+          window.parent.location.href = redirectUrl;
+        }
+        
+        // Return promise that will be resolved when we return
         return new Promise((resolve, reject) => {
-          // Store resolve/reject
           window._unchainedPendingRequests = window._unchainedPendingRequests || {};
           window._unchainedPendingRequests[requestId] = { resolve, reject };
           
-          // Send message to parent
-          window.parent.postMessage({
-            type: 'UNCHAINED_WALLET_REQUEST',
-            requestId,
-            method,
-            params,
-            origin: window.location.origin
-          }, walletOrigin);
+          // Listen for response when page returns
+          const checkForResult = setInterval(() => {
+            // Check localStorage for result (parent will set it)
+            try {
+              const resultStr = window.localStorage.getItem(`unchained_result_${requestId}`);
+              const errorStr = window.localStorage.getItem(`unchained_error_${requestId}`);
+              
+              if (resultStr || errorStr) {
+                clearInterval(checkForResult);
+                delete window._unchainedPendingRequests[requestId];
+                window.localStorage.removeItem(`unchained_result_${requestId}`);
+                window.localStorage.removeItem(`unchained_error_${requestId}`);
+                
+                if (errorStr) {
+                  reject(new Error(errorStr));
+                } else {
+                  try {
+                    const result = JSON.parse(resultStr);
+                    resolve(result.accounts || result);
+                  } catch (e) {
+                    resolve(resultStr);
+                  }
+                }
+              }
+            } catch (e) {
+              // Cross-origin - can't access localStorage
+            }
+          }, 100);
           
-          // Listen for response
+          // Also listen for postMessage response
           const messageListener = (event) => {
             if (event.origin !== walletOrigin) return;
             if (event.data.type === 'UNCHAINED_WALLET_RESPONSE' && event.data.requestId === requestId) {
+              clearInterval(checkForResult);
               window.removeEventListener('message', messageListener);
               delete window._unchainedPendingRequests[requestId];
               
@@ -66,6 +111,7 @@
           
           // Timeout after 5 minutes
           setTimeout(() => {
+            clearInterval(checkForResult);
             window.removeEventListener('message', messageListener);
             delete window._unchainedPendingRequests[requestId];
             reject(new Error('Request timeout'));

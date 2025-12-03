@@ -161,15 +161,31 @@ export default function BrowserPage() {
 
     // Listen for messages from iframe
     const handleMessage = async (event: MessageEvent) => {
-      // Only accept messages from our iframe
-      if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) {
-        return;
-      }
+      // Accept messages from iframe
+      if (!iframeRef.current) return;
+      
+      // Check if message is from our iframe (relaxed check for cross-origin)
+      const isFromIframe = event.source === iframeRef.current.contentWindow || 
+                          (event.source && (event.source as any).frameElement === iframeRef.current);
 
-      if (event.data.type === 'UNCHAINED_WALLET_REQUEST') {
+      if (event.data.type === 'UNCHAINED_STORE_REQUEST') {
+        const { requestId, method, params, origin, iframeUrl } = event.data;
+        
+        // Store request info for when we return
+        localStorage.setItem(`browser_request_${requestId}`, JSON.stringify({
+          method,
+          params,
+          origin,
+          iframeUrl,
+          timestamp: Date.now()
+        }));
+        
+        // The iframe will redirect the parent window, so we don't need to do anything here
+        // The redirect happens in the injected script
+      } else if (event.data.type === 'UNCHAINED_WALLET_REQUEST') {
+        // Legacy support - redirect to wallet
         const { requestId, method, params, origin } = event.data;
         
-        // Store request info
         localStorage.setItem(`browser_request_${requestId}`, JSON.stringify({
           method,
           params,
@@ -177,19 +193,12 @@ export default function BrowserPage() {
           timestamp: Date.now()
         }));
         
-        // Redirect to web wallet based on method
         if (method === 'eth_requestAccounts') {
-          // Redirect to connect page
-          const connectUrl = `${window.location.origin}/connect?origin=${encodeURIComponent(origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}&from=browser`;
-          window.location.href = connectUrl;
+          window.location.href = `${window.location.origin}/connect?origin=${encodeURIComponent(origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}&from=browser`;
         } else if (method === 'eth_sendTransaction' || method === 'eth_sign' || method === 'personal_sign') {
-          // Redirect to sign page
-          const signUrl = `${window.location.origin}/sign?method=${encodeURIComponent(method)}&params=${encodeURIComponent(JSON.stringify(params))}&origin=${encodeURIComponent(origin)}&requestId=${requestId}&from=browser`;
-          window.location.href = signUrl;
+          window.location.href = `${window.location.origin}/sign?method=${encodeURIComponent(method)}&params=${encodeURIComponent(JSON.stringify(params))}&origin=${encodeURIComponent(origin)}&requestId=${requestId}&from=browser`;
         } else {
-          // For other methods, try to handle directly or redirect
-          const connectUrl = `${window.location.origin}/connect?origin=${encodeURIComponent(origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}&from=browser`;
-          window.location.href = connectUrl;
+          window.location.href = `${window.location.origin}/connect?origin=${encodeURIComponent(origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}&from=browser`;
         }
       }
     };
@@ -217,27 +226,39 @@ export default function BrowserPage() {
     const requestId = urlParams.get("requestId")
 
     if (walletStatus === "approved" && requestId) {
-      // Get result from localStorage
-      const resultStr = localStorage.getItem(`browser_result_${requestId}`)
+      // Get result from localStorage (set by connect/sign page)
+      const resultStr = localStorage.getItem(`unchained_result_${requestId}`)
       if (resultStr) {
         try {
           const result = JSON.parse(resultStr)
           
-          // Send result to iframe
+          // Send result to iframe via postMessage
           if (iframeRef.current.contentWindow) {
-            iframeRef.current.contentWindow.postMessage({
-              type: "UNCHAINED_WALLET_RESPONSE",
-              requestId,
-              result: result.accounts || result
-            }, "*") // Use * for cross-origin, or specific origin if known
+            try {
+              iframeRef.current.contentWindow.postMessage({
+                type: "UNCHAINED_WALLET_RESPONSE",
+                requestId,
+                result: result.accounts || result
+              }, "*") // Use * for cross-origin
+              
+              console.log("[Browser] Sent result to iframe:", requestId)
+            } catch (e) {
+              console.error("[Browser] Error sending message to iframe:", e)
+            }
           }
           
           // Clean up
-          localStorage.removeItem(`browser_result_${requestId}`)
+          localStorage.removeItem(`unchained_result_${requestId}`)
+          localStorage.removeItem(`unchained_error_${requestId}`)
           localStorage.removeItem(`browser_request_${requestId}`)
           
           // Clean URL
-          window.history.replaceState({}, "", window.location.pathname)
+          const cleanUrl = window.location.pathname + window.location.search
+            .replace(/[?&]wallet_status=[^&]*/, '')
+            .replace(/[?&]requestId=[^&]*/, '')
+            .replace(/^&/, '?')
+            .replace(/\?$/, '')
+          window.history.replaceState({}, "", cleanUrl || window.location.pathname)
         } catch (e) {
           console.error("[Browser] Error parsing result:", e)
         }
