@@ -32,11 +32,7 @@ export default function BrowserPage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false)
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
-      return
-    }
+    // No password required for browser
     const savedHistory = localStorage.getItem("browser_history")
     if (savedHistory) {
       setHistory(JSON.parse(savedHistory))
@@ -227,7 +223,7 @@ export default function BrowserPage() {
               <History className="w-3 h-3" />
             </button>
           )}
-          </div>
+        </div>
         )}
       </div>
 

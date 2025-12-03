@@ -30,7 +30,6 @@ export default function SendPage() {
   const router = useRouter()
   const [recipient, setRecipient] = useState("")
   const [amount, setAmount] = useState("")
-  const [password, setPassword] = useState("")
   const [chainId, setChainId] = useState(1)
   const [balance, setBalance] = useState("0")
   const [selectedToken, setSelectedToken] = useState<Token | null>(null)
@@ -184,7 +183,7 @@ export default function SendPage() {
     setError("")
     setSuccess("")
 
-    if (!recipient || !amount || !password || !selectedToken) {
+    if (!recipient || !amount || !selectedToken) {
       setError("Please fill in all fields")
       return
     }
@@ -203,15 +202,31 @@ export default function SendPage() {
 
       let txHash: string
       if (selectedToken.isNative) {
-        txHash = await sendNativeToken(active, password, recipient, amount, chainId)
+        txHash = await sendNativeToken(active, null, recipient, amount, chainId)
       } else {
-        txHash = await sendToken(active, password, selectedToken.address, recipient, amount, chainId)
+        txHash = await sendToken(active, null, selectedToken.address, recipient, amount, chainId)
       }
 
-      setSuccess(`Transaction sent: ${txHash.slice(0, 10)}...`)
+      // Store transaction in history with full link
+      const explorerUrl = chainId === 1 
+        ? `https://etherscan.io/tx/${txHash}`
+        : `https://pepuscan.com/tx/${txHash}`
+      const txHistory = JSON.parse(localStorage.getItem("transaction_history") || "[]")
+      txHistory.unshift({
+        hash: txHash,
+        type: "send",
+        to: recipient,
+        amount,
+        token: selectedToken.symbol,
+        chainId,
+        timestamp: Date.now(),
+        explorerUrl,
+      })
+      localStorage.setItem("transaction_history", JSON.stringify(txHistory.slice(0, 100)))
+
+      setSuccess(`Transaction sent! View: ${explorerUrl}`)
       setRecipient("")
       setAmount("")
-      setPassword("")
       await loadTokens() // Refresh balances
 
       setTimeout(() => {
@@ -357,18 +372,6 @@ export default function SendPage() {
             </p>
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="input-field"
-            />
-          </div>
-
           {/* Error Message */}
           {error && (
             <div className="glass-card p-4 border border-red-500/50 bg-red-500/10">
@@ -386,7 +389,7 @@ export default function SendPage() {
           {/* Send Button */}
           <button
             onClick={handleSend}
-            disabled={loading || !recipient || !amount || !password || !selectedToken}
+            disabled={loading || !recipient || !amount || !selectedToken}
             className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}

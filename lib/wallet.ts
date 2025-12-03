@@ -167,10 +167,16 @@ export function saveWalletState(state: any) {
   localStorage.setItem(WALLET_STATE_KEY, JSON.stringify(state))
 }
 
+const SESSION_PASSWORD_KEY = "unchained_session_password"
+
 export function lockWallet() {
   const state = getWalletState()
   state.isLocked = true
   saveWalletState(state)
+  // Clear session password when locking
+  if (typeof window !== "undefined") {
+    sessionStorage.removeItem(SESSION_PASSWORD_KEY)
+  }
 }
 
 export function unlockWallet(password: string): boolean {
@@ -184,10 +190,22 @@ export function unlockWallet(password: string): boolean {
     state.isLocked = false
     state.lastActivity = Date.now()
     saveWalletState(state)
+    // Store password in sessionStorage for transaction use
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(SESSION_PASSWORD_KEY, password)
+    }
     return true
   } catch {
     return false
   }
+}
+
+// Get password from session storage (for transactions)
+export function getSessionPassword(): string | null {
+  if (typeof window === "undefined") return null
+  const state = getWalletState()
+  if (state.isLocked) return null
+  return sessionStorage.getItem(SESSION_PASSWORD_KEY)
 }
 
 export function getPrivateKey(wallet: Wallet, password: string): string {

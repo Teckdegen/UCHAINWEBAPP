@@ -14,12 +14,7 @@ export default function ReceivePage() {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
-      return
-    }
-
+    // No password required for receive page
     updateActivity()
     const wallets = getWallets()
     const wallet = getCurrentWallet() || wallets[0]

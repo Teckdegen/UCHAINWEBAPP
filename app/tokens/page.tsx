@@ -30,12 +30,7 @@ export default function TokensPage() {
   const [customError, setCustomError] = useState("")
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
-      return
-    }
-
+    // No password required for viewing tokens
     updateActivity()
     fetchAllTokens()
   }, [router, chainId])

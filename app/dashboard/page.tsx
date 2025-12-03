@@ -18,7 +18,7 @@ import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
-import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins } from "lucide-react"
+import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins, Clock } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
@@ -60,12 +60,7 @@ export default function DashboardPage() {
   } | null>(null)
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
-      return
-    }
-
+    // No password required for viewing dashboard
     updateActivity()
     setWallets(getWallets())
     setCurrentWalletIdState(getCurrentWalletId())
@@ -394,7 +389,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            // PEPU: Bridge + Swap + Receive + Tokens
+            // PEPU: Bridge + Swap + Tokens + Transactions
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link href="/bridge" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
@@ -423,13 +418,13 @@ export default function DashboardPage() {
                 <p className="text-sm font-semibold">Tokens</p>
               </Link>
 
-              <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+              <Link href="/transactions" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
                   <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                    <Clock className="w-5 h-5 text-green-500" />
                   </div>
                 </div>
-                <p className="text-sm font-semibold">Receive</p>
+                <p className="text-sm font-semibold">Transactions</p>
               </Link>
             </div>
             )}

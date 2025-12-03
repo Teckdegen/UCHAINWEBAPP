@@ -1,6 +1,6 @@
 import { ethers } from "ethers"
 import { getProvider } from "./rpc"
-import { getPrivateKey, type Wallet } from "./wallet"
+import { getPrivateKey, getSessionPassword, type Wallet } from "./wallet"
 
 const SUPERBRIDGE_L2_ADDRESS =
   process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS || "0x0000000000000000000000000000000000000000"
@@ -88,12 +88,18 @@ export async function getPoolBalance(): Promise<string> {
 
 export async function executeBridge(
   wallet: Wallet,
-  password: string,
+  password: string | null,
   amount: string,
   chainId = 97741,
 ): Promise<string> {
   try {
-    const privateKey = getPrivateKey(wallet, password)
+    // Use session password if password not provided
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
     const provider = getProvider(chainId)
     const walletInstance = new ethers.Wallet(privateKey, provider)
 

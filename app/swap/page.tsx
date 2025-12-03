@@ -6,7 +6,7 @@ import { ethers } from "ethers"
 import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback, getTokenInfo } from "@/lib/rpc"
-import { TrendingUp, Loader, ArrowRightLeft, ChevronDown } from "lucide-react"
+import { TrendingUp, Loader, ArrowRightLeft, ChevronDown, ExternalLink } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import TokenDetailsModal from "@/components/TokenDetailsModal"
 
@@ -47,7 +47,6 @@ export default function SwapPage() {
   })
   const [amountIn, setAmountIn] = useState("")
   const [amountOut, setAmountOut] = useState("")
-  const [password, setPassword] = useState("")
   const [chainId, setChainId] = useState(97741)
   const [loading, setLoading] = useState(false)
   const [quoting, setQuoting] = useState(false)
@@ -410,8 +409,8 @@ export default function SwapPage() {
   }
 
   const handleApprove = async () => {
-    if (!password || !amountIn) {
-      setError("Missing required fields")
+    if (!amountIn) {
+      setError("Please enter an amount")
       return
     }
 
@@ -420,18 +419,26 @@ export default function SwapPage() {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
 
-      await approveToken(fromToken.address, wallets[0], password, amountIn, fromToken.decimals, chainId)
+      await approveToken(fromToken.address, wallets[0], null, amountIn, fromToken.decimals, chainId)
       setNeedsApproval(false)
-      setSuccess("Token approved")
+      setSuccess("Token approved, executing swap...")
+      
+      // Automatically execute swap after approval
+      if (amountIn && amountOut) {
+        // Small delay to ensure approval is processed, then execute swap
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        await handleSwap()
+      } else {
+        setLoading(false)
+      }
     } catch (err: any) {
       setError(err.message)
-    } finally {
       setLoading(false)
     }
   }
 
   const handleSwap = async () => {
-    if (!password || !amountIn || !amountOut) {
+    if (!amountIn || !amountOut) {
       setError("Missing required fields")
       return
     }
@@ -441,12 +448,30 @@ export default function SwapPage() {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
 
-      const txHash = await executeSwap(fromToken, toToken, amountIn, amountOut, wallets[0], password, 0.5, chainId)
+      const txHash = await executeSwap(fromToken, toToken, amountIn, amountOut, wallets[0], null, 0.5, chainId)
 
-      setSuccess(`Swap successful: ${txHash.slice(0, 10)}...`)
+      // Show full transaction link
+      const explorerUrl = chainId === 1 
+        ? `https://etherscan.io/tx/${txHash}`
+        : `https://pepuscan.com/tx/${txHash}`
+      setSuccess(`Swap successful! View transaction: ${explorerUrl}`)
+      
+      // Store transaction in history
+      const txHistory = JSON.parse(localStorage.getItem("transaction_history") || "[]")
+      txHistory.unshift({
+        hash: txHash,
+        type: "swap",
+        fromToken: fromToken.symbol,
+        toToken: toToken.symbol,
+        amountIn,
+        amountOut,
+        chainId,
+        timestamp: Date.now(),
+        explorerUrl,
+      })
+      localStorage.setItem("transaction_history", JSON.stringify(txHistory.slice(0, 100))) // Keep last 100
       setAmountIn("")
       setAmountOut("")
-      setPassword("")
 
       // Reload tokens to update balances
       setTimeout(() => {
@@ -766,18 +791,6 @@ export default function SwapPage() {
             {quoting && <p className="text-xs text-gray-400 mt-2">Getting quote...</p>}
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="input-field"
-            />
-          </div>
-
           {/* Messages */}
           {error && (
             <div className="glass-card p-4 border border-red-500/50 bg-red-500/10">
@@ -804,7 +817,7 @@ export default function SwapPage() {
           ) : (
             <button
               onClick={handleSwap}
-              disabled={loading || !amountIn || !amountOut || !password || quoting}
+              disabled={loading || !amountIn || !amountOut || quoting}
               className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader className="w-4 h-4 animate-spin" />}

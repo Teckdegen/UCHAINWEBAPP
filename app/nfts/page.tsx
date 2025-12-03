@@ -40,12 +40,7 @@ export default function NFTsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const state = getWalletState()
-    if (state.isLocked) {
-      router.push("/unlock")
-      return
-    }
-
+    // No password required for viewing NFTs
     updateActivity()
     fetchPEPUNFTs()
   }, [router])

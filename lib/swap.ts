@@ -1,6 +1,6 @@
 import { ethers } from "ethers"
 import { getProvider } from "./rpc"
-import { getPrivateKey, type Wallet } from "./wallet"
+import { getPrivateKey, getSessionPassword, type Wallet } from "./wallet"
 
 const QUOTER_ADDRESS = "0xd647b2D80b48e93613Aa6982b85f8909578b4829"
 const SWAP_ROUTER_ADDRESS = "0x150c3F0f16C3D9EB34351d7af9c961FeDc97A0fb"
@@ -368,7 +368,7 @@ export async function checkAllowance(
 export async function approveToken(
   tokenAddress: string,
   wallet: Wallet,
-  password: string,
+  password: string | null,
   amount: string,
   decimals: number,
   chainId = 97741,
@@ -378,7 +378,13 @@ export async function approveToken(
       throw new Error("Native token does not need approval")
     }
 
-    const privateKey = getPrivateKey(wallet, password)
+    // Use session password if password not provided
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
     
     // Validate private key format
     if (!privateKey || typeof privateKey !== 'string') {
@@ -426,12 +432,18 @@ export async function executeSwap(
   amountIn: string,
   amountOut: string,
   wallet: Wallet,
-  password: string,
+  password: string | null,
   slippage = 0.5,
   chainId = 97741,
 ): Promise<string> {
   try {
-    const privateKey = getPrivateKey(wallet, password)
+    // Use session password if password not provided
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
     
     // Validate private key format
     if (!privateKey || typeof privateKey !== 'string') {

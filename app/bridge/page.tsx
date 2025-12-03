@@ -13,7 +13,6 @@ const MAX_POOL = 35009000 // 35,009,000 tokens
 export default function BridgePage() {
   const router = useRouter()
   const [amount, setAmount] = useState("")
-  const [password, setPassword] = useState("")
   const [balance, setBalance] = useState("0")
   const [poolBalance, setPoolBalance] = useState("0")
   const [feePercentage, setFeePercentage] = useState(0.05)
@@ -67,8 +66,8 @@ export default function BridgePage() {
     setTxHash(null)
     setSuccessTx(null)
 
-    if (!amount || !password) {
-      setError("Please enter amount and password")
+    if (!amount) {
+      setError("Please enter amount")
       return
     }
 
@@ -97,7 +96,7 @@ export default function BridgePage() {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
 
-      const hash = await executeBridge(wallets[0], password, amount, 97741)
+      const hash = await executeBridge(wallets[0], null, amount, 97741)
       setTxHash(hash)
 
       const receivedAmount = Number.parseFloat(amount) * receivePercentage
@@ -107,8 +106,21 @@ export default function BridgePage() {
         hash,
       })
 
+      // Store transaction in history with full link
+      const explorerUrl = `https://pepuscan.com/tx/${hash}`
+      const txHistory = JSON.parse(localStorage.getItem("transaction_history") || "[]")
+      txHistory.unshift({
+        hash,
+        type: "bridge",
+        amount,
+        received: receivedAmount.toFixed(6),
+        chainId: 97741,
+        timestamp: Date.now(),
+        explorerUrl,
+      })
+      localStorage.setItem("transaction_history", JSON.stringify(txHistory.slice(0, 100)))
+
       setAmount("")
-      setPassword("")
 
       // Reload pool balance after successful bridge
       setTimeout(() => {
@@ -125,7 +137,6 @@ export default function BridgePage() {
     setSuccessTx(null)
     setTxHash(null)
     setAmount("")
-    setPassword("")
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,7 +169,7 @@ export default function BridgePage() {
   const hasInsufficientL1Pool = bridgeAmount > l1PoolAmount && bridgeAmount > 0
 
   const isBridgeDisabled =
-    loading || !amount || !password || Number.parseFloat(amount) <= 0 || hasInsufficientL1Pool
+    loading || !amount || Number.parseFloat(amount) <= 0 || hasInsufficientL1Pool
 
   const wallets = getWallets()
   const walletAddress = wallets.length > 0 ? wallets[0].address : ""
@@ -272,18 +283,6 @@ export default function BridgePage() {
                   </div>
                 </div>
 
-          {/* Password */}
-                <div className="mb-4">
-                  <label className="block text-white text-sm mb-1">Password</label>
-            <input
-              type="password"
-                    className="w-full bg-white/[0.06] backdrop-blur-sm border border-white/[0.2] rounded-lg px-2 py-1 text-white text-base sm:text-lg focus:outline-none placeholder:text-xs focus:ring-2 focus:ring-white/20 focus:border-white/30"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-            />
-          </div>
-
                 {/* Bridge Button */}
                 <div className="relative w-full mb-4">
                   <button
@@ -327,14 +326,14 @@ export default function BridgePage() {
                     </div>
 
                     <div className="bg-black/40 rounded-lg p-2 mb-3">
-                      <div className="text-xs text-gray-300 mb-1">Transaction Hash:</div>
+                      <div className="text-xs text-gray-300 mb-1">Transaction:</div>
                       <a
                         href={`https://pepuscan.com/tx/${txHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-mono text-xs text-yellow-300 hover:text-yellow-200 underline break-all"
                       >
-                        {txHash}
+                        https://pepuscan.com/tx/{txHash}
                       </a>
                     </div>
 
@@ -375,14 +374,14 @@ export default function BridgePage() {
                     </div>
 
                     <div className="bg-black/40 rounded-lg p-2 mb-3">
-                      <div className="text-xs text-gray-300 mb-1">Transaction Hash:</div>
+                      <div className="text-xs text-gray-300 mb-1">Transaction:</div>
                       <a
                         href={`https://pepuscan.com/tx/${successTx.hash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-mono text-xs text-yellow-300 hover:text-yellow-200 underline break-all"
                       >
-                        {successTx.hash}
+                        https://pepuscan.com/tx/{successTx.hash}
                       </a>
                     </div>
 

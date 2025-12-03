@@ -111,9 +111,9 @@ export async function getNativeBalance(address: string, chainId: number): Promis
     const balance = await provider.getBalance(address)
     return ethers.formatEther(balance)
   } catch (error) {
-    const provider = getProvider(chainId)
-    const balance = await provider.getBalance(address)
-    return ethers.formatEther(balance)
+  const provider = getProvider(chainId)
+  const balance = await provider.getBalance(address)
+  return ethers.formatEther(balance)
   }
 }
 
@@ -171,13 +171,13 @@ export async function getTokenBalance(tokenAddress: string, userAddress: string,
 
     return ethers.formatUnits(balance, decimals)
   } catch (error) {
-    const provider = getProvider(chainId)
-    const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
+  const provider = getProvider(chainId)
+  const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
 
-    const contract = new ethers.Contract(tokenAddress, erc20Abi, provider)
-    const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()])
+  const contract = new ethers.Contract(tokenAddress, erc20Abi, provider)
+  const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()])
 
-    return ethers.formatUnits(balance, decimals)
+  return ethers.formatUnits(balance, decimals)
   }
 }
 
@@ -200,19 +200,19 @@ export async function getTokenInfo(
   } catch {
     try {
       // Fallback to first endpoint
-      const provider = getProvider(chainId)
-      const erc20Abi = [
-        "function name() view returns (string)",
-        "function symbol() view returns (string)",
-        "function decimals() view returns (uint8)",
-      ]
+    const provider = getProvider(chainId)
+    const erc20Abi = [
+      "function name() view returns (string)",
+      "function symbol() view returns (string)",
+      "function decimals() view returns (uint8)",
+    ]
 
-      const contract = new ethers.Contract(tokenAddress, erc20Abi, provider)
-      const [name, symbol, decimals] = await Promise.all([contract.name(), contract.symbol(), contract.decimals()])
+    const contract = new ethers.Contract(tokenAddress, erc20Abi, provider)
+    const [name, symbol, decimals] = await Promise.all([contract.name(), contract.symbol(), contract.decimals()])
 
-      return { name, symbol, decimals: Number.parseInt(decimals) }
-    } catch {
-      return null
+    return { name, symbol, decimals: Number.parseInt(decimals) }
+  } catch {
+    return null
     }
   }
 }

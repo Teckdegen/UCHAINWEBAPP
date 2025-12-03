@@ -1,13 +1,13 @@
 import { ethers } from "ethers"
 import { getProvider, getProviderWithFallback } from "./rpc"
-import { getPrivateKey, type Wallet } from "./wallet"
+import { getPrivateKey, getSessionPassword, type Wallet } from "./wallet"
 
 const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || "0x0000000000000000000000000000000000000000"
 const FEE_PERCENTAGE = 0.5
 
 export async function sendNativeToken(
   wallet: Wallet,
-  password: string,
+  password: string | null,
   toAddress: string,
   amount: string,
   chainId: number,
@@ -17,7 +17,13 @@ export async function sendNativeToken(
       throw new Error("Invalid recipient address")
     }
 
-    const privateKey = getPrivateKey(wallet, password)
+    // Use session password if password not provided
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
     const provider = await getProviderWithFallback(chainId)
     const walletInstance = new ethers.Wallet(privateKey, provider)
 
@@ -44,7 +50,7 @@ export async function sendNativeToken(
 
 export async function sendToken(
   wallet: Wallet,
-  password: string,
+  password: string | null,
   tokenAddress: string,
   toAddress: string,
   amount: string,
@@ -55,7 +61,13 @@ export async function sendToken(
       throw new Error("Invalid recipient address")
     }
 
-    const privateKey = getPrivateKey(wallet, password)
+    // Use session password if password not provided
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
     const provider = await getProviderWithFallback(chainId)
     const walletInstance = new ethers.Wallet(privateKey, provider)
 
