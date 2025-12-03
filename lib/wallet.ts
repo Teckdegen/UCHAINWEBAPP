@@ -169,7 +169,35 @@ export function unlockWallet(password: string): boolean {
 }
 
 export function getPrivateKey(wallet: Wallet, password: string): string {
-  return decryptData(wallet.encryptedPrivateKey, password)
+  try {
+    const decrypted = decryptData(wallet.encryptedPrivateKey, password)
+    
+    // Validate decrypted result
+    if (!decrypted || typeof decrypted !== 'string' || decrypted.trim().length === 0) {
+      throw new Error("Failed to decrypt private key. The password may be incorrect.")
+    }
+    
+    // Ensure private key has 0x prefix
+    let cleaned = decrypted.trim()
+    if (!cleaned.startsWith("0x")) {
+      cleaned = "0x" + cleaned
+    }
+    
+    // Validate private key format by trying to create a wallet
+    try {
+      new ethers.Wallet(cleaned)
+    } catch (validationError: any) {
+      throw new Error(`Invalid private key format: ${validationError.message}. The password may be incorrect.`)
+    }
+    
+    return cleaned
+  } catch (error: any) {
+    // Re-throw with clearer message
+    if (error.message.includes("password") || error.message.includes("decrypt")) {
+      throw new Error("Incorrect password. Please try again.")
+    }
+    throw error
+  }
 }
 
 export function getMnemonic(wallet: Wallet, password: string): string | undefined {

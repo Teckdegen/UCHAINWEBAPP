@@ -379,8 +379,25 @@ export async function approveToken(
     }
 
     const privateKey = getPrivateKey(wallet, password)
+    
+    // Validate private key format
+    if (!privateKey || typeof privateKey !== 'string') {
+      throw new Error("Invalid private key: decryption failed or returned empty value")
+    }
+    
+    // Ensure private key has 0x prefix
+    let cleanedPrivateKey = privateKey.trim()
+    if (!cleanedPrivateKey.startsWith("0x")) {
+      cleanedPrivateKey = "0x" + cleanedPrivateKey
+    }
+    
+    // Validate private key length
+    if (cleanedPrivateKey.length !== 66) {
+      throw new Error(`Invalid private key length: expected 66 characters (with 0x), got ${cleanedPrivateKey.length}. The password may be incorrect.`)
+    }
+    
     const provider = getProvider(chainId)
-    const walletInstance = new ethers.Wallet(privateKey, provider)
+    const walletInstance = new ethers.Wallet(cleanedPrivateKey, provider)
 
     const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, walletInstance)
     // Approve max amount for better UX
@@ -415,8 +432,32 @@ export async function executeSwap(
 ): Promise<string> {
   try {
     const privateKey = getPrivateKey(wallet, password)
+    
+    // Validate private key format
+    if (!privateKey || typeof privateKey !== 'string') {
+      throw new Error("Invalid private key: decryption failed or returned empty value")
+    }
+    
+    // Ensure private key has 0x prefix
+    let cleanedPrivateKey = privateKey.trim()
+    if (!cleanedPrivateKey.startsWith("0x")) {
+      cleanedPrivateKey = "0x" + cleanedPrivateKey
+    }
+    
+    // Validate private key length (should be 66 characters with 0x prefix = 64 hex chars)
+    if (cleanedPrivateKey.length !== 66) {
+      throw new Error(`Invalid private key length: expected 66 characters (with 0x), got ${cleanedPrivateKey.length}. The password may be incorrect.`)
+    }
+    
+    // Try to create wallet to validate private key
+    try {
+      new ethers.Wallet(cleanedPrivateKey)
+    } catch (validationError: any) {
+      throw new Error(`Invalid private key format: ${validationError.message}. The password may be incorrect.`)
+    }
+    
     const provider = getProvider(chainId)
-    const walletInstance = new ethers.Wallet(privateKey, provider)
+    const walletInstance = new ethers.Wallet(cleanedPrivateKey, provider)
 
     const swapRouter = new ethers.Contract(SWAP_ROUTER_ADDRESS, SWAP_ROUTER_ABI, walletInstance)
 
