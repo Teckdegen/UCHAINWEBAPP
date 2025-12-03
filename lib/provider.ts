@@ -221,17 +221,7 @@ export class UnchainedProvider {
   }
 
   private async requestAccounts() {
-    const state = getWalletState()
     const currentOrigin = window.location.origin
-    
-    if (state.isLocked) {
-      // Store the return URL and redirect to unlock
-      const returnUrl = window.location.href
-      localStorage.setItem("unchained_return_url", returnUrl)
-      localStorage.setItem("unchained_return_origin", currentOrigin)
-      window.location.href = `${currentOrigin}/unlock?redirect=${encodeURIComponent(returnUrl)}`
-      throw new Error("Wallet is locked")
-    }
 
     // If we're on the connect page, we've already been redirected
     if (window.location.pathname === "/connect") {
@@ -243,6 +233,7 @@ export class UnchainedProvider {
     }
 
     // Redirect to connect page (like OAuth flow)
+    // No password required - user can approve connection directly
     const returnOrigin = currentOrigin
     const returnUrl = window.location.href
     localStorage.setItem("unchained_return_url", returnUrl)
@@ -256,10 +247,11 @@ export class UnchainedProvider {
 
   private getAccounts() {
     const wallets = getWallets()
-    const state = getWalletState()
-    if (state.isLocked || wallets.length === 0) {
+    if (wallets.length === 0) {
       return []
     }
+    // No lock check - allow connection even if wallet is locked
+    // Password is only required for signing transactions, not for connecting
     const wallet = getCurrentWallet() || wallets[0]
     return [wallet.address.toLowerCase()]
   }
