@@ -43,11 +43,21 @@ export default function SendPage() {
   const tokenSelectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
+    // Check if wallet is locked
     const state = getWalletState()
     if (state.isLocked) {
       router.push("/unlock")
       return
     }
+    
+    // No password required to enter page - only when sending
     updateActivity()
     loadTokens()
   }, [router, chainId])
@@ -402,8 +412,7 @@ export default function SendPage() {
 
           {/* Send Button */}
           <button
-            onClick={handleSend}
-            disabled={loading || !recipient || !amount || !password || !selectedToken}
+            onClick={handleS            disabled={loading || !recipient || !amount || !password || !selectedToken}
             className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}

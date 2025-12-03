@@ -37,9 +37,16 @@ export default function SettingsPage() {
   const [autoLockSeconds, setAutoLockSecondsState] = useState<number>(60)
 
   useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
     // No password required for viewing settings
     updateActivity()
-    setWallets(getWallets())
+    setWallets(wallets)
 
     // Load auto-lock setting
     if (typeof window !== "undefined") {

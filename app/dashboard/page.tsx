@@ -60,9 +60,16 @@ export default function DashboardPage() {
   } | null>(null)
 
   useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
     // No password required for viewing dashboard
     updateActivity()
-    setWallets(getWallets())
+    setWallets(wallets)
     setCurrentWalletIdState(getCurrentWalletId())
     fetchBalances()
     const interval = setInterval(fetchBalances, 30000)

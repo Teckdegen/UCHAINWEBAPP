@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createWallet, addWallet, getMnemonic, importWalletFromMnemonic, importWalletFromPrivateKey } from "@/lib/wallet"
+import { createWallet, addWallet, getMnemonic, importWalletFromMnemonic, importWalletFromPrivateKey, getWallets } from "@/lib/wallet"
 import { Eye, EyeOff, Copy } from "lucide-react"
 import Image from "next/image"
 
@@ -10,6 +10,14 @@ type SetupMode = "menu" | "create" | "import-seed" | "import-key"
 
 export default function SetupPage() {
   const router = useRouter()
+  
+  useEffect(() => {
+    // If wallet already exists, redirect to dashboard
+    const wallets = getWallets()
+    if (wallets.length > 0) {
+      router.push("/dashboard")
+    }
+  }, [router])
   const [mode, setMode] = useState<SetupMode>("menu")
   const [password, setPassword] = useState("")
   const [walletName, setWalletName] = useState("")

@@ -30,6 +30,13 @@ export default function TokensPage() {
   const [customError, setCustomError] = useState("")
 
   useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
     // No password required for viewing tokens
     updateActivity()
     fetchAllTokens()

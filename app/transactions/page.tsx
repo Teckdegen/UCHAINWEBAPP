@@ -26,9 +26,16 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
     updateActivity()
     loadTransactions()
-  }, [chainId])
+  }, [router, chainId])
 
   const loadTransactions = () => {
     try {

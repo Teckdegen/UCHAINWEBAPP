@@ -14,9 +14,15 @@ export default function ReceivePage() {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
     // No password required for receive page
     updateActivity()
-    const wallets = getWallets()
     const wallet = getCurrentWallet() || wallets[0]
     if (wallet) {
       setAddress(wallet.address)

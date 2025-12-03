@@ -69,6 +69,14 @@ export default function SwapPage() {
   const toSelectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
+    // Check if wallet is locked
     const state = getWalletState()
     if (state.isLocked) {
       router.push("/unlock")
