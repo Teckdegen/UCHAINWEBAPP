@@ -7,9 +7,17 @@
 (function() {
   'use strict';
 
+  // CRITICAL: Inject IMMEDIATELY before any dApp code runs
   // Prevent multiple injections
   if (window.ethereum && window.ethereum.isUnchained) {
+    console.log('[Unchained Wallet] Provider already exists');
     return;
+  }
+
+  // Inject as early as possible - even before DOM is ready
+  if (document.readyState === 'loading') {
+    // If document is still loading, inject immediately
+    // This ensures window.ethereum is available before dApp scripts run
   }
 
   // Detect if we're in an iframe
@@ -168,16 +176,44 @@
     enumerable: true,
   });
   
-  // Inject into window
-  Object.defineProperty(window, 'ethereum', {
-    value: provider,
-    writable: false,
-    configurable: false
-  });
+  // Inject into window IMMEDIATELY - before any dApp code runs
+  try {
+    Object.defineProperty(window, 'ethereum', {
+      value: provider,
+      writable: false,
+      configurable: false
+    });
+  } catch (e) {
+    // If defineProperty fails, try direct assignment (less secure but works)
+    window.ethereum = provider;
+  }
+
+  // Dispatch initialized event IMMEDIATELY so dApps can detect it
+  try {
+    window.dispatchEvent(new Event('ethereum#initialized'));
+    
+    // Also try CustomEvent for better compatibility
+    if (typeof CustomEvent !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('ethereum#initialized'));
+    }
+  } catch (e) {
+    // Some browsers may not support custom events
+    console.warn('[Unchained Wallet] Could not dispatch initialization event:', e);
+  }
+
+  // Verify injection
+  const isInjected = window.ethereum && window.ethereum.isUnchained;
   
-  // Dispatch initialized event
-  window.dispatchEvent(new Event('ethereum#initialized'));
-  
-  console.log('[Unchained Wallet] Provider injected', { isInIframe, walletOrigin });
+  if (isInjected) {
+    console.log('[Unchained Wallet] ✅ Provider injected and ready', { 
+      isInIframe, 
+      walletOrigin,
+      hasEthereum: !!window.ethereum,
+      isUnchained: window.ethereum?.isUnchained,
+      chainId: window.ethereum?.chainId
+    });
+  } else {
+    console.error('[Unchained Wallet] ❌ Provider injection failed!');
+  }
 })();
 

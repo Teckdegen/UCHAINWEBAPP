@@ -38,117 +38,152 @@ export default function BrowserPage() {
       setHistory(JSON.parse(savedHistory))
     }
 
-    // Inject window.ethereum into iframe using script tag (works for cross-origin)
+    // Inject window.ethereum into iframe - must happen BEFORE dApp code runs
     const injectEthereumProvider = () => {
       if (!iframeRef.current || !currentUrl) return
 
       try {
         const iframe = iframeRef.current
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
-        
-        if (!iframeDoc) {
-          // Cross-origin iframe - can't access document
-          // The script will be loaded via src attribute instead
-          console.log('[Browser] Cross-origin iframe detected, using script src injection');
+        const iframeDoc = iframe.contentDocument
+        const iframeWindow = iframe.contentWindow
+
+        if (!iframeDoc || !iframeWindow) {
+          // Cross-origin iframe - use proxy approach
+          console.log('[Browser] Cross-origin iframe detected - provider will be injected via proxy');
           return;
         }
 
         // Check if already injected
-        if (iframeDoc.querySelector('script[data-unchained-inject]')) {
+        if (iframeWindow.ethereum?.isUnchained) {
+          console.log('[Browser] Provider already injected');
           return;
         }
 
-        // Create script element with injector code
+        // Load inject script from our origin - MUST load synchronously before dApp code
         const script = iframeDoc.createElement('script');
+        script.src = `${window.location.origin}/unchained-inject.js?t=${Date.now()}`;
+        script.async = false; // CRITICAL: Load synchronously to ensure it runs before dApp code
+        script.defer = false; // Don't defer - load immediately
         script.setAttribute('data-unchained-inject', 'true');
-        script.textContent = `
-          (function() {
-            if (window.ethereum && window.ethereum.isUnchained) return;
-            const isInIframe = true;
-            const walletOrigin = '${window.location.origin}';
-            const provider = {
-              isUnchained: true,
-              isMetaMask: true,
-              isCoinbaseWallet: true,
-              request: async (args) => {
-                const { method, params = [] } = args;
-                const requestId = Math.random().toString(36).substring(7);
-                return new Promise((resolve, reject) => {
-                  window._unchainedPendingRequests = window._unchainedPendingRequests || {};
-                  window._unchainedPendingRequests[requestId] = { resolve, reject };
-                  window.parent.postMessage({
-                    type: 'UNCHAINED_WALLET_REQUEST',
-                    requestId,
-                    method,
-                    params,
-                    origin: window.location.origin
-                  }, walletOrigin);
-                  const messageListener = (event) => {
-                    if (event.origin !== walletOrigin) return;
-                    if (event.data.type === 'UNCHAINED_WALLET_RESPONSE' && event.data.requestId === requestId) {
-                      window.removeEventListener('message', messageListener);
-                      delete window._unchainedPendingRequests[requestId];
-                      if (event.data.error) {
-                        reject(new Error(event.data.error));
-                      } else {
-                        resolve(event.data.result);
-                      }
-                    }
-                  };
-                  window.addEventListener('message', messageListener);
-                  setTimeout(() => {
-                    window.removeEventListener('message', messageListener);
-                    delete window._unchainedPendingRequests[requestId];
-                    reject(new Error('Request timeout'));
-                  }, 300000);
-                });
-              },
-              on: (event, listener) => {
-                window._unchainedListeners = window._unchainedListeners || {};
-                window._unchainedListeners[event] = window._unchainedListeners[event] || [];
-                window._unchainedListeners[event].push(listener);
-              },
-              removeListener: (event, listener) => {
-                if (window._unchainedListeners && window._unchainedListeners[event]) {
-                  window._unchainedListeners[event] = window._unchainedListeners[event].filter(l => l !== listener);
-                }
-              },
-              removeAllListeners: (event) => {
-                if (event) {
-                  if (window._unchainedListeners) delete window._unchainedListeners[event];
-                } else {
-                  window._unchainedListeners = {};
-                }
-              },
-              get chainId() { return '0x1'; },
-              get networkVersion() { return '1'; }
-            };
-            Object.defineProperty(window, 'ethereum', {
-              value: provider,
-              writable: false,
-              configurable: false
-            });
-            window.dispatchEvent(new Event('ethereum#initialized'));
-          })();
-        `;
         
-        // Inject into iframe head or body
-        const target = iframeDoc.head || iframeDoc.body || iframeDoc.documentElement;
-        if (target) {
-          target.insertBefore(script, target.firstChild);
-          console.log('[Browser] Ethereum provider injected into iframe');
+        script.onload = () => {
+          console.log('[Browser] ✅ Unchained provider successfully injected into iframe');
+        };
+        
+        script.onerror = () => {
+          console.warn('[Browser] Failed to load inject script, using inline fallback');
+          // Fallback: inject inline
+          try {
+            const inlineScript = iframeDoc.createElement('script');
+            inlineScript.textContent = `
+              (function() {
+                if (window.ethereum && window.ethereum.isUnchained) return;
+                const walletOrigin = '${window.location.origin}';
+                const provider = {
+                  isUnchained: true,
+                  isMetaMask: true,
+                  isCoinbaseWallet: true,
+                  request: async (args) => {
+                    const { method, params = [] } = args;
+                    const requestId = Math.random().toString(36).substring(7);
+                    return new Promise((resolve, reject) => {
+                      window._unchainedPendingRequests = window._unchainedPendingRequests || {};
+                      window._unchainedPendingRequests[requestId] = { resolve, reject };
+                      window.parent.postMessage({
+                        type: 'UNCHAINED_WALLET_REQUEST',
+                        requestId,
+                        method,
+                        params,
+                        origin: window.location.origin
+                      }, walletOrigin);
+                      const messageListener = (event) => {
+                        if (event.origin !== walletOrigin) return;
+                        if (event.data.type === 'UNCHAINED_WALLET_RESPONSE' && event.data.requestId === requestId) {
+                          window.removeEventListener('message', messageListener);
+                          delete window._unchainedPendingRequests[requestId];
+                          if (event.data.error) {
+                            reject(new Error(event.data.error));
+                          } else {
+                            resolve(event.data.result);
+                          }
+                        }
+                      };
+                      window.addEventListener('message', messageListener);
+                      setTimeout(() => {
+                        window.removeEventListener('message', messageListener);
+                        delete window._unchainedPendingRequests[requestId];
+                        reject(new Error('Request timeout'));
+                      }, 300000);
+                    });
+                  },
+                  on: (event, listener) => {
+                    window._unchainedListeners = window._unchainedListeners || {};
+                    window._unchainedListeners[event] = window._unchainedListeners[event] || [];
+                    window._unchainedListeners[event].push(listener);
+                  },
+                  removeListener: (event, listener) => {
+                    if (window._unchainedListeners && window._unchainedListeners[event]) {
+                      window._unchainedListeners[event] = window._unchainedListeners[event].filter(l => l !== listener);
+                    }
+                  },
+                  removeAllListeners: (event) => {
+                    if (event) {
+                      if (window._unchainedListeners) delete window._unchainedListeners[event];
+                    } else {
+                      window._unchainedListeners = {};
+                    }
+                  },
+                  get chainId() { return '0x1'; },
+                  get networkVersion() { return '1'; }
+                };
+                Object.defineProperty(window, 'ethereum', {
+                  value: provider,
+                  writable: false,
+                  configurable: false
+                });
+                window.dispatchEvent(new Event('ethereum#initialized'));
+                console.log('[Unchained Wallet] Provider injected (inline fallback)');
+              })();
+            `;
+            iframeDoc.head.insertBefore(inlineScript, iframeDoc.head.firstChild);
+            console.log('[Browser] ✅ Provider injected via inline fallback');
+          } catch (e) {
+            console.error('[Browser] Inline injection failed:', e);
+          }
+        };
+        
+        // Insert at the VERY beginning of head to ensure it loads first
+        if (iframeDoc.head) {
+          if (iframeDoc.head.firstChild) {
+            iframeDoc.head.insertBefore(script, iframeDoc.head.firstChild);
+          } else {
+            iframeDoc.head.appendChild(script);
+          }
+        } else {
+          // If head doesn't exist yet, wait for it
+          const observer = new MutationObserver(() => {
+            if (iframeDoc.head) {
+              iframeDoc.head.insertBefore(script, iframeDoc.head.firstChild);
+              observer.disconnect();
+            }
+          });
+          observer.observe(iframeDoc.documentElement, { childList: true });
         }
-      } catch (error) {
-        // Cross-origin iframe - can't inject directly
-        console.log('[Browser] Cannot inject into cross-origin iframe, will use postMessage');
+      } catch (error: any) {
+        console.error('[Browser] Injection error:', error);
       }
     };
 
-    // Inject when iframe loads
+    // Inject when iframe loads - try multiple times to ensure it happens
     if (iframeRef.current) {
       const iframe = iframeRef.current;
+      
       const handleLoad = () => {
-        setTimeout(injectEthereumProvider, 100); // Wait for iframe to load
+        // Try immediately
+        injectEthereumProvider();
+        // Also try after a short delay in case DOM isn't ready
+        setTimeout(injectEthereumProvider, 50);
+        setTimeout(injectEthereumProvider, 200);
       };
       
       iframe.addEventListener('load', handleLoad);
@@ -156,6 +191,15 @@ export default function BrowserPage() {
       // Also try immediately if already loaded
       if (iframe.contentDocument?.readyState === 'complete') {
         handleLoad();
+      }
+      
+      // Also listen for DOMContentLoaded
+      try {
+        if (iframe.contentDocument) {
+          iframe.contentDocument.addEventListener('DOMContentLoaded', injectEthereumProvider);
+        }
+      } catch (e) {
+        // Cross-origin - can't access
       }
     }
 
