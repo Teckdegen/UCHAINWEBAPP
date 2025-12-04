@@ -16,7 +16,7 @@ import {
   unlockWallet,
 } from "@/lib/wallet"
 import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
-import { getNativeBalance } from "@/lib/rpc"
+import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins, Clock } from "lucide-react"
@@ -38,7 +38,14 @@ export default function DashboardPage() {
   const [ethPrice, setEthPrice] = useState<number>(0)
   const [balances, setBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [chainId, setChainId] = useState(97741)
+  const [chainId, setChainId] = useState(() => {
+    // Initialize from localStorage or default to PEPU
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("selected_chain")
+      return saved ? Number(saved) : 97741
+    }
+    return 97741
+  })
   const [wallets, setWallets] = useState<any[]>([])
   const [currentWalletId, setCurrentWalletIdState] = useState<string | null>(null)
   const [showAddWallet, setShowAddWallet] = useState(false)
@@ -72,10 +79,22 @@ export default function DashboardPage() {
     updateActivity()
     setWallets(wallets)
     setCurrentWalletIdState(getCurrentWalletId())
+    
+    // Clear balances immediately when chain changes
+    setBalances([])
+    setPortfolioValue("0.00")
+    
     fetchBalances()
     const interval = setInterval(fetchBalances, 30000)
     return () => clearInterval(interval)
   }, [router, chainId])
+
+  // Save chainId to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selected_chain", chainId.toString())
+    }
+  }, [chainId])
 
   const fetchBalances = async () => {
     setLoading(true)
@@ -121,42 +140,60 @@ export default function DashboardPage() {
 
       // Get ERC-20 tokens
       if (chainId === 97741 || chainId === 1) {
-        const provider = new ethers.JsonRpcProvider(
-          chainId === 1 ? "https://eth.llamarpc.com" : "https://rpc-pepu-v2-mainnet-0.t.conduit.xyz",
-        )
-        const network = chainId === 1 ? "ethereum" : "pepe-unchained"
-
-        const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-        const currentBlock = await provider.getBlockNumber()
-        const lookback = chainId === 1 ? 50000 : 10000
-        const fromBlock = Math.max(0, currentBlock - lookback)
-
         try {
-          const addressTopic = ethers.zeroPadValue(wallet.address, 32)
+          // Use getProviderWithFallback for better RPC reliability
+          const provider = await getProviderWithFallback(chainId)
+          const network = chainId === 1 ? "ethereum" : "pepe-unchained"
 
-          const [logsFrom, logsTo] = await Promise.all([
-            provider.getLogs({
-              fromBlock,
-              toBlock: "latest",
-              topics: [transferTopic, addressTopic],
-            }),
-            provider.getLogs({
-              fromBlock,
-              toBlock: "latest",
-              topics: [transferTopic, null, addressTopic],
-            }),
-      ])
+          const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+          let currentBlock = 0
+          try {
+            currentBlock = await provider.getBlockNumber()
+          } catch (error) {
+            console.error("Error getting block number:", error)
+            // Continue with token detection even if block number fails
+          }
 
-          const allLogs = [...logsFrom, ...logsTo]
-          let tokenAddresses = [...new Set(allLogs.map((log) => log.address.toLowerCase()))]
+          const lookback = chainId === 1 ? 100000 : 10000 // Increased lookback for ETH
+          const fromBlock = Math.max(0, currentBlock - lookback)
+
+          let tokenAddresses: string[] = []
+
+          // Try to get token addresses from transfer logs
+          try {
+            const addressTopic = ethers.zeroPadValue(wallet.address, 32)
+
+            const [logsFrom, logsTo] = await Promise.all([
+              provider.getLogs({
+                fromBlock,
+                toBlock: "latest",
+                topics: [transferTopic, addressTopic],
+              }).catch(() => []),
+              provider.getLogs({
+                fromBlock,
+                toBlock: "latest",
+                topics: [transferTopic, null, addressTopic],
+              }).catch(() => []),
+            ])
+
+            const allLogs = [...logsFrom, ...logsTo]
+            tokenAddresses = [...new Set(allLogs.map((log) => log.address.toLowerCase()))]
+          } catch (error) {
+            console.error("Error fetching transfer logs:", error)
+            // Continue with force tokens even if log fetching fails
+          }
 
           // Ensure important ETH tokens are always checked (USDC + user-saved custom tokens)
           if (chainId === 1) {
             const baseForceTokens = [
               // USDC
               "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-              // Previously added custom token
-              "0x93aa0ccd1e5628d3a841c4dbdf602d9eb04085d6",
+              // USDT
+              "0xdac17f958d2ee523a2206206994597c13d831ec7",
+              // DAI
+              "0x6b175474e89094c44da98b954eedeac495271d0f",
+              // WETH
+              "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
             ]
             const custom = getSavedEthCustomTokens()
             const forceTokens = [...baseForceTokens, ...custom].map((t) => t.toLowerCase())
@@ -172,20 +209,32 @@ export default function DashboardPage() {
             try {
               const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
               const [tokenBalance, decimals, symbol, name] = await Promise.all([
-                contract.balanceOf(wallet.address),
-                contract.decimals(),
+                contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", 18)),
+                contract.decimals().catch(() => 18),
                 contract.symbol().catch(() => "???"),
                 contract.name().catch(() => "Unknown Token"),
               ])
 
               const balanceFormatted = ethers.formatUnits(tokenBalance, decimals)
+              const hasBalance = Number.parseFloat(balanceFormatted) > 0
 
-              if (Number.parseFloat(balanceFormatted) > 0) {
+              // For ETH, show tokens even with 0 balance if they're in the force list (custom tokens)
+              const isForceToken = chainId === 1 && getSavedEthCustomTokens().some(
+                (t) => t.toLowerCase() === tokenAddress.toLowerCase()
+              )
+
+              if (hasBalance || isForceToken) {
                 // Fetch price from GeckoTerminal (use appropriate network)
-                const geckoData = await fetchGeckoTerminalData(tokenAddress, network as "ethereum" | "pepe-unchained")
+                let geckoData = null
+                try {
+                  geckoData = await fetchGeckoTerminalData(tokenAddress, network as "ethereum" | "pepe-unchained")
+                } catch (error) {
+                  console.error(`Error fetching price for ${tokenAddress}:`, error)
+                }
+
                 const isBonded = geckoData && geckoData.price_usd !== null && geckoData.price_usd !== undefined
                 const priceUsd = geckoData?.price_usd ? parseFloat(geckoData.price_usd) : 0
-                const usdValue = isBonded
+                const usdValue = isBonded && hasBalance
                   ? (Number.parseFloat(balanceFormatted) * priceUsd).toFixed(2)
                   : "0.00"
 
@@ -211,6 +260,7 @@ export default function DashboardPage() {
           allBalances.push(...validTokens)
         } catch (error) {
           console.error("Error scanning for tokens:", error)
+          // Don't throw - still show native balance even if token scanning fails
         }
       }
 
@@ -339,7 +389,12 @@ export default function DashboardPage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
             <div className="flex gap-2">
               <button
-                onClick={() => setChainId(1)}
+                onClick={() => {
+                  setChainId(1)
+                  setBalances([])
+                  setPortfolioValue("0.00")
+                  setLoading(true)
+                }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                 }`}
@@ -347,7 +402,12 @@ export default function DashboardPage() {
                 Ethereum
               </button>
               <button
-                onClick={() => setChainId(97741)}
+                onClick={() => {
+                  setChainId(97741)
+                  setBalances([])
+                  setPortfolioValue("0.00")
+                  setLoading(true)
+                }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                 }`}
