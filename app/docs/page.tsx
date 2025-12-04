@@ -45,11 +45,11 @@ export default function DocsPage() {
           <p className="text-xs text-gray-400 mt-2">The SDK wraps wagmi + viem and is focused on Unchained only.</p>
         </section>
 
-        {/* Single Connection Example (Only Unchained) */}
+        {/* React Example (Only Unchained) */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Wallet className="w-4 h-4 text-green-500" />
-            Quick Start · Connect Only to Unchained
+            React · Connect Only to Unchained
           </h2>
           <p className="text-xs text-gray-300">
             Drop this into your React app to get a **single “Connect Unchained” button**. The dApp must provide its own
@@ -91,6 +91,51 @@ export function App() {
           <p className="text-xs text-gray-300">
             After this, you can use normal wagmi + viem hooks (`useAccount`, `useSendTransaction`, etc.) the same way
             you would with any EVM wallet – but all connections go through Unchained.
+          </p>
+        </section>
+
+        {/* Plain JavaScript Example */}
+        <section className="glass-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Code className="w-4 h-4 text-green-500" />
+            Vanilla JS · Connect with window.ethereum
+          </h2>
+          <p className="text-xs text-gray-300">
+            If you are not using React, you can connect directly to Unchained from plain JavaScript. The extension or
+            iframe injector exposes <code>window.unchained</code> and <code>window.ethereum</code> as the Unchained
+            provider.
+          </p>
+          <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+            <code>{`// Helper to get the Unchained provider (extension or iframe)
+function getUnchainedProvider() {
+  if (window.unchained) return window.unchained;
+  if (window.ethereum && window.ethereum.isUnchained) return window.ethereum;
+  return null;
+}
+
+async function connectUnchained() {
+  const provider = getUnchainedProvider();
+  if (!provider || !provider.request) {
+    alert("Unchained Wallet not detected. Make sure the Unchained web wallet or extension is open.");
+    return;
+  }
+
+  try {
+    // Request accounts (this will open Unchained's /connect page if needed)
+    const accounts = await provider.request({ method: "eth_requestAccounts" });
+    console.log("Connected to Unchained:", accounts[0]);
+  } catch (err) {
+    console.error("Unchained connect failed:", err);
+  }
+}
+
+// Example: hook this up to a button
+document.getElementById("connect-unchained-btn").addEventListener("click", connectUnchained);`}</code>
+          </pre>
+          <p className="text-xs text-gray-300">
+            This is the same flow the Unchained extension and in-app browser use – the dApp just calls{" "}
+            <code>request(&#123; method: "eth_requestAccounts" &#125;)</code>, and all approvals happen in the Unchained
+            UI.
           </p>
         </section>
       </div>
