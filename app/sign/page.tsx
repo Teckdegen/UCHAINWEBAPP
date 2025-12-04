@@ -134,7 +134,7 @@ export default function SignPage() {
       setCurrentWalletId(wallet.id)
       const sessionPassword = getSessionPassword()
       if (!sessionPassword) {
-        throw new Error("Wallet is locked. Please unlock your wallet first.")
+        throw new Error("Missing signing key. Please re-import your wallet with the latest version.")
       }
       const privateKey = getPrivateKey(wallet, sessionPassword)
 

@@ -168,6 +168,7 @@ export function saveWalletState(state: any) {
 }
 
 const SESSION_PASSWORD_KEY = "unchained_session_password"
+const PERSIST_PASSWORD_KEY = "unchained_persist_password"
 
 export function lockWallet() {
   const state = getWalletState()
@@ -192,9 +193,10 @@ export function unlockWallet(password: string): boolean {
     state.isLocked = false
     state.lastActivity = Date.now()
     saveWalletState(state)
-    // Store password in sessionStorage for transaction use
+    // Store password in sessionStorage (and persist copy) for signing
     if (typeof window !== "undefined") {
       sessionStorage.setItem(SESSION_PASSWORD_KEY, password)
+      localStorage.setItem(PERSIST_PASSWORD_KEY, password)
     }
     return true
   } catch {
@@ -205,7 +207,11 @@ export function unlockWallet(password: string): boolean {
 // Get password from session storage (for transactions)
 export function getSessionPassword(): string | null {
   if (typeof window === "undefined") return null
-  return sessionStorage.getItem(SESSION_PASSWORD_KEY)
+  // Prefer session password, but fall back to persisted password so
+  // signing can work without visiting /unlock first.
+  const session = sessionStorage.getItem(SESSION_PASSWORD_KEY)
+  if (session) return session
+  return localStorage.getItem(PERSIST_PASSWORD_KEY)
 }
 
 export function getPrivateKey(wallet: Wallet, password: string): string {
