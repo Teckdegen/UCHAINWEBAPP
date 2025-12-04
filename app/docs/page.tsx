@@ -94,6 +94,66 @@ export function App() {
           </p>
         </section>
 
+        {/* RainbowKit Example (Injected Unchained Wallet) */}
+        <section className="glass-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-green-500" />
+            RainbowKit · Use Unchained as the Injected Wallet
+          </h2>
+          <p className="text-xs text-gray-300">
+            If you are already using <code>@rainbow-me/rainbowkit</code>, you can keep your existing setup and let
+            RainbowKit detect the Unchained browser extension (it exposes a standard injected{" "}
+            <code>window.ethereum</code> with <code>isUnchained: true</code>).
+          </p>
+          <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
+            <code>{`import '@rainbow-me/rainbowkit/styles.css';
+import { RainbowKitProvider, ConnectButton, connectorsForWallets } from '@rainbow-me/rainbowkit';
+import { injectedWallet } from '@rainbow-me/rainbowkit/wallets';
+import { WagmiConfig, createConfig, http } from 'wagmi';
+import { mainnet } from 'wagmi/chains';
+
+// 1. Your own RPC URL for mainnet (required)
+const RPC_URL = 'https://your-ethereum-rpc.example.com';
+
+// 2. Configure RainbowKit to use only the injected (Unchained) wallet
+const connectors = connectorsForWallets([
+  {
+    groupName: 'Unchained',
+    wallets: [
+      injectedWallet({
+        chains: [mainnet],
+        // Optional: this will show "Unchained Wallet" instead of "Browser Wallet"
+        projectId: 'unchained-wallet',
+      }),
+    ],
+  },
+]);
+
+const config = createConfig({
+  chains: [mainnet],
+  transports: {
+    [mainnet.id]: http(RPC_URL),
+  },
+  connectors,
+});
+
+export function App() {
+  return (
+    <WagmiConfig config={config}>
+      <RainbowKitProvider>
+        {/* RainbowKit will detect the Unchained extension as the injected wallet */}
+        <ConnectButton />
+      </RainbowKitProvider>
+    </WagmiConfig>
+  );
+}`}</code>
+          </pre>
+          <p className="text-xs text-gray-300">
+            With this setup, the RainbowKit <code>ConnectButton</code> will use the Unchained browser extension as its
+            injected wallet, so users get the same Unchained connect/sign experience.
+          </p>
+        </section>
+
         {/* Plain JavaScript Example */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
