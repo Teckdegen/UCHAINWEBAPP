@@ -15,10 +15,9 @@ export default function ProviderInit() {
   const pathname = usePathname()
   
   useEffect(() => {
-    // Always lock wallet on page reload/mount EXCEPT on /docs page
-    // This ensures security - wallet must be unlocked again after any page reload
+    // Auto-lock wallet only when the dashboard page reloads.
+    // Other pages stay unlocked unless the user explicitly locks.
     if (typeof window !== "undefined") {
-      // Skip locking if we're on the docs page
       if (pathname === "/docs") {
         // Don't lock on docs page, just initialize user ID
         getOrCreateUserId()
@@ -33,16 +32,19 @@ export default function ProviderInit() {
         }, 0)
         return
       }
-      
-      const state = getWalletState()
-      // Lock wallet if it's not already locked
-      // This will also clear the session password
-      if (!state.isLocked) {
-        lockWallet()
+
+      // Only lock when we're on the dashboard page
+      if (pathname === "/dashboard") {
+        const state = getWalletState()
+        // Lock wallet if it's not already locked
+        // This will also clear the session password
+        if (!state.isLocked) {
+          lockWallet()
+        }
+
+        // Also clear session password directly as a safety measure
+        sessionStorage.removeItem("unchained_session_password")
       }
-      
-      // Also clear session password directly as a safety measure
-      sessionStorage.removeItem("unchained_session_password")
     }
 
     getOrCreateUserId()
