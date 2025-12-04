@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { createWallet, addWallet, getMnemonic, importWalletFromMnemonic, importWalletFromPrivateKey, getWallets } from "@/lib/wallet"
+import { createWallet, addWallet, getMnemonic, importWalletFromMnemonic, importWalletFromPrivateKey, getWallets, unlockWallet } from "@/lib/wallet"
 import { Eye, EyeOff, Copy } from "lucide-react"
 import Image from "next/image"
 
@@ -42,6 +42,8 @@ export default function SetupPage() {
     try {
       const wallet = await createWallet(password, walletName || "My Wallet", 1)
       addWallet(wallet) // This will automatically register userId with API
+      // Auto-unlock using the same password so signing doesn't require /unlock
+      unlockWallet(password)
       const mnemonic = getMnemonic(wallet, password)
       setMnemonic(mnemonic || "")
       // Prepare quiz
@@ -73,6 +75,8 @@ export default function SetupPage() {
     try {
       const wallet = await importWalletFromMnemonic(seedPhrase.trim(), password, walletName || "Imported Wallet", 1)
       addWallet(wallet)
+      // Auto-unlock so signing doesn't require /unlock
+      unlockWallet(password)
       setSeedPhrase("")
       setWalletName("")
       setPassword("")
@@ -94,6 +98,8 @@ export default function SetupPage() {
     try {
       const wallet = await importWalletFromPrivateKey(privateKey.trim(), password, walletName || "Imported Wallet", 1)
       addWallet(wallet)
+      // Auto-unlock so signing doesn't require /unlock
+      unlockWallet(password)
       setPrivateKey("")
       setWalletName("")
       setPassword("")

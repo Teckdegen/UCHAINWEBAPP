@@ -13,6 +13,7 @@ import {
   importWalletFromPrivateKey,
   addWallet,
   createWallet,
+  unlockWallet,
 } from "@/lib/wallet"
 import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance } from "@/lib/rpc"
@@ -659,6 +660,8 @@ export default function DashboardPage() {
                       setAddWalletLoading(true)
                       const newWallet = await createWallet(addPassword, newWalletName || undefined, chainId)
                       addWallet(newWallet)
+                      // Auto-unlock so signing doesn't require /unlock
+                      unlockWallet(addPassword)
                       setWallets(getWallets())
                       setCurrentWalletId(newWallet.id)
                       setCurrentWalletIdState(newWallet.id)
@@ -730,6 +733,8 @@ export default function DashboardPage() {
                         chainId,
                       )
                       addWallet(newWallet)
+                      // Auto-unlock so signing doesn't require /unlock
+                      unlockWallet(addPassword)
                       setWallets(getWallets())
                       setCurrentWalletId(newWallet.id)
                       setCurrentWalletIdState(newWallet.id)
@@ -802,6 +807,8 @@ export default function DashboardPage() {
                         chainId,
                       )
                       addWallet(newWallet)
+                      // Auto-unlock so signing doesn't require /unlock
+                      unlockWallet(addPassword)
                       setWallets(getWallets())
                       setCurrentWalletId(newWallet.id)
                       setCurrentWalletIdState(newWallet.id)

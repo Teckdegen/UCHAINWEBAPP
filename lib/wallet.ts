@@ -205,8 +205,6 @@ export function unlockWallet(password: string): boolean {
 // Get password from session storage (for transactions)
 export function getSessionPassword(): string | null {
   if (typeof window === "undefined") return null
-  const state = getWalletState()
-  if (state.isLocked) return null
   return sessionStorage.getItem(SESSION_PASSWORD_KEY)
 }
 
