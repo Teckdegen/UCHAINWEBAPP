@@ -34,6 +34,33 @@ export async function getEtherscanTokenBalance(
 }
 
 /**
+ * Get ETH native balance from Etherscan API
+ */
+export async function getEtherscanEthBalance(walletAddress: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `${ETHERSCAN_API_BASE}?module=account&action=balance&address=${walletAddress}&tag=latest&apikey=${ETHERSCAN_API_KEY}`,
+    )
+
+    if (!response.ok) {
+      throw new Error(`Etherscan API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.status === "1" && data.result) {
+      // Result is in wei (smallest unit), return as string
+      return data.result
+    }
+
+    return null
+  } catch (error) {
+    console.error(`Error fetching Etherscan ETH balance:`, error)
+    return null
+  }
+}
+
+/**
  * Get multiple token balances in a single call (more efficient)
  */
 export async function getEtherscanTokenBalances(

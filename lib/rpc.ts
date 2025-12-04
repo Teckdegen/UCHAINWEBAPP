@@ -1,6 +1,7 @@
 import { ethers } from "ethers"
 import { createPublicClient, http } from "viem"
 import { mainnet } from "viem/chains"
+import { getEtherscanEthBalance } from "./etherscan"
 
 // Multiple RPC endpoints for Ethereum (fallback support)
 const ETH_RPC_URLS = [
@@ -92,8 +93,18 @@ export function getNativeSymbol(chainId: number): string {
 }
 
 export async function getNativeBalance(address: string, chainId: number): Promise<string> {
-  // Use viem for Ethereum native balance
+  // For Ethereum, try Etherscan API first (most reliable)
   if (chainId === 1) {
+    try {
+      const balanceWei = await getEtherscanEthBalance(address)
+      if (balanceWei) {
+        return ethers.formatEther(balanceWei)
+      }
+    } catch (error) {
+      console.warn("Etherscan API failed for ETH balance, trying RPC:", error)
+    }
+
+    // Fallback to viem for Ethereum native balance
     try {
       const client = createPublicClient({
         chain: mainnet,
@@ -101,19 +112,28 @@ export async function getNativeBalance(address: string, chainId: number): Promis
       })
       const balance = await client.getBalance({ address: address as `0x${string}` })
       return ethers.formatEther(balance)
-    } catch {
-      // Fallback to ethers provider chain
+    } catch (error) {
+      console.warn("Viem RPC failed, trying ethers fallback:", error)
+      // Continue to ethers provider fallback
     }
   }
 
+  // Use ethers with fallback RPC endpoints
   try {
     const provider = await getProviderWithFallback(chainId)
     const balance = await provider.getBalance(address)
     return ethers.formatEther(balance)
   } catch (error) {
-  const provider = getProvider(chainId)
-  const balance = await provider.getBalance(address)
-  return ethers.formatEther(balance)
+    console.warn("getProviderWithFallback failed, trying single provider:", error)
+    // Final fallback to single provider
+    try {
+      const provider = getProvider(chainId)
+      const balance = await provider.getBalance(address)
+      return ethers.formatEther(balance)
+    } catch (finalError) {
+      console.error("All RPC endpoints failed for native balance:", finalError)
+      throw new Error(`Failed to fetch native balance: ${finalError}`)
+    }
   }
 }
 
