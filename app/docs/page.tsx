@@ -52,8 +52,8 @@ export default function DocsPage() {
             Quick Start · Connect Only to Unchained
           </h2>
           <p className="text-xs text-gray-300">
-            Drop this into your React app to get a **single “Connect Unchained” button**. It uses wagmi under the hood
-            and never shows other wallets.
+            Drop this into your React app to get a **single “Connect Unchained” button**. The dApp must provide its own
+            RPC URL when creating the config.
           </p>
           <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
             <code>{`import { createUnchainedConfig, WalletSelector } from "unchainedwallet"
@@ -61,10 +61,17 @@ import { WagmiProvider } from "wagmi"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { mainnet } from "wagmi/chains"
 
-// 1. Create a wagmi config that prefers ONLY Unchained Wallet
+// 1. Your own RPC URL for mainnet (required)
+const RPC_URL = "https://your-ethereum-rpc.example.com";
+
+// 2. Create a wagmi config that prefers ONLY Unchained Wallet
 const config = createUnchainedConfig({
   chains: [mainnet],
-  // Optional: mark that you only want Unchained as the wallet
+  // DApp must provide its own RPC config
+  rpcUrls: {
+    1: RPC_URL,
+  },
+  // Mark that you only want Unchained as the wallet
   onlyUnchained: true,
 })
 
@@ -74,7 +81,7 @@ export function App() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        {/* 2. Simple button – always connects to Unchained Wallet */}
+        {/* 3. Simple button – always connects to Unchained Wallet */}
         <WalletSelector onlyUnchained showUI={false} />
       </QueryClientProvider>
     </WagmiProvider>
