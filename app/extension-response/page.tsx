@@ -1,16 +1,11 @@
 "use client"
 
 import { useEffect } from "react"
-import { useSearchParams } from "next/navigation"
 
 export default function ExtensionResponsePage() {
-  const searchParams = useSearchParams()
-  const requestId = searchParams.get("requestId")
-
   useEffect(() => {
-    // This page is just a marker for the extension background script
-    // The background script will read the result from localStorage and close this window
-    // Show a brief message then auto-close
+    // This page is just a marker for the extension background script.
+    // The background script reads the URL query params and closes the window.
     const timer = setTimeout(() => {
       if (window.opener) {
         window.close()
