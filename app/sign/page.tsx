@@ -179,11 +179,18 @@ export default function SignPage() {
 
       setApproved(true)
 
-      // Check if this is from browser iframe
+      // Check if this is from browser iframe or extension
       const fromBrowser = searchParams.get("from") === "browser"
+      const fromExtension = searchParams.get("from") === "extension"
       const requestId = searchParams.get("requestId")
       
-      if (fromBrowser && requestId) {
+      if (fromExtension && requestId) {
+        // This is from extension - redirect with result in URL
+        setTimeout(() => {
+          window.location.href = `/extension-response?requestId=${requestId}&result=${encodeURIComponent(result)}`
+        }, 1000)
+        return
+      } else if (fromBrowser && requestId) {
         // This is from browser iframe - store result
         localStorage.setItem(`browser_result_${requestId}`, JSON.stringify(result))
         
@@ -248,20 +255,30 @@ export default function SignPage() {
       }
     } else {
       // Regular injected provider flow
-    setRejected(true)
-
-      const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
-      const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
-      const requestId = searchParams.get("requestId") || localStorage.getItem("unchained_request_id") || ""
+      const fromExtension = searchParams.get("from") === "extension"
+      const requestId = searchParams.get("requestId")
       
-      const returnUrlObj = new URL(returnUrl)
-      returnUrlObj.searchParams.set("wallet_error", "User rejected transaction")
-      returnUrlObj.searchParams.set("wallet_request_id", requestId)
-      returnUrlObj.searchParams.set("wallet_status", "rejected")
-      
-      setTimeout(() => {
-        window.location.href = returnUrlObj.toString()
-      }, 1000)
+      if (fromExtension && requestId) {
+        // Redirect with rejection error
+        setRejected(true)
+        setTimeout(() => {
+          window.location.href = `/extension-response?requestId=${requestId}&error=${encodeURIComponent("User rejected transaction")}`
+        }, 1000)
+      } else {
+        setRejected(true)
+        const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
+        const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+        const reqId = requestId || searchParams.get("requestId") || localStorage.getItem("unchained_request_id") || ""
+        
+        const returnUrlObj = new URL(returnUrl)
+        returnUrlObj.searchParams.set("wallet_error", "User rejected transaction")
+        returnUrlObj.searchParams.set("wallet_request_id", reqId)
+        returnUrlObj.searchParams.set("wallet_status", "rejected")
+        
+        setTimeout(() => {
+          window.location.href = returnUrlObj.toString()
+        }, 1000)
+      }
     }
   }
 

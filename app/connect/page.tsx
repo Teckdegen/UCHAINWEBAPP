@@ -109,11 +109,20 @@ export default function ConnectPage() {
         timestamp: Date.now(),
       }
 
-        // Check if this is from browser iframe
+        // Check if this is from browser iframe or extension
         const fromBrowser = searchParams.get("from") === "browser"
+        const fromExtension = searchParams.get("from") === "extension"
         const requestId = searchParams.get("requestId")
         
-        if (fromBrowser && requestId) {
+        if (fromExtension && requestId) {
+          // This is from extension - redirect with result in URL
+          setApproved(true)
+          
+          // Redirect to response page with result in query params
+          setTimeout(() => {
+            window.location.href = `/extension-response?requestId=${requestId}&result=${encodeURIComponent(JSON.stringify(result.accounts))}`
+          }, 1000)
+        } else if (fromBrowser && requestId) {
           // This is from browser iframe - store result and redirect back
           setApproved(true)
           
@@ -122,13 +131,13 @@ export default function ConnectPage() {
           
           // Get iframe URL from request storage
           const requestStr = localStorage.getItem(`browser_request_${requestId}`)
-          let iframeUrl = currentUrl
+          let iframeUrl = window.location.origin
           if (requestStr) {
             try {
               const requestData = JSON.parse(requestStr)
-              iframeUrl = requestData.iframeUrl || currentUrl
+              iframeUrl = requestData.iframeUrl || window.location.origin
             } catch (e) {
-              // Use currentUrl
+              // Use current origin
             }
           }
           
@@ -178,19 +187,30 @@ export default function ConnectPage() {
       } catch (err: any) {
         setError(err.message || "Failed to reject")
       }
-    } else {
+      } else {
       // Regular injected provider flow
-      const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
-      const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+      const fromExtension = searchParams.get("from") === "extension"
+      const requestId = searchParams.get("requestId")
       
-      const returnUrlObj = new URL(returnUrl)
-      returnUrlObj.searchParams.set("wallet_error", "User rejected connection")
-      returnUrlObj.searchParams.set("wallet_status", "rejected")
-      
-      setRejected(true)
-      setTimeout(() => {
-        window.location.href = returnUrlObj.toString()
-      }, 1000)
+      if (fromExtension && requestId) {
+        // Redirect with rejection error
+        setRejected(true)
+        setTimeout(() => {
+          window.location.href = `/extension-response?requestId=${requestId}&error=${encodeURIComponent("User rejected connection")}`
+        }, 1000)
+      } else {
+        const returnOrigin = localStorage.getItem("unchained_return_origin") || origin
+        const returnUrl = localStorage.getItem("unchained_return_url") || returnOrigin
+        
+        const returnUrlObj = new URL(returnUrl)
+        returnUrlObj.searchParams.set("wallet_error", "User rejected connection")
+        returnUrlObj.searchParams.set("wallet_status", "rejected")
+        
+        setRejected(true)
+        setTimeout(() => {
+          window.location.href = returnUrlObj.toString()
+        }, 1000)
+      }
     }
   }
 
