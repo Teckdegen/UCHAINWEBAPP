@@ -2,7 +2,7 @@
 
 ## Overview
 
-A browser extension can inject `window.ethereum` into all websites and redirect to your web wallet for approvals. This makes your wallet work like MetaMask - available on all websites!
+A browser extension can inject `window.ethereum` into all websites and redirect to your web wallet for approvals. This makes **Unchained Wallet** available as the only EVM provider on all websites.
 
 ## How It Works
 
@@ -72,29 +72,28 @@ extension/
 
 ### 2. Create `content-script.js`
 
-This injects `window.ethereum` into all web pages:
+This injects `window.ethereum` into all web pages as an **Unchained-only** provider:
 
 ```javascript
-// Inject the ethereum provider into the page
+// Inject the Unchained ethereum provider into the page
 (function() {
   // Prevent multiple injections
-  if (window.ethereum && window.ethereum.isUnchained) {
+  if ((window.ethereum && window.ethereum.isUnchained) || window.unchained) {
     return
   }
 
   // Create the provider object
   const provider = {
+    // Mark this provider so dApps know it's Unchained
     isUnchained: true,
-    isMetaMask: true,  // For compatibility
-    isCoinbaseWallet: true,  // For compatibility
-    
-    // Request method - intercepts all requests
+
+    // Request method - intercepts all requests and routes to Unchained
     request: async (args) => {
       const { method, params = [] } = args
-      
+
       // Generate unique request ID
       const requestId = Math.random().toString(36).substring(7)
-      
+
       // Store request in chrome.storage
       await chrome.storage.local.set({
         [`unchained_request_${requestId}`]: {
@@ -104,24 +103,25 @@ This injects `window.ethereum` into all web pages:
           timestamp: Date.now()
         }
       })
-      
-      // Get your web wallet URL (from extension options or hardcoded)
-      const walletUrl = 'https://your-wallet-app.vercel.app' // or localhost:3000 for dev
-      
+
+      // Your deployed Unchained web wallet URL
+      const walletUrl = 'https://uchainwebapp.vercel.app' // or localhost:3000 for dev
+
       // Redirect to your web wallet with request info
-      const redirectUrl = `${walletUrl}/connect?origin=${encodeURIComponent(window.location.origin)}&method=${encodeURIComponent(method)}&requestId=${requestId}`
-      
-      // Open in new tab or redirect current tab
+      const redirectUrl = `${walletUrl}/connect?origin=${encodeURIComponent(
+        window.location.origin
+      )}&method=${encodeURIComponent(method)}&requestId=${requestId}`
+
+      // Ask background script to open the wallet
       chrome.runtime.sendMessage({
         type: 'OPEN_WALLET',
         url: redirectUrl,
-        requestId: requestId
+        requestId
       })
-      
+
       // Wait for response from background script
       return new Promise((resolve, reject) => {
-        // Listen for response
-        chrome.runtime.onMessage.addListener(function listener(message) {
+        function listener(message) {
           if (message.type === 'WALLET_RESPONSE' && message.requestId === requestId) {
             chrome.runtime.onMessage.removeListener(listener)
             if (message.error) {
@@ -130,42 +130,43 @@ This injects `window.ethereum` into all web pages:
               resolve(message.result)
             }
           }
-        })
+        }
+        chrome.runtime.onMessage.addListener(listener)
       })
     },
-    
-    // Event listeners
+
+    // Optional: basic event API for dApps
     on: (event, listener) => {
-      // Store listeners and notify on changes
-      if (!window._unchainedListeners) {
-        window._unchainedListeners = {}
-      }
-      if (!window._unchainedListeners[event]) {
-        window._unchainedListeners[event] = []
-      }
+      if (!window._unchainedListeners) window._unchainedListeners = {}
+      if (!window._unchainedListeners[event]) window._unchainedListeners[event] = []
       window._unchainedListeners[event].push(listener)
     },
-    
+
     removeListener: (event, listener) => {
       if (window._unchainedListeners && window._unchainedListeners[event]) {
-        window._unchainedListeners[event] = window._unchainedListeners[event].filter(l => l !== listener)
+        window._unchainedListeners[event] = window._unchainedListeners[event].filter(
+          (l) => l !== listener,
+        )
       }
     },
-    
-    // Chain ID
+
+    // Optional: expose current chain
     chainId: '0x1', // Default to Ethereum
-    
-    // Network version
     networkVersion: '1'
   }
-  
-  // Inject into page
-  Object.defineProperty(window, 'ethereum', {
-    value: provider,
-    writable: false,
-    configurable: false
-  })
-  
+
+  // Also expose as window.unchained so SDKs can detect explicitly
+  window.unchained = provider
+
+  // Inject into page as window.ethereum if it's not already taken
+  if (!window.ethereum) {
+    Object.defineProperty(window, 'ethereum', {
+      value: provider,
+      writable: false,
+      configurable: false
+    })
+  }
+
   // Dispatch connect event
   window.dispatchEvent(new Event('ethereum#initialized'))
 })()
@@ -265,7 +266,7 @@ if (requestId) {
 
 ✅ **Works on ALL websites** - No same-origin restrictions  
 ✅ **No CORS issues** - Extension has full permissions  
-✅ **Familiar UX** - Works like MetaMask  
+✅ **Familiar UX** - dApps just call `window.ethereum.request(...)`  
 ✅ **Centralized wallet** - All approvals go to your web wallet  
 ✅ **Easy updates** - Update web wallet, extension stays the same  
 
