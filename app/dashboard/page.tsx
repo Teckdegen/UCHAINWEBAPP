@@ -18,7 +18,8 @@ import {
 import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
-import { fetchGeckoTerminalData, fetchGeckoTerminalTokenDetails } from "@/lib/gecko"
+import { fetchGeckoTerminalData } from "@/lib/gecko"
+import { getEtherscanTokenBalance } from "@/lib/etherscan"
 import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins, Clock } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
@@ -215,52 +216,46 @@ export default function DashboardPage() {
               let priceUsd = 0
 
               if (chainId === 1) {
-                // For ETH: Use GeckoTerminal API to get token details (preferred)
-                try {
-                  const geckoTokenData = await fetchGeckoTerminalTokenDetails(tokenAddress, "ethereum")
-                  if (geckoTokenData) {
-                    symbol = geckoTokenData.symbol
-                    name = geckoTokenData.name
-                    decimals = geckoTokenData.decimals
-                    priceUsd = geckoTokenData.price_usd || 0
-                    geckoData = {
-                      price_usd: geckoTokenData.price_usd?.toString() || null,
-                      fdv_usd: geckoTokenData.fdv_usd,
-                      market_cap_usd: geckoTokenData.market_cap_usd,
-                      volume_usd: geckoTokenData.volume_usd,
-                      image_url: geckoTokenData.image_url,
-                    }
-                  }
-                } catch (error) {
-                  console.error(`Error fetching GeckoTerminal data for ${tokenAddress}:`, error)
-                }
-
-                // Fallback to contract calls if GeckoTerminal didn't return token details
-                if (symbol === "???" || name === "Unknown Token") {
-                  try {
-                    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-                    const [dec, sym, nm] = await Promise.all([
-                      contract.decimals().catch(() => 18),
-                      contract.symbol().catch(() => "???"),
-                      contract.name().catch(() => "Unknown Token"),
-                    ])
-                    if (symbol === "???") symbol = sym
-                    if (name === "Unknown Token") name = nm
-                    decimals = dec
-                  } catch (error) {
-                    console.error(`Error fetching contract details for ${tokenAddress}:`, error)
-                  }
-                }
-
-                // Get balance from contract
+                // For ETH: Use contract calls for token metadata (symbol, name, decimals)
                 try {
                   const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-                  tokenBalance = await contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", decimals))
+                  const [dec, sym, nm] = await Promise.all([
+                    contract.decimals().catch(() => 18),
+                    contract.symbol().catch(() => "???"),
+                    contract.name().catch(() => "Unknown Token"),
+                  ])
+                  symbol = sym
+                  name = nm
+                  decimals = dec
+                } catch (error) {
+                  console.error(`Error fetching contract details for ${tokenAddress}:`, error)
+                }
+
+                // Get balance from Etherscan API (more reliable than RPC)
+                try {
+                  const balanceWei = await getEtherscanTokenBalance(wallet.address, tokenAddress)
+                  if (balanceWei) {
+                    tokenBalance = BigInt(balanceWei)
+                  } else {
+                    // Fallback to contract call if Etherscan fails
+                    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
+                    tokenBalance = await contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", decimals))
+                  }
                 } catch (error) {
                   console.error(`Error fetching balance for ${tokenAddress}:`, error)
+                  // Final fallback to contract call
+                  try {
+                    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
+                    tokenBalance = await contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", decimals))
+                  } catch {
+                    tokenBalance = ethers.parseUnits("0", decimals)
+                  }
                 }
+
+                // Don't fetch price from GeckoTerminal for ETH tokens (user requested Etherscan only)
+                // Price can be fetched separately if needed, but not from GeckoTerminal
               } else {
-                // For PEPU: Use contract calls (existing logic)
+                // For PEPU: Use contract calls and GeckoTerminal (CoinGecko for prices)
                 const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
                 const [balance, dec, sym, nm] = await Promise.all([
                   contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", 18)),
@@ -273,7 +268,7 @@ export default function DashboardPage() {
                 symbol = sym
                 name = nm
 
-                // Fetch price from GeckoTerminal for PEPU
+                // Fetch price from GeckoTerminal for PEPU tokens only
                 try {
                   geckoData = await fetchGeckoTerminalData(tokenAddress, "pepe-unchained")
                   priceUsd = geckoData?.price_usd ? parseFloat(geckoData.price_usd) : 0
