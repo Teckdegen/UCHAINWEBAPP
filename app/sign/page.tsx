@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getWalletState, getWallets, getPrivateKey, getCurrentWalletId, setCurrentWalletId } from "@/lib/wallet"
+import { getWallets, getPrivateKey, getCurrentWalletId, setCurrentWalletId, getSessionPassword } from "@/lib/wallet"
 import { getProvider, getChainName } from "@/lib/rpc"
 import { getUnchainedProvider } from "@/lib/provider"
 import {
@@ -24,7 +24,6 @@ export default function SignPage() {
   const [method, setMethod] = useState("")
   const [origin, setOrigin] = useState("")
   const [params, setParams] = useState<any>(null)
-  const [password, setPassword] = useState("")
   const [approved, setApproved] = useState(false)
   const [rejected, setRejected] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -120,11 +119,6 @@ export default function SignPage() {
   }, [router, searchParams])
 
   const handleApprove = async () => {
-    if (!password || password.length !== 4) {
-      setError("Please enter your 4-digit PIN")
-      return
-    }
-
     if (!params) {
       setError("Invalid transaction parameters")
       return
@@ -138,7 +132,11 @@ export default function SignPage() {
 
       const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
       setCurrentWalletId(wallet.id)
-      const privateKey = getPrivateKey(wallet, password)
+      const sessionPassword = getSessionPassword()
+      if (!sessionPassword) {
+        throw new Error("Wallet is locked. Please unlock your wallet first.")
+      }
+      const privateKey = getPrivateKey(wallet, sessionPassword)
 
       let result: any = null
 
@@ -487,25 +485,6 @@ export default function SignPage() {
           </div>
         )}
 
-        {/* Password Input */}
-        {!approved && !rejected && (
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-            <label className="block text-gray-400 mb-3 text-sm font-medium">Enter 4-Digit PIN to Confirm</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 4)
-                setPassword(val)
-              }}
-              maxLength={4}
-              className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white text-center text-2xl tracking-widest font-bold focus:border-green-500 focus:outline-none"
-              placeholder="0000"
-              autoFocus
-            />
-          </div>
-        )}
-
         {/* Error Message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
@@ -540,7 +519,7 @@ export default function SignPage() {
             </button>
             <button
               onClick={handleApprove}
-              disabled={!password || password.length !== 4 || loading}
+              disabled={loading}
               className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-black font-bold py-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
