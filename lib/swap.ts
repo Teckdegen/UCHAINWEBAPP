@@ -498,7 +498,7 @@ export async function executeSwap(
       throw new Error(`Invalid private key format: ${validationError.message}. The password may be incorrect.`)
     }
     
-    const provider = getProvider(chainId)
+    // Reuse the provider from above
     const walletInstance = new ethers.Wallet(cleanedPrivateKey, provider)
 
     const swapRouter = new ethers.Contract(SWAP_ROUTER_ADDRESS, SWAP_ROUTER_ABI, walletInstance)
