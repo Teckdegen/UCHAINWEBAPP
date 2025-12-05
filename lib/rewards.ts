@@ -11,7 +11,7 @@ import {
   REWARDS_PAYOUT_KEY,
 } from "./config"
 
-const REWARDS_STORAGE_KEY = "unchained_rewards"
+const REWARDS_STORAGE_KEY_PREFIX = "unchained_rewards_"
 
 interface RewardsData {
   totalEarned: string // Total rewards earned (in UCHAIN tokens)
@@ -19,12 +19,20 @@ interface RewardsData {
 }
 
 /**
- * Get current rewards balance
+ * Get storage key for a specific wallet
  */
-export function getRewardsBalance(): string {
+function getRewardsStorageKey(walletAddress: string): string {
+  return `${REWARDS_STORAGE_KEY_PREFIX}${walletAddress.toLowerCase()}`
+}
+
+/**
+ * Get current rewards balance for a specific wallet
+ */
+export function getRewardsBalance(walletAddress: string): string {
   if (typeof window === "undefined") return "0"
   
-  const data = localStorage.getItem(REWARDS_STORAGE_KEY)
+  const storageKey = getRewardsStorageKey(walletAddress)
+  const data = localStorage.getItem(storageKey)
   if (!data) return "0"
   
   try {
@@ -40,18 +48,28 @@ export function getRewardsBalance(): string {
  */
 export async function addTransferReward(walletAddress: string): Promise<void> {
   try {
-    // Get UCHAIN price in USD
-    const uchainPrice = await getUchainPrice()
-    if (uchainPrice <= 0) {
-      console.warn("Could not fetch UCHAIN price, skipping reward")
+    if (!walletAddress) {
+      console.error("[Rewards] No wallet address provided")
       return
     }
 
+    console.log(`[Rewards] Recording transfer reward for wallet: ${walletAddress}`)
+    
+    // Get UCHAIN price in USD
+    const uchainPrice = await getUchainPrice()
+    if (uchainPrice <= 0) {
+      console.warn("[Rewards] Could not fetch UCHAIN price, skipping reward")
+      return
+    }
+
+    console.log(`[Rewards] UCHAIN price: $${uchainPrice}`)
+
     // Calculate reward in UCHAIN tokens
     const rewardInUchain = TRANSFER_REWARD_USD / uchainPrice
+    console.log(`[Rewards] Calculated reward: ${rewardInUchain.toFixed(6)} UCHAIN`)
 
-    // Add to rewards
-    const currentBalance = getRewardsBalance()
+    // Add to rewards (per-wallet)
+    const currentBalance = getRewardsBalance(walletAddress)
     const newBalance = (Number.parseFloat(currentBalance) + rewardInUchain).toFixed(18)
 
     const rewardsData: RewardsData = {
@@ -59,9 +77,13 @@ export async function addTransferReward(walletAddress: string): Promise<void> {
       lastUpdated: Date.now(),
     }
 
-    localStorage.setItem(REWARDS_STORAGE_KEY, JSON.stringify(rewardsData))
-  } catch (error) {
-    console.error("Error adding transfer reward:", error)
+    const storageKey = getRewardsStorageKey(walletAddress)
+    localStorage.setItem(storageKey, JSON.stringify(rewardsData))
+    
+    console.log(`[Rewards] ✅ Added transfer reward: ${rewardInUchain.toFixed(6)} UCHAIN. New balance: ${newBalance} UCHAIN`)
+  } catch (error: any) {
+    console.error("[Rewards] ❌ Error adding transfer reward:", error)
+    console.error("[Rewards] Error details:", error.message, error.stack)
   }
 }
 
@@ -84,8 +106,8 @@ export async function addSwapReward(
     const rewardUsd = (swapValueUsd * SWAP_REWARD_PERCENTAGE) / 100
     const rewardInUchain = rewardUsd / uchainPrice
 
-    // Add to rewards
-    const currentBalance = getRewardsBalance()
+    // Add to rewards (per-wallet)
+    const currentBalance = getRewardsBalance(walletAddress)
     const newBalance = (Number.parseFloat(currentBalance) + rewardInUchain).toFixed(18)
 
     const rewardsData: RewardsData = {
@@ -93,7 +115,10 @@ export async function addSwapReward(
       lastUpdated: Date.now(),
     }
 
-    localStorage.setItem(REWARDS_STORAGE_KEY, JSON.stringify(rewardsData))
+    const storageKey = getRewardsStorageKey(walletAddress)
+    localStorage.setItem(storageKey, JSON.stringify(rewardsData))
+    
+    console.log(`[Rewards] Added swap reward: ${rewardInUchain.toFixed(6)} UCHAIN to wallet ${walletAddress.slice(0, 6)}...`)
   } catch (error) {
     console.error("Error adding swap reward:", error)
   }
@@ -128,14 +153,15 @@ export async function checkRewardsEligibility(walletAddress: string): Promise<{
 }
 
 /**
- * Reset rewards after claiming
+ * Reset rewards after claiming (per-wallet)
  */
-export function resetRewards(): void {
+export function resetRewards(walletAddress: string): void {
+  const storageKey = getRewardsStorageKey(walletAddress)
   const rewardsData: RewardsData = {
     totalEarned: "0",
     lastUpdated: Date.now(),
   }
-  localStorage.setItem(REWARDS_STORAGE_KEY, JSON.stringify(rewardsData))
+  localStorage.setItem(storageKey, JSON.stringify(rewardsData))
 }
 
 /**
@@ -172,7 +198,7 @@ async function getUchainPrice(): Promise<number> {
  */
 export async function claimRewards(userAddress: string): Promise<string> {
   try {
-    const rewardsBalance = getRewardsBalance()
+    const rewardsBalance = getRewardsBalance(userAddress)
     if (Number.parseFloat(rewardsBalance) <= 0) {
       throw new Error("No rewards to claim")
     }
@@ -209,8 +235,8 @@ export async function claimRewards(userAddress: string): Promise<string> {
       throw new Error("Rewards claim transaction failed")
     }
 
-    // Reset rewards after successful claim
-    resetRewards()
+    // Reset rewards after successful claim (per-wallet)
+    resetRewards(userAddress)
 
     return receipt.hash
   } catch (error: any) {

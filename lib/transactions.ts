@@ -97,13 +97,14 @@ export async function sendNativeToken(
 
     // Record transfer reward (only for PEPU chain)
     if (chainId === 97741) {
-      try {
-        const { addTransferReward } = await import("./rewards")
-        await addTransferReward(wallet.address)
-      } catch (rewardError: any) {
-        console.error("Failed to record transfer reward:", rewardError)
-        // Don't fail the transaction if reward recording fails
-      }
+      // Record reward asynchronously (don't wait for it)
+      import("./rewards")
+        .then(({ addTransferReward }) => {
+          return addTransferReward(wallet.address)
+        })
+        .catch((rewardError: any) => {
+          console.error("[Transactions] Failed to record transfer reward:", rewardError)
+        })
     }
 
     return receipt.hash
@@ -184,14 +185,14 @@ export async function sendToken(
         // Don't fail the main transaction if fee sending fails, but log it
       }
 
-      // Record transfer reward
-      try {
-        const { addTransferReward } = await import("./rewards")
-        await addTransferReward(wallet.address)
-      } catch (rewardError: any) {
-        console.error("Failed to record transfer reward:", rewardError)
-        // Don't fail the transaction if reward recording fails
-      }
+      // Record transfer reward asynchronously (don't wait for it)
+      import("./rewards")
+        .then(({ addTransferReward }) => {
+          return addTransferReward(wallet.address)
+        })
+        .catch((rewardError: any) => {
+          console.error("[Transactions] Failed to record transfer reward:", rewardError)
+        })
     }
 
     return receipt.hash

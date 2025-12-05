@@ -31,8 +31,12 @@ export default function RewardsPage() {
 
     // Refresh rewards balance every 5 seconds
     const interval = setInterval(() => {
-      const balance = getRewardsBalance()
-      setRewardsBalance(balance)
+      const wallets = getWallets()
+      if (wallets.length > 0) {
+        const active = getCurrentWallet() || wallets[0]
+        const balance = getRewardsBalance(active.address)
+        setRewardsBalance(balance)
+      }
     }, 5000)
 
     return () => clearInterval(interval)
@@ -46,8 +50,8 @@ export default function RewardsPage() {
 
       const active = getCurrentWallet() || wallets[0]
       
-      // Get rewards balance
-      const balance = getRewardsBalance()
+      // Get rewards balance (per-wallet)
+      const balance = getRewardsBalance(active.address)
       setRewardsBalance(balance)
 
       // Check eligibility
