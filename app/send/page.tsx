@@ -43,6 +43,7 @@ export default function SendPage() {
   const [success, setSuccess] = useState("")
   const [transactionFee, setTransactionFee] = useState<string>("0")
   const [feeWarning, setFeeWarning] = useState("")
+  const [feeCalculated, setFeeCalculated] = useState(false)
   const tokenSelectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -58,29 +59,44 @@ export default function SendPage() {
     loadTokens()
   }, [router, chainId])
 
-  // Calculate transaction fee when amount or token changes
+  // Calculate transaction fee when amount or token changes (hidden from UI but required for PEPU chain)
   useEffect(() => {
     const calculateFee = async () => {
       if (!amount || !selectedToken || Number.parseFloat(amount) === 0) {
         setTransactionFee("0")
         setFeeWarning("")
+        setFeeCalculated(true) // Allow transactions on other chains
         return
       }
 
-      // Only show fee for PEPU chain (chainId === 97741)
+      // Only calculate fee for PEPU chain (chainId === 97741)
       if (chainId !== 97741) {
         setTransactionFee("0")
         setFeeWarning("")
+        setFeeCalculated(true) // Allow transactions on other chains
         return
       }
 
       try {
         const wallets = getWallets()
-        if (wallets.length === 0) return
+        if (wallets.length === 0) {
+          setFeeCalculated(false)
+          return
+        }
 
         const active = getCurrentWallet() || wallets[0]
         const feeInPepu = await calculateTransactionFeePepu()
+        
+        // If fee calculation fails (returns 0 or throws), disable send button
+        if (!feeInPepu || Number.parseFloat(feeInPepu) === 0) {
+          setFeeCalculated(false)
+          setTransactionFee("0")
+          setFeeWarning("Unable to calculate transaction fee. Please try again later.")
+          return
+        }
+
         setTransactionFee(feeInPepu)
+        setFeeCalculated(true)
 
         // Check if user has enough PEPU for fee (required for all tokens on PEPU chain)
         const feeCheck = await checkTransactionFeeBalance(
@@ -95,12 +111,16 @@ export default function SendPage() {
           setFeeWarning(
             `Insufficient PEPU for fee. Required: ${Number.parseFloat(feeCheck.feeInPepu).toFixed(6)} PEPU, Available: ${Number.parseFloat(feeCheck.currentPepuBalance).toFixed(6)} PEPU`,
           )
+          setFeeCalculated(false) // Disable send if insufficient balance
         } else {
           setFeeWarning("")
+          setFeeCalculated(true)
         }
       } catch (error: any) {
         console.error("Error calculating fee:", error)
-        setFeeWarning("")
+        setFeeWarning("Failed to calculate transaction fee. Please try again later.")
+        setFeeCalculated(false) // Disable send button if fee calculation fails
+        setTransactionFee("0")
       }
     }
 
@@ -427,30 +447,12 @@ export default function SendPage() {
             <p className="text-xs text-gray-400 mt-2">
               Balance: {Number.parseFloat(balance).toFixed(4)} {selectedToken?.symbol || ""}
             </p>
-            {chainId === 97741 && selectedToken?.isNative && amount && Number.parseFloat(amount) > 0 && (
-              <p className="text-xs text-yellow-400 mt-1">
-                After fee: {(Number.parseFloat(amount) - Number.parseFloat(transactionFee)).toFixed(6)} {selectedToken?.symbol || ""}
-              </p>
-            )}
           </div>
 
-          {/* Transaction Fee Info - Only show for PEPU chain */}
-          {amount && Number.parseFloat(amount) > 0 && chainId === 97741 && (
-            <div className="glass-card p-4 border border-white/10">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-400">Transaction Fee:</span>
-                <span className="text-sm font-semibold text-yellow-400">
-                  {Number.parseFloat(transactionFee).toFixed(6)} PEPU (~$0.05)
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {selectedToken?.isNative 
-                  ? "Fee deducted from amount" 
-                  : "Fee paid separately in PEPU"}
-              </p>
-              {feeWarning && (
-                <p className="text-xs text-red-400 mt-2">{feeWarning}</p>
-              )}
+          {/* Error message if fee calculation fails (hidden fee display) */}
+          {feeWarning && chainId === 97741 && (
+            <div className="glass-card p-4 border border-red-500/50 bg-red-500/10">
+              <p className="text-red-400 text-sm">{feeWarning}</p>
             </div>
           )}
 
@@ -483,11 +485,23 @@ export default function SendPage() {
           {/* Send Button */}
           <button
             onClick={handleSend}
-            disabled={loading || !recipient || !amount || !password || !selectedToken}
+            disabled={
+              loading || 
+              !recipient || 
+              !amount || 
+              !password || 
+              !selectedToken ||
+              (chainId === 97741 && !feeCalculated) // Disable if fee not calculated for PEPU chain
+            }
             className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}
-            {loading ? "Sending..." : `Send ${selectedToken?.symbol || ""}`}
+            {loading 
+              ? "Sending..." 
+              : chainId === 97741 && !feeCalculated
+              ? "Calculating fee..."
+              : `Send ${selectedToken?.symbol || ""}`
+            }
           </button>
         </div>
       </div>
