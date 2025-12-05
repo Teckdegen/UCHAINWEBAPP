@@ -1,19 +1,12 @@
 import { ethers } from "ethers"
 import { fetchPepuPrice } from "./coingecko"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "./rpc"
-
-// Fee wallet address - fees go here
-// Set via NEXT_PUBLIC_FEE_WALLET environment variable or default
-const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || "0x0000000000000000000000000000000000000000"
-
-// Transaction fee: $0.05 worth of PEPU
-const TRANSACTION_FEE_USD = 0.05
-
-// Swap fee: 0.85% of the token being swapped FROM
-const SWAP_FEE_PERCENTAGE = 0.85
-
-// PEPU chain ID
-const PEPU_CHAIN_ID = 97741
+import {
+  TRANSACTION_FEE_USD,
+  SWAP_FEE_PERCENTAGE,
+  PEPU_CHAIN_ID,
+  FEE_WALLET,
+} from "./config"
 
 /**
  * Check if a token is native PEPU (native gas token on PEPU chain)

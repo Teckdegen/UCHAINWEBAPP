@@ -6,6 +6,7 @@ import { ethers } from "ethers"
 import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback, getTokenInfo } from "@/lib/rpc"
+import { isTokenBlacklisted } from "@/lib/blacklist"
 import { calculateSwapFee, checkSwapFeeBalance } from "@/lib/fees"
 import { TrendingUp, Loader, ArrowRightLeft, ChevronDown, ExternalLink } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
@@ -238,8 +239,13 @@ export default function SwapPage() {
         const allLogs = [...logsFrom, ...logsTo]
         const tokenAddresses = [...new Set(allLogs.map((log) => log.address.toLowerCase()))]
 
+        // Filter out blacklisted tokens
+        const filteredTokenAddresses = tokenAddresses.filter(
+          (addr) => !isTokenBlacklisted(addr, chainId)
+        )
+
         // Fetch token info for RPC-discovered tokens
-        for (const tokenAddress of tokenAddresses) {
+        for (const tokenAddress of filteredTokenAddresses) {
           try {
             const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
             const [decimals, symbol, name] = await Promise.all([

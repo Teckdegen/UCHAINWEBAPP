@@ -6,6 +6,7 @@ import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/
 import { getSavedEthCustomTokens } from "@/lib/customTokens"
 import { sendNativeToken, sendToken } from "@/lib/transactions"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
+import { isTokenBlacklisted } from "@/lib/blacklist"
 import { calculateTransactionFeePepu, checkTransactionFeeBalance } from "@/lib/fees"
 import { ArrowUp, Loader, ChevronDown } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
@@ -239,7 +240,12 @@ export default function SendPage() {
           }
         }
 
-        for (const tokenAddress of tokenAddresses) {
+        // Filter out blacklisted tokens
+        const filteredTokenAddresses = tokenAddresses.filter(
+          (addr) => !isTokenBlacklisted(addr, chainId)
+        )
+
+        for (const tokenAddress of filteredTokenAddresses) {
           try {
             const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
             const [balance, decimals, symbol, name] = await Promise.all([

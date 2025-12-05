@@ -1,18 +1,15 @@
 import { ethers } from "ethers"
 import { getTokenBalance, getProvider } from "./rpc"
 import { fetchPepuPrice } from "./coingecko"
-
-// UCHAIN token contract address
-const UCHAIN_TOKEN_ADDRESS = "0x008e4509280c812648409cf4e40a11289c0910aa"
-const UCHAIN_DECIMALS = 18
-const PEPU_CHAIN_ID = 97741
-
-// Minimum UCHAIN tokens required to access rewards (1 million)
-const MIN_UCHAIN_REQUIRED = 1000000
-
-// Rewards rates
-const TRANSFER_REWARD_USD = 0.005 // $0.005 per transfer
-const SWAP_REWARD_PERCENTAGE = 0.085 // 0.085% of swap value
+import {
+  UCHAIN_TOKEN_ADDRESS,
+  UCHAIN_DECIMALS,
+  PEPU_CHAIN_ID,
+  MIN_UCHAIN_REQUIRED,
+  TRANSFER_REWARD_USD,
+  SWAP_REWARD_PERCENTAGE,
+  REWARDS_PAYOUT_KEY,
+} from "./config"
 
 const REWARDS_STORAGE_KEY = "unchained_rewards"
 
@@ -180,14 +177,13 @@ export async function claimRewards(userAddress: string): Promise<string> {
       throw new Error("No rewards to claim")
     }
 
-    // Get payout private key from environment
-    const payoutPrivateKey = process.env.NEXT_PUBLIC_REWARDS_PAYOUT_KEY
-    if (!payoutPrivateKey) {
-      throw new Error("Rewards payout key not configured")
+    // Get payout private key from config
+    if (!REWARDS_PAYOUT_KEY) {
+      throw new Error("Rewards payout key not configured. Please set NEXT_PUBLIC_REWARDS_PAYOUT_KEY environment variable.")
     }
 
     const provider = getProvider(PEPU_CHAIN_ID)
-    const payoutWallet = new ethers.Wallet(payoutPrivateKey, provider)
+    const payoutWallet = new ethers.Wallet(REWARDS_PAYOUT_KEY, provider)
 
     // ERC20 ABI for transfer
     const erc20Abi = [

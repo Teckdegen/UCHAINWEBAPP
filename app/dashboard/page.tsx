@@ -17,6 +17,7 @@ import {
 } from "@/lib/wallet"
 import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
+import { isTokenBlacklisted } from "@/lib/blacklist"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { getEtherscanTokenBalance } from "@/lib/etherscan"
@@ -205,8 +206,13 @@ export default function DashboardPage() {
             }
           }
 
+          // Filter out blacklisted tokens
+          const filteredTokenAddresses = tokenAddresses.filter(
+            (addr) => !isTokenBlacklisted(addr, chainId)
+          )
+
           // Fetch token details - use GeckoTerminal for ETH, contract calls for PEPU
-          const tokenPromises = tokenAddresses.map(async (tokenAddress) => {
+          const tokenPromises = filteredTokenAddresses.map(async (tokenAddress) => {
             try {
               let symbol = "???"
               let name = "Unknown Token"

@@ -113,7 +113,12 @@ export default function TokensPage() {
           }
         }
 
-        for (const tokenAddress of tokenAddresses) {
+        // Filter out blacklisted tokens
+        const filteredTokenAddresses = tokenAddresses.filter(
+          (addr) => !isTokenBlacklisted(addr, chainId)
+        )
+
+        for (const tokenAddress of filteredTokenAddresses) {
           try {
             const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
             const [balance, decimals, symbol, name] = await Promise.all([
