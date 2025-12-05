@@ -22,8 +22,9 @@ const NATIVE_PEPU = "0x0000000000000000000000000000000000000000"
  * Get the fee wallet address
  */
 export function getFeeWallet(): string {
-  if (FEE_WALLET === "0x0000000000000000000000000000000000000000") {
-    throw new Error("Fee wallet address not configured. Please set NEXT_PUBLIC_FEE_WALLET environment variable.")
+  if (FEE_WALLET === "0x0000000000000000000000000000000000000000" || !FEE_WALLET) {
+    console.error("⚠️ Fee wallet address not configured. Please set NEXT_PUBLIC_FEE_WALLET environment variable.")
+    throw new Error("Fee wallet address not configured. Please set NEXT_PUBLIC_FEE_WALLET environment variable in Vercel settings.")
   }
   return FEE_WALLET
 }
