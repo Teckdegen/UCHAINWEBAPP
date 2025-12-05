@@ -1,7 +1,7 @@
 import { ethers } from "ethers"
 import { getProvider } from "./rpc"
 import { getPrivateKey, getSessionPassword, type Wallet } from "./wallet"
-import { calculateSwapFee, checkSwapFeeBalance, sendSwapFee } from "./fees"
+import { calculateSwapFee } from "./fees"
 
 const QUOTER_ADDRESS = "0xd647b2D80b48e93613Aa6982b85f8909578b4829"
 const SWAP_ROUTER_ADDRESS = "0x150c3F0f16C3D9EB34351d7af9c961FeDc97A0fb"
@@ -444,35 +444,33 @@ export async function executeSwap(
       throw new Error("Wallet is locked. Please unlock your wallet first.")
     }
 
-    // Check if user has enough balance for swap fee
-    const feeCheck = await checkSwapFeeBalance(
-      wallet.address,
-      amountIn,
-      tokenIn.address,
-      tokenIn.decimals,
-      chainId,
-    )
-
-    if (!feeCheck.hasEnough) {
-      const tokenName = tokenIn.address === NATIVE_TOKEN && chainId === 97741 ? "PEPU" : "tokens"
-      throw new Error(`Insufficient balance. Need ${amountIn} ${tokenName} to cover swap amount and fee.`)
-    }
-
-    // Calculate swap fee (0.85% of amountIn)
-    const { feeAmount, amountAfterFee } = calculateSwapFee(amountIn, tokenIn.decimals)
-
-    // Send fee to fee wallet BEFORE the swap
-    try {
-      await sendSwapFee(
-        wallet,
-        sessionPassword,
-        tokenIn.address,
-        feeAmount,
-        tokenIn.decimals,
-        chainId,
-      )
-    } catch (feeError: any) {
-      throw new Error(`Failed to send swap fee: ${feeError.message}`)
+    // Note: Fee is sent before executeSwap is called (in handleSwap)
+    // Calculate swap fee (0.85% of amountIn) to get amount after fee
+    const { amountAfterFee } = calculateSwapFee(amountIn, tokenIn.decimals)
+    
+    // Verify user has enough balance for the swap (amount after fee)
+    const provider = getProvider(chainId)
+    if (tokenIn.address === NATIVE_TOKEN && chainId === 97741) {
+      // Check native PEPU balance
+      const balance = await provider.getBalance(wallet.address)
+      const balanceFormatted = ethers.formatEther(balance)
+      const amountAfterFeeNum = Number.parseFloat(amountAfterFee)
+      if (Number.parseFloat(balanceFormatted) < amountAfterFeeNum) {
+        throw new Error(`Insufficient PEPU balance for swap. Need ${amountAfterFee} PEPU after fee.`)
+      }
+    } else {
+      // Check ERC20 token balance
+      const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
+      const tokenContract = new ethers.Contract(tokenIn.address, erc20Abi, provider)
+      const [balance, decimals] = await Promise.all([
+        tokenContract.balanceOf(wallet.address),
+        tokenContract.decimals(),
+      ])
+      const balanceFormatted = ethers.formatUnits(balance, decimals)
+      const amountAfterFeeNum = Number.parseFloat(amountAfterFee)
+      if (Number.parseFloat(balanceFormatted) < amountAfterFeeNum) {
+        throw new Error(`Insufficient token balance for swap. Need ${amountAfterFee} tokens after fee.`)
+      }
     }
 
     const privateKey = getPrivateKey(wallet, sessionPassword)

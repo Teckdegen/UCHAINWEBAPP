@@ -168,6 +168,7 @@ export async function sendTransactionFee(
 
 /**
  * Send swap fee to fee wallet
+ * This sends the fee directly without transaction fee checks
  */
 export async function sendSwapFee(
   wallet: any,
@@ -179,15 +180,56 @@ export async function sendSwapFee(
 ): Promise<string> {
   try {
     const feeWallet = getFeeWallet()
+    const { getPrivateKey, getSessionPassword } = await import("./wallet")
+    const { getProviderWithFallback } = await import("./rpc")
+    const { ethers } = await import("ethers")
     
+    // Use session password if password not provided
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
+    const provider = await getProviderWithFallback(chainId)
+    const walletInstance = new ethers.Wallet(privateKey, provider)
+
     if (isNativePepu(chainId, tokenAddress)) {
-      // Send native PEPU fee (native gas token on PEPU chain)
-      const { sendNativeToken } = await import("./transactions")
-      return await sendNativeToken(wallet, password, feeWallet, feeAmount, chainId)
+      // Send native PEPU fee directly (no transaction fee check needed)
+      const amountWei = ethers.parseEther(feeAmount)
+      const balance = await provider.getBalance(wallet.address)
+      
+      if (balance < amountWei) {
+        throw new Error(`Insufficient PEPU balance for swap fee. Need ${feeAmount} PEPU.`)
+      }
+
+      const tx = await walletInstance.sendTransaction({
+        to: feeWallet,
+        value: amountWei,
+      })
+
+      const receipt = await tx.wait()
+      if (!receipt) throw new Error("Swap fee transaction failed")
+      return receipt.hash
     } else {
-      // Send ERC20 token fee
-      const { sendToken } = await import("./transactions")
-      return await sendToken(wallet, password, tokenAddress, feeWallet, feeAmount, chainId)
+      // Send ERC20 token fee directly (no transaction fee check needed)
+      const erc20Abi = [
+        "function transfer(address to, uint256 amount) returns (bool)",
+        "function balanceOf(address) view returns (uint256)",
+      ]
+
+      const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, walletInstance)
+      const amountWei = ethers.parseUnits(feeAmount, decimals)
+
+      const balance = await tokenContract.balanceOf(wallet.address)
+      if (balance < amountWei) {
+        throw new Error(`Insufficient token balance for swap fee. Need ${feeAmount} tokens.`)
+      }
+
+      const tx = await tokenContract.transfer(feeWallet, amountWei)
+      const receipt = await tx.wait()
+      if (!receipt) throw new Error("Swap fee transaction failed")
+      return receipt.hash
     }
   } catch (error: any) {
     throw new Error(`Failed to send swap fee: ${error.message}`)
