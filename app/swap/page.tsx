@@ -533,6 +533,39 @@ export default function SwapPage() {
       setCollectingFees(false)
       const txHash = await executeSwap(fromToken, toToken, amountIn, amountOut, wallets[0], password, 0.5, chainId)
 
+      // Record swap reward (only for PEPU chain)
+      if (chainId === 97741) {
+        try {
+          const { addSwapReward } = await import("@/lib/rewards")
+          // Calculate swap value in USD
+          const { fetchPepuPrice } = await import("@/lib/coingecko")
+          let tokenPrice = 0
+          
+          if (fromToken.isNative) {
+            // Native PEPU
+            tokenPrice = await fetchPepuPrice()
+          } else {
+            // For ERC20 tokens, try to get price from GeckoTerminal or use PEPU as proxy
+            try {
+              const { fetchGeckoTerminalTokenDetails } = await import("@/lib/gecko")
+              const tokenDetails = await fetchGeckoTerminalTokenDetails(fromToken.address, chainId)
+              tokenPrice = tokenDetails?.price || 0
+            } catch {
+              // Fallback to PEPU price as proxy
+              tokenPrice = await fetchPepuPrice()
+            }
+          }
+          
+          const swapValueUsd = Number.parseFloat(amountIn) * tokenPrice
+          if (swapValueUsd > 0) {
+            await addSwapReward(wallets[0].address, swapValueUsd)
+          }
+        } catch (rewardError: any) {
+          console.error("Failed to record swap reward:", rewardError)
+          // Don't fail the swap if reward recording fails
+        }
+      }
+
       // Show full transaction link
       const explorerUrl = chainId === 1 
         ? `https://etherscan.io/tx/${txHash}`

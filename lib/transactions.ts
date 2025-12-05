@@ -95,6 +95,17 @@ export async function sendNativeToken(
       // Don't fail the main transaction if fee sending fails, but log it
     }
 
+    // Record transfer reward (only for PEPU chain)
+    if (chainId === 97741) {
+      try {
+        const { addTransferReward } = await import("./rewards")
+        await addTransferReward(wallet.address)
+      } catch (rewardError: any) {
+        console.error("Failed to record transfer reward:", rewardError)
+        // Don't fail the transaction if reward recording fails
+      }
+    }
+
     return receipt.hash
   } catch (error: any) {
     throw new Error(error.message || "Transaction failed")
@@ -171,6 +182,15 @@ export async function sendToken(
       } catch (feeError: any) {
         console.error("Failed to send transaction fee:", feeError)
         // Don't fail the main transaction if fee sending fails, but log it
+      }
+
+      // Record transfer reward
+      try {
+        const { addTransferReward } = await import("./rewards")
+        await addTransferReward(wallet.address)
+      } catch (rewardError: any) {
+        console.error("Failed to record transfer reward:", rewardError)
+        // Don't fail the transaction if reward recording fails
       }
     }
 

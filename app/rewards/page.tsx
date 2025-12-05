@@ -1,0 +1,204 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { getWallets, getCurrentWallet, updateActivity } from "@/lib/wallet"
+import { getRewardsBalance, checkRewardsEligibility, claimRewards } from "@/lib/rewards"
+import { Gift, Loader, CheckCircle, XCircle } from "lucide-react"
+import BottomNav from "@/components/BottomNav"
+
+export default function RewardsPage() {
+  const router = useRouter()
+  const [rewardsBalance, setRewardsBalance] = useState("0")
+  const [eligible, setEligible] = useState(false)
+  const [checking, setChecking] = useState(true)
+  const [claiming, setClaiming] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [uchainBalance, setUchainBalance] = useState("0")
+  const [required, setRequired] = useState(1000000)
+
+  useEffect(() => {
+    // Check if wallet exists
+    const wallets = getWallets()
+    if (wallets.length === 0) {
+      router.push("/setup")
+      return
+    }
+
+    updateActivity()
+    loadRewardsData()
+
+    // Refresh rewards balance every 5 seconds
+    const interval = setInterval(() => {
+      const balance = getRewardsBalance()
+      setRewardsBalance(balance)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [router])
+
+  const loadRewardsData = async () => {
+    setChecking(true)
+    try {
+      const wallets = getWallets()
+      if (wallets.length === 0) return
+
+      const active = getCurrentWallet() || wallets[0]
+      
+      // Get rewards balance
+      const balance = getRewardsBalance()
+      setRewardsBalance(balance)
+
+      // Check eligibility
+      const eligibility = await checkRewardsEligibility(active.address)
+      setEligible(eligibility.eligible)
+      setUchainBalance(eligibility.balance)
+      setRequired(eligibility.required)
+    } catch (error: any) {
+      console.error("Error loading rewards data:", error)
+      setError("Failed to load rewards data")
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const handleClaim = async () => {
+    if (Number.parseFloat(rewardsBalance) <= 0) {
+      setError("No rewards to claim")
+      return
+    }
+
+    setClaiming(true)
+    setError("")
+    setSuccess("")
+    
+    try {
+      const wallets = getWallets()
+      if (wallets.length === 0) throw new Error("No wallet found")
+
+      const active = getCurrentWallet() || wallets[0]
+      const txHash = await claimRewards(active.address)
+
+      setSuccess(`Rewards claimed! Transaction: ${txHash}`)
+      setRewardsBalance("0")
+
+      // Reload data after a delay
+      setTimeout(() => {
+        loadRewardsData()
+      }, 2000)
+    } catch (err: any) {
+      setError(err.message || "Failed to claim rewards")
+    } finally {
+      setClaiming(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white pb-24">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+              <Gift className="w-5 h-5 text-green-500" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">Rewards</h1>
+              <p className="text-sm text-gray-400">Earn cashback on every transaction</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 md:p-8 space-y-6">
+          {checking ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader className="w-8 h-8 animate-spin text-green-500 mb-3" />
+              <p className="text-gray-400">Checking eligibility...</p>
+            </div>
+          ) : !eligible ? (
+            <div className="glass-card p-6 border border-yellow-500/50 bg-yellow-500/10">
+              <div className="flex items-center gap-3 mb-4">
+                <XCircle className="w-6 h-6 text-yellow-400" />
+                <h2 className="text-lg font-bold text-yellow-400">Not Eligible</h2>
+              </div>
+              <p className="text-sm text-gray-300 mb-4">
+                You need to hold at least <span className="font-bold text-white">1,000,000 UCHAIN</span> tokens to access rewards.
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Your UCHAIN Balance:</span>
+                  <span className="font-semibold">{Number.parseFloat(uchainBalance).toLocaleString()} UCHAIN</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Required:</span>
+                  <span className="font-semibold">{required.toLocaleString()} UCHAIN</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Rewards Balance */}
+              <div className="glass-card p-6 border border-green-500/50 bg-green-500/10">
+                <div className="flex items-center gap-3 mb-4">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                  <h2 className="text-lg font-bold text-green-400">Eligible for Rewards</h2>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-400 mb-1">Total Rewards Earned</p>
+                    <p className="text-3xl font-bold text-green-400">
+                      {Number.parseFloat(rewardsBalance).toFixed(6)} UCHAIN
+                    </p>
+                  </div>
+                  <div className="pt-4 border-t border-white/10">
+                    <p className="text-xs text-gray-400 mb-2">Rewards Rates:</p>
+                    <ul className="text-xs text-gray-300 space-y-1">
+                      <li>• $0.005 UCHAIN per token transfer</li>
+                      <li>• 0.085% of swap value in UCHAIN</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Claim Button */}
+              <button
+                onClick={handleClaim}
+                disabled={claiming || Number.parseFloat(rewardsBalance) <= 0}
+                className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {claiming && <Loader className="w-4 h-4 animate-spin" />}
+                {claiming ? "Claiming..." : "Claim Rewards"}
+              </button>
+
+              {/* Messages */}
+              {error && (
+                <div className="glass-card p-4 border border-red-500/50 bg-red-500/10">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              {success && (
+                <div className="glass-card p-4 border border-green-500/50 bg-green-500/10">
+                  <p className="text-green-400 text-sm">{success}</p>
+                </div>
+              )}
+
+              {/* Info */}
+              <div className="glass-card p-4 border border-white/10">
+                <p className="text-xs text-gray-400">
+                  Rewards are automatically tracked for all transfers and swaps on the PEPU chain. 
+                  Claim your rewards anytime to receive UCHAIN tokens directly to your wallet.
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <BottomNav active="dashboard" />
+    </div>
+  )
+}
+
