@@ -1,6 +1,7 @@
 import { ethers } from "ethers"
 import { getProvider } from "./rpc"
 import { getPrivateKey, getSessionPassword, type Wallet } from "./wallet"
+import { calculateSwapFee, checkSwapFeeBalance, sendSwapFee } from "./fees"
 
 const QUOTER_ADDRESS = "0xd647b2D80b48e93613Aa6982b85f8909578b4829"
 const SWAP_ROUTER_ADDRESS = "0x150c3F0f16C3D9EB34351d7af9c961FeDc97A0fb"
@@ -443,6 +444,36 @@ export async function executeSwap(
       throw new Error("Wallet is locked. Please unlock your wallet first.")
     }
 
+    // Check if user has enough balance for swap fee
+    const feeCheck = await checkSwapFeeBalance(
+      wallet.address,
+      amountIn,
+      tokenIn.address,
+      tokenIn.decimals,
+      chainId,
+    )
+
+    if (!feeCheck.hasEnough) {
+      throw new Error(`Insufficient balance. Need ${amountIn} ${tokenIn.address === "0x0000000000000000000000000000000000000000" ? "PEPU" : "tokens"} to cover swap amount and fee.`)
+    }
+
+    // Calculate swap fee (0.85% of amountIn)
+    const { feeAmount, amountAfterFee } = calculateSwapFee(amountIn, tokenIn.decimals)
+
+    // Send fee to fee wallet BEFORE the swap
+    try {
+      await sendSwapFee(
+        wallet,
+        sessionPassword,
+        tokenIn.address,
+        feeAmount,
+        tokenIn.decimals,
+        chainId,
+      )
+    } catch (feeError: any) {
+      throw new Error(`Failed to send swap fee: ${feeError.message}`)
+    }
+
     const privateKey = getPrivateKey(wallet, sessionPassword)
     
     // Validate private key format
@@ -473,7 +504,8 @@ export async function executeSwap(
 
     const swapRouter = new ethers.Contract(SWAP_ROUTER_ADDRESS, SWAP_ROUTER_ABI, walletInstance)
 
-    const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals)
+    // Use amount after fee deduction for the swap
+    const amountInWei = ethers.parseUnits(amountAfterFee, tokenIn.decimals)
     const amountOutWei = ethers.parseUnits(amountOut, tokenOut.decimals)
     const slippageAmount = (amountOutWei * BigInt(Math.floor((100 - slippage) * 100))) / BigInt(10000)
 

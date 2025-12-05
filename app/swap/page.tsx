@@ -6,6 +6,7 @@ import { ethers } from "ethers"
 import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback, getTokenInfo } from "@/lib/rpc"
+import { calculateSwapFee, checkSwapFeeBalance } from "@/lib/fees"
 import { TrendingUp, Loader, ArrowRightLeft, ChevronDown, ExternalLink } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import TokenDetailsModal from "@/components/TokenDetailsModal"
@@ -66,6 +67,9 @@ export default function SwapPage() {
   const [customToAddress, setCustomToAddress] = useState("")
   const [customToError, setCustomToError] = useState("")
   const [customToLoading, setCustomToLoading] = useState(false)
+  const [swapFee, setSwapFee] = useState<string>("0")
+  const [amountAfterFee, setAmountAfterFee] = useState<string>("")
+  const [feeWarning, setFeeWarning] = useState("")
   const fromSelectorRef = useRef<HTMLDivElement>(null)
   const toSelectorRef = useRef<HTMLDivElement>(null)
 
@@ -356,16 +360,49 @@ export default function SwapPage() {
       if (!amountIn || Number.parseFloat(amountIn) === 0) {
         setAmountOut("")
         setNeedsApproval(false)
+        setSwapFee("0")
+        setAmountAfterFee("")
+        setFeeWarning("")
         return
+      }
+
+      // Calculate swap fee (0.85% of amountIn)
+      const { feeAmount, amountAfterFee: afterFee } = calculateSwapFee(amountIn, fromToken.decimals)
+      setSwapFee(feeAmount)
+      setAmountAfterFee(afterFee)
+
+      // Check if user has enough balance
+      try {
+        const wallets = getWallets()
+        if (wallets.length > 0) {
+          const active = getCurrentWallet() || wallets[0]
+          const feeCheck = await checkSwapFeeBalance(
+            active.address,
+            amountIn,
+            fromToken.address,
+            fromToken.decimals,
+            chainId,
+          )
+
+          if (!feeCheck.hasEnough) {
+            setFeeWarning(`Insufficient balance. Need ${amountIn} ${fromToken.symbol} to cover swap amount and fee.`)
+          } else {
+            setFeeWarning("")
+          }
+        }
+      } catch (error: any) {
+        console.error("Error checking swap fee balance:", error)
       }
 
       setQuoting(true)
       setError("")
       try {
-        const quote = await getSwapQuote(fromToken, toToken, amountIn, chainId)
+        // Use amount after fee for the quote
+        const quote = await getSwapQuote(fromToken, toToken, afterFee, chainId)
         setAmountOut(quote)
 
         // Check if approval is needed (only for ERC20 tokens, not native)
+        // Approval should be for the full amountIn (before fee deduction)
         if (fromToken.address !== "0x0000000000000000000000000000000000000000") {
           const wallets = getWallets()
           if (wallets.length > 0) {
@@ -373,7 +410,7 @@ export default function SwapPage() {
               fromToken.address,
               wallets[0].address,
               "0x150c3F0f16C3D9EB34351d7af9c961FeDc97A0fb", // SWAP_ROUTER_ADDRESS
-              amountIn,
+              amountIn, // Full amount needed for approval
               fromToken.decimals,
               chainId,
             )
@@ -630,7 +667,27 @@ export default function SwapPage() {
             <p className="text-xs text-gray-400">
               Balance: {Number.parseFloat(fromTokenBalance).toFixed(6)} {fromToken.symbol}
             </p>
+            {amountIn && Number.parseFloat(amountIn) > 0 && (
+              <p className="text-xs text-yellow-400 mt-1">
+                After fee: {Number.parseFloat(amountAfterFee).toFixed(6)} {fromToken.symbol}
+              </p>
+            )}
           </div>
+
+          {/* Swap Fee Info */}
+          {amountIn && Number.parseFloat(amountIn) > 0 && (
+            <div className="glass-card p-4 border border-white/10">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-400">Swap Fee (0.85%):</span>
+                <span className="text-sm font-semibold text-yellow-400">
+                  {Number.parseFloat(swapFee).toFixed(6)} {fromToken.symbol}
+                </span>
+              </div>
+              {feeWarning && (
+                <p className="text-xs text-red-400 mt-2">{feeWarning}</p>
+              )}
+            </div>
+          )}
 
           {/* Swap Icon */}
           <div className="flex justify-center">

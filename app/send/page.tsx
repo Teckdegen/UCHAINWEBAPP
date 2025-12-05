@@ -6,6 +6,7 @@ import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/
 import { getSavedEthCustomTokens } from "@/lib/customTokens"
 import { sendNativeToken, sendToken } from "@/lib/transactions"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
+import { calculateTransactionFeePepu, checkTransactionFeeBalance } from "@/lib/fees"
 import { ArrowUp, Loader, ChevronDown } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
@@ -40,6 +41,8 @@ export default function SendPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState("")
+  const [transactionFee, setTransactionFee] = useState<string>("0")
+  const [feeWarning, setFeeWarning] = useState("")
   const tokenSelectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -54,6 +57,55 @@ export default function SendPage() {
     updateActivity()
     loadTokens()
   }, [router, chainId])
+
+  // Calculate transaction fee when amount or token changes
+  useEffect(() => {
+    const calculateFee = async () => {
+      if (!amount || !selectedToken || Number.parseFloat(amount) === 0) {
+        setTransactionFee("0")
+        setFeeWarning("")
+        return
+      }
+
+      // Only show fee for PEPU chain (chainId === 97741)
+      if (chainId !== 97741) {
+        setTransactionFee("0")
+        setFeeWarning("")
+        return
+      }
+
+      try {
+        const wallets = getWallets()
+        if (wallets.length === 0) return
+
+        const active = getCurrentWallet() || wallets[0]
+        const feeInPepu = await calculateTransactionFeePepu()
+        setTransactionFee(feeInPepu)
+
+        // Check if user has enough PEPU for fee (required for all tokens on PEPU chain)
+        const feeCheck = await checkTransactionFeeBalance(
+          active.address,
+          amount,
+          selectedToken.address,
+          selectedToken.decimals,
+          chainId,
+        )
+
+        if (!feeCheck.hasEnough) {
+          setFeeWarning(
+            `Insufficient PEPU for fee. Required: ${Number.parseFloat(feeCheck.feeInPepu).toFixed(6)} PEPU, Available: ${Number.parseFloat(feeCheck.currentPepuBalance).toFixed(6)} PEPU`,
+          )
+        } else {
+          setFeeWarning("")
+        }
+      } catch (error: any) {
+        console.error("Error calculating fee:", error)
+        setFeeWarning("")
+      }
+    }
+
+    calculateFee()
+  }, [amount, selectedToken, chainId])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -375,7 +427,32 @@ export default function SendPage() {
             <p className="text-xs text-gray-400 mt-2">
               Balance: {Number.parseFloat(balance).toFixed(4)} {selectedToken?.symbol || ""}
             </p>
+            {chainId === 97741 && selectedToken?.isNative && amount && Number.parseFloat(amount) > 0 && (
+              <p className="text-xs text-yellow-400 mt-1">
+                After fee: {(Number.parseFloat(amount) - Number.parseFloat(transactionFee)).toFixed(6)} {selectedToken?.symbol || ""}
+              </p>
+            )}
           </div>
+
+          {/* Transaction Fee Info - Only show for PEPU chain */}
+          {amount && Number.parseFloat(amount) > 0 && chainId === 97741 && (
+            <div className="glass-card p-4 border border-white/10">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-400">Transaction Fee:</span>
+                <span className="text-sm font-semibold text-yellow-400">
+                  {Number.parseFloat(transactionFee).toFixed(6)} PEPU (~$0.05)
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {selectedToken?.isNative 
+                  ? "Fee deducted from amount" 
+                  : "Fee paid separately in PEPU"}
+              </p>
+              {feeWarning && (
+                <p className="text-xs text-red-400 mt-2">{feeWarning}</p>
+              )}
+            </div>
+          )}
 
           {/* Password */}
           <div>
