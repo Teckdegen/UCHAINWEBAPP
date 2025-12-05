@@ -17,7 +17,7 @@ export const SWAP_FEE_PERCENTAGE = 0.85 // 0.85% of the token being swapped FROM
 // REWARDS SYSTEM
 // ============================================
 // Minimum UCHAIN tokens required to access rewards
-export const MIN_UCHAIN_REQUIRED = 1000000 // 1 million UCHAIN tokens
+export const MIN_UCHAIN_REQUIRED = 10 // 1 million UCHAIN tokens
 
 // Cashback per transaction (in USD worth of UCHAIN)
 export const TRANSFER_REWARD_USD = 0.005 // $0.005 worth of UCHAIN per transfer
