@@ -60,8 +60,12 @@ export default function SendPage() {
   }, [router, chainId])
 
   // Calculate transaction fee when amount or token changes (hidden from UI but required for PEPU chain)
+  // Retries every 5 seconds if CoinGecko fails
   useEffect(() => {
-    const calculateFee = async () => {
+    let retryTimeout: NodeJS.Timeout | null = null
+    let isMounted = true
+
+    const calculateFee = async (isRetry = false) => {
       if (!amount || !selectedToken || Number.parseFloat(amount) === 0) {
         setTransactionFee("0")
         setFeeWarning("")
@@ -87,44 +91,72 @@ export default function SendPage() {
         const active = getCurrentWallet() || wallets[0]
         const feeInPepu = await calculateTransactionFeePepu()
         
-        // If fee calculation fails (returns 0 or throws), disable send button
+        // If fee calculation fails (returns 0 or throws), retry after 5 seconds
         if (!feeInPepu || Number.parseFloat(feeInPepu) === 0) {
-          setFeeCalculated(false)
-          setTransactionFee("0")
-          setFeeWarning("Unable to calculate transaction fee. Please try again later.")
+          if (isMounted) {
+            setFeeCalculated(false)
+            setTransactionFee("0")
+            setFeeWarning("Unable to calculate transaction fee. Retrying in 5 seconds...")
+            
+            // Retry after 5 seconds
+            retryTimeout = setTimeout(() => {
+              if (isMounted) {
+                calculateFee(true)
+              }
+            }, 5000)
+          }
           return
         }
 
-        setTransactionFee(feeInPepu)
-        setFeeCalculated(true)
+        if (isMounted) {
+          setTransactionFee(feeInPepu)
+          setFeeWarning("") // Clear retry message
 
-        // Check if user has enough PEPU for fee (required for all tokens on PEPU chain)
-        const feeCheck = await checkTransactionFeeBalance(
-          active.address,
-          amount,
-          selectedToken.address,
-          selectedToken.decimals,
-          chainId,
-        )
-
-        if (!feeCheck.hasEnough) {
-          setFeeWarning(
-            `Insufficient PEPU for fee. Required: ${Number.parseFloat(feeCheck.feeInPepu).toFixed(6)} PEPU, Available: ${Number.parseFloat(feeCheck.currentPepuBalance).toFixed(6)} PEPU`,
+          // Check if user has enough PEPU for fee (required for all tokens on PEPU chain)
+          const feeCheck = await checkTransactionFeeBalance(
+            active.address,
+            amount,
+            selectedToken.address,
+            selectedToken.decimals,
+            chainId,
           )
-          setFeeCalculated(false) // Disable send if insufficient balance
-        } else {
-          setFeeWarning("")
-          setFeeCalculated(true)
+
+          if (!feeCheck.hasEnough) {
+            setFeeWarning(
+              `Insufficient PEPU for fee. Required: ${Number.parseFloat(feeCheck.feeInPepu).toFixed(6)} PEPU, Available: ${Number.parseFloat(feeCheck.currentPepuBalance).toFixed(6)} PEPU`,
+            )
+            setFeeCalculated(false) // Disable send if insufficient balance
+          } else {
+            setFeeWarning("")
+            setFeeCalculated(true)
+          }
         }
       } catch (error: any) {
         console.error("Error calculating fee:", error)
-        setFeeWarning("Failed to calculate transaction fee. Please try again later.")
-        setFeeCalculated(false) // Disable send button if fee calculation fails
-        setTransactionFee("0")
+        if (isMounted) {
+          setFeeWarning("Failed to calculate transaction fee. Retrying in 5 seconds...")
+          setFeeCalculated(false) // Disable send button if fee calculation fails
+          setTransactionFee("0")
+          
+          // Retry after 5 seconds
+          retryTimeout = setTimeout(() => {
+            if (isMounted) {
+              calculateFee(true)
+            }
+          }, 5000)
+        }
       }
     }
 
     calculateFee()
+
+    // Cleanup function
+    return () => {
+      isMounted = false
+      if (retryTimeout) {
+        clearTimeout(retryTimeout)
+      }
+    }
   }, [amount, selectedToken, chainId])
 
   useEffect(() => {

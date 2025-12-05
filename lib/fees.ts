@@ -15,8 +15,17 @@ const SWAP_FEE_PERCENTAGE = 0.85
 // PEPU chain ID
 const PEPU_CHAIN_ID = 97741
 
-// Native PEPU address
-const NATIVE_PEPU = "0x0000000000000000000000000000000000000000"
+/**
+ * Check if a token is native PEPU (native gas token on PEPU chain)
+ * PEPU is the native token, not an ERC20, so we check by chain ID
+ */
+function isNativePepu(chainId: number, tokenAddress: string): boolean {
+  // On PEPU chain, native token is identified by zero address or by being the native gas token
+  return chainId === PEPU_CHAIN_ID && (
+    tokenAddress === "0x0000000000000000000000000000000000000000" ||
+    tokenAddress === ethers.ZeroAddress
+  )
+}
 
 /**
  * Get the fee wallet address
@@ -84,8 +93,8 @@ export async function checkTransactionFeeBalance(
     
     // Calculate total required (amount + fee if sending PEPU, or just fee if sending other token)
     let requiredTotal = feeInPepu
-    if (chainId === PEPU_CHAIN_ID && tokenAddress === NATIVE_PEPU) {
-      // If sending PEPU, need amount + fee
+    if (isNativePepu(chainId, tokenAddress)) {
+      // If sending native PEPU, need amount + fee
       const totalNeeded = Number.parseFloat(amount) + Number.parseFloat(feeInPepu)
       requiredTotal = totalNeeded.toFixed(18)
     }
@@ -117,9 +126,11 @@ export async function checkSwapFeeBalance(
     
     // Check if user has enough of the token being swapped
     let balance: string
-    if (tokenInAddress === NATIVE_PEPU && chainId === PEPU_CHAIN_ID) {
+    if (isNativePepu(chainId, tokenInAddress)) {
+      // Native PEPU balance
       balance = await getNativeBalance(walletAddress, chainId)
     } else {
+      // ERC20 token balance
       balance = await getTokenBalance(tokenInAddress, walletAddress, chainId)
     }
     
@@ -169,8 +180,8 @@ export async function sendSwapFee(
   try {
     const feeWallet = getFeeWallet()
     
-    if (tokenAddress === NATIVE_PEPU && chainId === PEPU_CHAIN_ID) {
-      // Send native PEPU fee
+    if (isNativePepu(chainId, tokenAddress)) {
+      // Send native PEPU fee (native gas token on PEPU chain)
       const { sendNativeToken } = await import("./transactions")
       return await sendNativeToken(wallet, password, feeWallet, feeAmount, chainId)
     } else {

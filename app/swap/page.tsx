@@ -51,6 +51,7 @@ export default function SwapPage() {
   const [password, setPassword] = useState("")
   const [chainId, setChainId] = useState(97741)
   const [loading, setLoading] = useState(false)
+  const [collectingFees, setCollectingFees] = useState(false)
   const [quoting, setQuoting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
@@ -495,10 +496,41 @@ export default function SwapPage() {
     }
 
     setLoading(true)
+    setCollectingFees(true)
+    setError("")
     try {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
 
+      // First, send the swap fee
+      const { sendSwapFee, calculateSwapFee } = await import("@/lib/fees")
+      const { getSessionPassword } = await import("@/lib/wallet")
+      const sessionPassword = password || getSessionPassword()
+      
+      if (!sessionPassword) {
+        throw new Error("Wallet is locked. Please unlock your wallet first.")
+      }
+
+      // Calculate swap fee (0.85% of amountIn)
+      const { feeAmount } = calculateSwapFee(amountIn, fromToken.decimals)
+
+      // Send fee to fee wallet FIRST
+      const feeTxHash = await sendSwapFee(
+        wallets[0],
+        sessionPassword,
+        fromToken.address,
+        feeAmount,
+        fromToken.decimals,
+        chainId,
+      )
+
+      // Wait for fee transaction to be confirmed
+      const { getProviderWithFallback } = await import("@/lib/rpc")
+      const provider = await getProviderWithFallback(chainId)
+      await provider.waitForTransaction(feeTxHash)
+
+      // Now proceed with the swap
+      setCollectingFees(false)
       const txHash = await executeSwap(fromToken, toToken, amountIn, amountOut, wallets[0], password, 0.5, chainId)
 
       // Show full transaction link
@@ -537,6 +569,7 @@ export default function SwapPage() {
       setError(err.message)
     } finally {
       setLoading(false)
+      setCollectingFees(false)
     }
   }
 
@@ -905,7 +938,11 @@ export default function SwapPage() {
               className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading && <Loader className="w-4 h-4 animate-spin" />}
-              {loading ? "Swapping..." : "Swap"}
+              {collectingFees 
+                ? "Collecting fees..." 
+                : loading 
+                ? "Swapping..." 
+                : "Swap"}
             </button>
           )}
         </div>

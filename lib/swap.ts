@@ -454,7 +454,8 @@ export async function executeSwap(
     )
 
     if (!feeCheck.hasEnough) {
-      throw new Error(`Insufficient balance. Need ${amountIn} ${tokenIn.address === "0x0000000000000000000000000000000000000000" ? "PEPU" : "tokens"} to cover swap amount and fee.`)
+      const tokenName = tokenIn.address === NATIVE_TOKEN && chainId === 97741 ? "PEPU" : "tokens"
+      throw new Error(`Insufficient balance. Need ${amountIn} ${tokenName} to cover swap amount and fee.`)
     }
 
     // Calculate swap fee (0.85% of amountIn)
