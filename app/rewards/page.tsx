@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getCurrentWallet, updateActivity } from "@/lib/wallet"
 import { getRewardsBalance, checkRewardsEligibility, claimRewards } from "@/lib/rewards"
+import { fetchGeckoTerminalData } from "@/lib/gecko"
+import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
 import { Gift, Loader, CheckCircle, XCircle } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 
@@ -17,6 +19,7 @@ export default function RewardsPage() {
   const [success, setSuccess] = useState("")
   const [uchainBalance, setUchainBalance] = useState("0")
   const [required, setRequired] = useState(1000000)
+  const [uchainPrice, setUchainPrice] = useState<number>(0)
 
   useEffect(() => {
     // Check if wallet exists
@@ -29,13 +32,25 @@ export default function RewardsPage() {
     updateActivity()
     loadRewardsData()
 
-    // Refresh rewards balance every 5 seconds
+    // Refresh rewards balance and price every 5 seconds
     const interval = setInterval(() => {
       const wallets = getWallets()
       if (wallets.length > 0) {
         const active = getCurrentWallet() || wallets[0]
         const balance = getRewardsBalance(active.address)
         setRewardsBalance(balance)
+        
+        // Refresh UCHAIN price
+        fetchGeckoTerminalData(UCHAIN_TOKEN_ADDRESS, "pepe-unchained")
+          .then((geckoData) => {
+            if (geckoData && geckoData.price_usd) {
+              const price = parseFloat(geckoData.price_usd)
+              if (price > 0) {
+                setUchainPrice(price)
+              }
+            }
+          })
+          .catch((err) => console.error("Error fetching UCHAIN price:", err))
       }
     }, 5000)
 
@@ -59,6 +74,19 @@ export default function RewardsPage() {
       setEligible(eligibility.eligible)
       setUchainBalance(eligibility.balance)
       setRequired(eligibility.required)
+
+      // Fetch UCHAIN price for USD display
+      try {
+        const geckoData = await fetchGeckoTerminalData(UCHAIN_TOKEN_ADDRESS, "pepe-unchained")
+        if (geckoData && geckoData.price_usd) {
+          const price = parseFloat(geckoData.price_usd)
+          if (price > 0) {
+            setUchainPrice(price)
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching UCHAIN price:", err)
+      }
     } catch (error: any) {
       console.error("Error loading rewards data:", error)
       setError("Failed to load rewards data")
@@ -155,12 +183,17 @@ export default function RewardsPage() {
                     <p className="text-3xl font-bold text-green-400">
                       {Number.parseFloat(rewardsBalance).toFixed(6)} UCHAIN
                     </p>
+                    {uchainPrice > 0 && (
+                      <p className="text-sm text-gray-400 mt-1">
+                        ≈ ${(Number.parseFloat(rewardsBalance) * uchainPrice).toFixed(2)} USD
+                      </p>
+                    )}
                   </div>
                   <div className="pt-4 border-t border-white/10">
                     <p className="text-xs text-gray-400 mb-2">Rewards Rates:</p>
                     <ul className="text-xs text-gray-300 space-y-1">
-                      <li>• $0.005 UCHAIN per token transfer</li>
-                      <li>• 0.085% of swap value in UCHAIN</li>
+                      <li>• $0.005 worth of UCHAIN per token transfer</li>
+                      <li>• 0.085% of swap value in UCHAIN (cashback)</li>
                     </ul>
                   </div>
                 </div>

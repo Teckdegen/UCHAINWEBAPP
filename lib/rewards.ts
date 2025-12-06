@@ -1,6 +1,7 @@
 import { ethers } from "ethers"
 import { getTokenBalance, getProvider } from "./rpc"
 import { fetchPepuPrice } from "./coingecko"
+import { fetchGeckoTerminalData } from "./gecko"
 import {
   UCHAIN_TOKEN_ADDRESS,
   UCHAIN_DECIMALS,
@@ -166,24 +167,23 @@ export function resetRewards(walletAddress: string): void {
 
 /**
  * Get UCHAIN token price in USD
- * For now, we'll use PEPU price as a proxy or fetch from CoinGecko
+ * Uses GeckoTerminal API for PEPU chain tokens
  */
 async function getUchainPrice(): Promise<number> {
   try {
-    // Try to get UCHAIN price from CoinGecko by contract address
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${UCHAIN_TOKEN_ADDRESS}&vs_currencies=usd`,
-    )
-
-    if (response.ok) {
-      const data = await response.json()
-      const contractKey = UCHAIN_TOKEN_ADDRESS.toLowerCase()
-      if (data[contractKey] && data[contractKey].usd) {
-        return data[contractKey].usd
+    // Try to get UCHAIN price from GeckoTerminal (PEPU chain)
+    const geckoData = await fetchGeckoTerminalData(UCHAIN_TOKEN_ADDRESS, "pepe-unchained")
+    
+    if (geckoData && geckoData.price_usd) {
+      const price = parseFloat(geckoData.price_usd)
+      if (price > 0) {
+        console.log(`[Rewards] UCHAIN price from GeckoTerminal: $${price}`)
+        return price
       }
     }
 
     // Fallback to PEPU price if UCHAIN price not available
+    console.warn("[Rewards] UCHAIN price not found on GeckoTerminal, using PEPU price as fallback")
     return await fetchPepuPrice()
   } catch (error) {
     console.error("Error fetching UCHAIN price:", error)
