@@ -2,6 +2,7 @@ import { ethers } from "ethers"
 import { getProvider } from "./rpc"
 import { getEtherscanTokenBalance } from "./etherscan"
 import { fetchGeckoTerminalData } from "./gecko"
+import { getPepuPriceByContract } from "./coingecko"
 import { PEPU_TOKEN_ADDRESS_ETH } from "./config"
 
 // ERC20 ABI for token operations
@@ -230,14 +231,14 @@ export async function getAllEthTokenBalances(walletAddress: string): Promise<Tok
       )
     }
 
-    // Fetch prices for tokens (especially PEPU from GeckoTerminal)
+    // Fetch prices for tokens (especially PEPU from CoinGecko)
     for (const token of tokens) {
       try {
-        // If it's PEPU, use GeckoTerminal
+        // If it's PEPU, use CoinGecko
         if (token.address.toLowerCase() === PEPU_TOKEN_ADDRESS_ETH.toLowerCase()) {
-          const geckoData = await fetchGeckoTerminalData(PEPU_TOKEN_ADDRESS_ETH, "ethereum")
-          if (geckoData?.price_usd) {
-            token.priceUsd = parseFloat(geckoData.price_usd)
+          const price = await getPepuPriceByContract()
+          if (price > 0) {
+            token.priceUsd = price
             const balanceNum = Number(ethers.formatUnits(token.balance, token.decimals))
             token.usdValue = (balanceNum * token.priceUsd).toFixed(2)
           }
@@ -304,11 +305,22 @@ export async function getEthTokenInfo(
 
     // Try to fetch price
     try {
-      const geckoData = await fetchGeckoTerminalData(tokenAddress, "ethereum")
-      if (geckoData?.price_usd) {
-        tokenInfo.priceUsd = parseFloat(geckoData.price_usd)
-        const balanceNum = Number(ethers.formatUnits(balance, Number(decimals)))
-        tokenInfo.usdValue = (balanceNum * tokenInfo.priceUsd).toFixed(2)
+      // If it's PEPU, use CoinGecko
+      if (tokenAddress.toLowerCase() === PEPU_TOKEN_ADDRESS_ETH.toLowerCase()) {
+        const price = await getPepuPriceByContract()
+        if (price > 0) {
+          tokenInfo.priceUsd = price
+          const balanceNum = Number(ethers.formatUnits(balance, Number(decimals)))
+          tokenInfo.usdValue = (balanceNum * tokenInfo.priceUsd).toFixed(2)
+        }
+      } else {
+        // For other tokens, try GeckoTerminal
+        const geckoData = await fetchGeckoTerminalData(tokenAddress, "ethereum")
+        if (geckoData?.price_usd) {
+          tokenInfo.priceUsd = parseFloat(geckoData.price_usd)
+          const balanceNum = Number(ethers.formatUnits(balance, Number(decimals)))
+          tokenInfo.usdValue = (balanceNum * tokenInfo.priceUsd).toFixed(2)
+        }
       }
     } catch (error) {
       // Price fetching is optional

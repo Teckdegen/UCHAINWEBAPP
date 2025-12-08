@@ -21,6 +21,7 @@ import { isTokenBlacklisted } from "@/lib/blacklist"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
+import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
 import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins, Clock, Gift } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
@@ -233,17 +234,26 @@ export default function DashboardPage() {
                 if (!hasBalance) return null
 
                 let priceUsd = 0
-                let geckoData = null
+                let isBonded = false
 
-                // Fetch price from GeckoTerminal for PEPU tokens
-                try {
-                  geckoData = await fetchGeckoTerminalData(tokenAddress, "pepe-unchained")
-                  priceUsd = geckoData?.price_usd ? parseFloat(geckoData.price_usd) : 0
-                } catch (error) {
-                  console.error(`Error fetching price for ${tokenAddress}:`, error)
+                // Fetch price from CoinGecko for PEPU/UCHAIN token (check if it's UCHAIN which is PEPU on PEPU chain)
+                if (tokenAddress.toLowerCase() === UCHAIN_TOKEN_ADDRESS.toLowerCase()) {
+                  try {
+                    priceUsd = await fetchPepuPrice()
+                    isBonded = priceUsd > 0
+                  } catch (error) {
+                    console.error(`Error fetching PEPU price from CoinGecko:`, error)
+                  }
+                } else {
+                  // For other tokens, try GeckoTerminal
+                  try {
+                    const geckoData = await fetchGeckoTerminalData(tokenAddress, "pepe-unchained")
+                    priceUsd = geckoData?.price_usd ? parseFloat(geckoData.price_usd) : 0
+                    isBonded = geckoData && geckoData.price_usd !== null && geckoData.price_usd !== undefined
+                  } catch (error) {
+                    console.error(`Error fetching price for ${tokenAddress}:`, error)
+                  }
                 }
-
-                const isBonded = geckoData && geckoData.price_usd !== null && geckoData.price_usd !== undefined
                 const usdValue = isBonded && hasBalance
                   ? (Number.parseFloat(balanceFormatted) * priceUsd).toFixed(2)
                   : "0.00"
@@ -269,38 +279,6 @@ export default function DashboardPage() {
             const validTokens = tokenResults.filter((token) => token !== null)
             allBalances.push(...validTokens)
           }
-        } catch (error) {
-          console.error("Error scanning for tokens:", error)
-          // Don't throw - still show native balance even if token scanning fails
-        }
-      }
-
-              if (hasBalance || isForceToken) {
-                const isBonded = geckoData && geckoData.price_usd !== null && geckoData.price_usd !== undefined
-                const usdValue = isBonded && hasBalance
-                  ? (Number.parseFloat(balanceFormatted) * priceUsd).toFixed(2)
-                  : "0.00"
-
-                return {
-                  address: tokenAddress,
-                  symbol,
-                  name,
-                  balance: balanceFormatted,
-                  usdValue,
-                  isBonded,
-                  priceUsd: isBonded ? priceUsd : null,
-                }
-              }
-              return null
-            } catch (error) {
-              console.error(`Error fetching token ${tokenAddress}:`, error)
-              return null
-            }
-          })
-
-          const tokenResults = await Promise.all(tokenPromises)
-          const validTokens = tokenResults.filter((token) => token !== null)
-          allBalances.push(...validTokens)
         } catch (error) {
           console.error("Error scanning for tokens:", error)
           // Don't throw - still show native balance even if token scanning fails
