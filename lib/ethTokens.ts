@@ -1,5 +1,5 @@
 import { ethers } from "ethers"
-import { getProvider } from "./rpc"
+import { getProvider, getProviderWithFallback } from "./rpc"
 import { getEtherscanTokenBalance } from "./etherscan"
 import { fetchGeckoTerminalData } from "./gecko"
 import { getPepuPriceByContract } from "./coingecko"
@@ -130,10 +130,13 @@ function formatTokenAmount(amount: bigint, decimals: number): string {
  */
 export async function getAllEthTokenBalances(walletAddress: string): Promise<TokenBalance[]> {
   const tokens: TokenBalance[] = []
-  const provider = getProvider(1) // Ethereum mainnet
-
+  
   try {
-    console.log("[ETH Tokens] Fetching token balances via RPC...")
+    console.log("[ETH Tokens] Fetching token balances via RPC for address:", walletAddress)
+    
+    // Use getProviderWithFallback for better reliability
+    const provider = await getProviderWithFallback(1) // Ethereum mainnet
+    console.log("[ETH Tokens] Provider initialized successfully")
 
     // Method 1: Check known tokens via RPC (FAST and RELIABLE)
     for (const knownToken of KNOWN_TOKENS) {
@@ -164,8 +167,9 @@ export async function getAllEthTokenBalances(walletAddress: string): Promise<Tok
 
           console.log(`[ETH Tokens] Found ${symbol}: ${balanceFormatted}`)
         }
-      } catch (error) {
-        // Skip tokens that error out
+      } catch (error: any) {
+        // Skip tokens that error out, but log for debugging
+        console.warn(`[ETH Tokens] Error checking token ${knownToken.symbol} (${knownToken.address}):`, error?.message || error)
         continue
       }
     }
@@ -218,7 +222,8 @@ export async function getAllEthTokenBalances(walletAddress: string): Promise<Tok
 
                 console.log(`[ETH Tokens] Found additional token ${symbol}: ${balanceFormatted}`)
               }
-            } catch (error) {
+            } catch (error: any) {
+              console.warn(`[ETH Tokens] Error checking Etherscan token ${tokenAddress}:`, error?.message || error)
               continue
             }
           }
@@ -268,8 +273,9 @@ export async function getAllEthTokenBalances(walletAddress: string): Promise<Tok
     })
 
     return tokens
-  } catch (error) {
-    console.error("[ETH Tokens] Error getting token balances:", error)
+  } catch (error: any) {
+    console.error("[ETH Tokens] Error getting token balances:", error?.message || error)
+    console.error("[ETH Tokens] Stack trace:", error?.stack)
     return tokens // Return whatever we found
   }
 }

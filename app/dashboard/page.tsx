@@ -146,30 +146,40 @@ export default function DashboardPage() {
         try {
           if (chainId === 1) {
             // For ETH: Use the new dual-method approach (RPC + Etherscan)
-            const ethTokens = await getAllEthTokenBalances(wallet.address)
-            
-            // Filter out blacklisted tokens
-            const filteredTokens = ethTokens.filter(
-              (token) => !isTokenBlacklisted(token.address, chainId)
-            )
-
-            // Convert to dashboard format
-            for (const token of filteredTokens) {
-              const balanceFormatted = token.balanceFormatted
-              const balanceNum = Number.parseFloat(balanceFormatted)
+            try {
+              console.log("[Dashboard] Fetching ETH tokens for:", wallet.address)
+              const ethTokens = await getAllEthTokenBalances(wallet.address)
+              console.log("[Dashboard] Found ETH tokens:", ethTokens.length)
               
-              if (balanceNum > 0) {
-                allBalances.push({
-                  symbol: token.symbol,
-                  name: token.name,
-                  balance: balanceFormatted,
-                  address: token.address,
-                  decimals: token.decimals,
-                  usdValue: token.usdValue || "0.00",
-                  isNative: false,
-                  isBonded: token.priceUsd !== undefined && token.priceUsd > 0,
-                })
+              // Filter out blacklisted tokens
+              const filteredTokens = ethTokens.filter(
+                (token) => !isTokenBlacklisted(token.address, chainId)
+              )
+              console.log("[Dashboard] After blacklist filter:", filteredTokens.length)
+
+              // Convert to dashboard format
+              for (const token of filteredTokens) {
+                const balanceFormatted = token.balanceFormatted
+                const balanceNum = Number.parseFloat(balanceFormatted)
+                
+                if (balanceNum > 0) {
+                  allBalances.push({
+                    symbol: token.symbol,
+                    name: token.name,
+                    balance: balanceFormatted,
+                    address: token.address,
+                    decimals: token.decimals,
+                    usdValue: token.usdValue || "0.00",
+                    isNative: false,
+                    isBonded: token.priceUsd !== undefined && token.priceUsd > 0,
+                  })
+                  console.log("[Dashboard] Added token:", token.symbol, balanceFormatted)
+                }
               }
+              console.log("[Dashboard] Total ETH tokens added to balances:", allBalances.filter(b => !b.isNative).length)
+            } catch (ethTokenError) {
+              console.error("[Dashboard] Error fetching ETH tokens:", ethTokenError)
+              // Continue even if ETH token fetching fails
             }
           } else {
             // For PEPU: Use existing logic with contract calls and GeckoTerminal
