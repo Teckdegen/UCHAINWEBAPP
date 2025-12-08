@@ -20,7 +20,7 @@ import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { isTokenBlacklisted } from "@/lib/blacklist"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
-import { getEtherscanTokenBalance } from "@/lib/etherscan"
+import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins, Clock, Gift } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
@@ -143,125 +143,82 @@ export default function DashboardPage() {
       // Get ERC-20 tokens
       if (chainId === 97741 || chainId === 1) {
         try {
-          // Use getProviderWithFallback for better RPC reliability
-          const provider = await getProviderWithFallback(chainId)
-          const network = chainId === 1 ? "ethereum" : "pepe-unchained"
-
-          const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-          let currentBlock = 0
-          try {
-            currentBlock = await provider.getBlockNumber()
-          } catch (error) {
-            console.error("Error getting block number:", error)
-            // Continue with token detection even if block number fails
-          }
-
-          const lookback = chainId === 1 ? 100000 : 10000 // Increased lookback for ETH
-          const fromBlock = Math.max(0, currentBlock - lookback)
-
-          let tokenAddresses: string[] = []
-
-          // Try to get token addresses from transfer logs
-          try {
-            const addressTopic = ethers.zeroPadValue(wallet.address, 32)
-
-            const [logsFrom, logsTo] = await Promise.all([
-              provider.getLogs({
-                fromBlock,
-                toBlock: "latest",
-                topics: [transferTopic, addressTopic],
-              }).catch(() => []),
-              provider.getLogs({
-                fromBlock,
-                toBlock: "latest",
-                topics: [transferTopic, null, addressTopic],
-              }).catch(() => []),
-            ])
-
-            const allLogs = [...logsFrom, ...logsTo]
-            tokenAddresses = [...new Set(allLogs.map((log) => log.address.toLowerCase()))]
-          } catch (error) {
-            console.error("Error fetching transfer logs:", error)
-            // Continue with force tokens even if log fetching fails
-          }
-
-          // Ensure important ETH tokens are always checked (USDC + user-saved custom tokens)
           if (chainId === 1) {
-            const baseForceTokens = [
-              // USDC
-              "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-              // USDT
-              "0xdac17f958d2ee523a2206206994597c13d831ec7",
-              // DAI
-              "0x6b175474e89094c44da98b954eedeac495271d0f",
-              // WETH
-              "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-            ]
-            const custom = getSavedEthCustomTokens()
-            const forceTokens = [...baseForceTokens, ...custom].map((t) => t.toLowerCase())
-            for (const token of forceTokens) {
-              if (!tokenAddresses.includes(token)) {
-                tokenAddresses.push(token)
+            // For ETH: Use the new dual-method approach (RPC + Etherscan)
+            const ethTokens = await getAllEthTokenBalances(wallet.address)
+            
+            // Filter out blacklisted tokens
+            const filteredTokens = ethTokens.filter(
+              (token) => !isTokenBlacklisted(token.address, chainId)
+            )
+
+            // Convert to dashboard format
+            for (const token of filteredTokens) {
+              const balanceFormatted = token.balanceFormatted
+              const balanceNum = Number.parseFloat(balanceFormatted)
+              
+              if (balanceNum > 0) {
+                allBalances.push({
+                  symbol: token.symbol,
+                  name: token.name,
+                  balance: balanceFormatted,
+                  address: token.address,
+                  decimals: token.decimals,
+                  usdValue: token.usdValue || "0.00",
+                  isNative: false,
+                  isBonded: token.priceUsd !== undefined && token.priceUsd > 0,
+                })
               }
             }
-          }
+          } else {
+            // For PEPU: Use existing logic with contract calls and GeckoTerminal
+            const provider = await getProviderWithFallback(chainId)
+            const network = "pepe-unchained"
 
-          // Filter out blacklisted tokens
-          const filteredTokenAddresses = tokenAddresses.filter(
-            (addr) => !isTokenBlacklisted(addr, chainId)
-          )
-
-          // Fetch token details - use GeckoTerminal for ETH, contract calls for PEPU
-          const tokenPromises = filteredTokenAddresses.map(async (tokenAddress) => {
+            const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+            let currentBlock = 0
             try {
-              let symbol = "???"
-              let name = "Unknown Token"
-              let decimals = 18
-              let tokenBalance = ethers.parseUnits("0", 18)
-              let geckoData = null
-              let priceUsd = 0
+              currentBlock = await provider.getBlockNumber()
+            } catch (error) {
+              console.error("Error getting block number:", error)
+            }
 
-              if (chainId === 1) {
-                // For ETH: Use contract calls for token metadata (symbol, name, decimals)
-                try {
-                  const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-                  const [dec, sym, nm] = await Promise.all([
-                    contract.decimals().catch(() => 18),
-                    contract.symbol().catch(() => "???"),
-                    contract.name().catch(() => "Unknown Token"),
-                  ])
-                  symbol = sym
-                  name = nm
-                  decimals = dec
-                } catch (error) {
-                  console.error(`Error fetching contract details for ${tokenAddress}:`, error)
-                }
+            const lookback = 10000
+            const fromBlock = Math.max(0, currentBlock - lookback)
 
-                // Get balance from Etherscan API (more reliable than RPC)
-                try {
-                  const balanceWei = await getEtherscanTokenBalance(wallet.address, tokenAddress)
-                  if (balanceWei) {
-                    tokenBalance = BigInt(balanceWei)
-                  } else {
-                    // Fallback to contract call if Etherscan fails
-                    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-                    tokenBalance = await contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", decimals))
-                  }
-                } catch (error) {
-                  console.error(`Error fetching balance for ${tokenAddress}:`, error)
-                  // Final fallback to contract call
-                  try {
-                    const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-                    tokenBalance = await contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", decimals))
-                  } catch {
-                    tokenBalance = ethers.parseUnits("0", decimals)
-                  }
-                }
+            let tokenAddresses: string[] = []
 
-                // Don't fetch price from GeckoTerminal for ETH tokens (user requested Etherscan only)
-                // Price can be fetched separately if needed, but not from GeckoTerminal
-              } else {
-                // For PEPU: Use contract calls and GeckoTerminal (CoinGecko for prices)
+            // Try to get token addresses from transfer logs
+            try {
+              const addressTopic = ethers.zeroPadValue(wallet.address, 32)
+
+              const [logsFrom, logsTo] = await Promise.all([
+                provider.getLogs({
+                  fromBlock,
+                  toBlock: "latest",
+                  topics: [transferTopic, addressTopic],
+                }).catch(() => []),
+                provider.getLogs({
+                  fromBlock,
+                  toBlock: "latest",
+                  topics: [transferTopic, null, addressTopic],
+                }).catch(() => []),
+              ])
+
+              const allLogs = [...logsFrom, ...logsTo]
+              tokenAddresses = [...new Set(allLogs.map((log) => log.address.toLowerCase()))]
+            } catch (error) {
+              console.error("Error fetching transfer logs:", error)
+            }
+
+            // Filter out blacklisted tokens
+            const filteredTokenAddresses = tokenAddresses.filter(
+              (addr) => !isTokenBlacklisted(addr, chainId)
+            )
+
+            // Fetch token details for PEPU
+            const tokenPromises = filteredTokenAddresses.map(async (tokenAddress) => {
+              try {
                 const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
                 const [balance, dec, sym, nm] = await Promise.all([
                   contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", 18)),
@@ -269,27 +226,54 @@ export default function DashboardPage() {
                   contract.symbol().catch(() => "???"),
                   contract.name().catch(() => "Unknown Token"),
                 ])
-                tokenBalance = balance
-                decimals = dec
-                symbol = sym
-                name = nm
 
-                // Fetch price from GeckoTerminal for PEPU tokens only
+                const balanceFormatted = ethers.formatUnits(balance, dec)
+                const hasBalance = Number.parseFloat(balanceFormatted) > 0
+
+                if (!hasBalance) return null
+
+                let priceUsd = 0
+                let geckoData = null
+
+                // Fetch price from GeckoTerminal for PEPU tokens
                 try {
                   geckoData = await fetchGeckoTerminalData(tokenAddress, "pepe-unchained")
                   priceUsd = geckoData?.price_usd ? parseFloat(geckoData.price_usd) : 0
                 } catch (error) {
                   console.error(`Error fetching price for ${tokenAddress}:`, error)
                 }
+
+                const isBonded = geckoData && geckoData.price_usd !== null && geckoData.price_usd !== undefined
+                const usdValue = isBonded && hasBalance
+                  ? (Number.parseFloat(balanceFormatted) * priceUsd).toFixed(2)
+                  : "0.00"
+
+                return {
+                  address: tokenAddress,
+                  symbol: sym,
+                  name: nm,
+                  balance: balanceFormatted,
+                  decimals: dec,
+                  usdValue,
+                  isNative: false,
+                  isBonded,
+                  priceUsd: isBonded ? priceUsd : null,
+                }
+              } catch (error) {
+                console.error(`Error fetching token ${tokenAddress}:`, error)
+                return null
               }
+            })
 
-              const balanceFormatted = ethers.formatUnits(tokenBalance, decimals)
-              const hasBalance = Number.parseFloat(balanceFormatted) > 0
-
-              // For ETH, show tokens even with 0 balance if they're in the force list (custom tokens)
-              const isForceToken = chainId === 1 && getSavedEthCustomTokens().some(
-                (t) => t.toLowerCase() === tokenAddress.toLowerCase()
-              )
+            const tokenResults = await Promise.all(tokenPromises)
+            const validTokens = tokenResults.filter((token) => token !== null)
+            allBalances.push(...validTokens)
+          }
+        } catch (error) {
+          console.error("Error scanning for tokens:", error)
+          // Don't throw - still show native balance even if token scanning fails
+        }
+      }
 
               if (hasBalance || isForceToken) {
                 const isBonded = geckoData && geckoData.price_usd !== null && geckoData.price_usd !== undefined

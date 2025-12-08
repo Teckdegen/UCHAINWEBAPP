@@ -17,7 +17,7 @@ export const SWAP_FEE_PERCENTAGE = 0.85 // 0.85% of the token being swapped FROM
 // REWARDS SYSTEM
 // ============================================
 // Minimum UCHAIN tokens required to access rewards
-export const MIN_UCHAIN_REQUIRED = 10 // 1 million UCHAIN tokens
+export const MIN_UCHAIN_REQUIRED = 1 // 1 million UCHAIN tokens
 
 // Cashback per transaction (in USD worth of UCHAIN)
 export const TRANSFER_REWARD_USD = 0.005 // $0.005 worth of UCHAIN per transfer
@@ -46,4 +46,22 @@ export const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || "0x0000000000000
 // REWARDS PAYOUT KEY (Set via environment variable)
 // ============================================
 export const REWARDS_PAYOUT_KEY = process.env.NEXT_PUBLIC_REWARDS_PAYOUT_KEY || ""
+
+// ============================================
+// BRIDGE CONFIGURATION
+// ============================================
+// L2 Bridge Contract (Pepe Unchained V2)
+export const L2_BRIDGE_CONTRACT = process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS || "0x9F2091C509141c112F94fF879FF6150f9034A4aa"
+
+// L1 Bridge Contract (Ethereum Mainnet)
+export const L1_BRIDGE_CONTRACT = process.env.NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS || "0x6D925164B21d24F820d01DA0B8E8f93f16f02317"
+
+// PEPU Token Address on Ethereum Mainnet
+export const PEPU_TOKEN_ADDRESS_ETH = "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6"
+
+// Maximum Bridge Pool Size
+export const MAX_BRIDGE_POOL = 35009000 // 35,009,000 tokens
+
+// Bridge Decimals
+export const BRIDGE_DECIMALS = 18
 

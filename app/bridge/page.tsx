@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation"
 import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
 import { getNativeBalance } from "@/lib/rpc"
 import { getFeePercentage, executeBridge, getPoolBalance } from "@/lib/bridge"
+import { MAX_BRIDGE_POOL } from "@/lib/config"
 import { Zap, Loader } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
-
-const MAX_POOL = 35009000 // 35,009,000 tokens
 
 export default function BridgePage() {
   const router = useRouter()
@@ -163,7 +162,7 @@ export default function BridgePage() {
   const bridgeFee = amount ? Number.parseFloat(amount) * feePercentage : 0
 
   const pool = Number.parseFloat(poolBalance)
-  const percent = Math.min((pool / MAX_POOL) * 100, 100)
+  const percent = Math.min((pool / MAX_BRIDGE_POOL) * 100, 100)
   const formattedPool = pool.toLocaleString(undefined, { maximumFractionDigits: 3 })
 
   const bridgeAmount = amount ? Number.parseFloat(amount) * receivePercentage : 0
@@ -245,7 +244,7 @@ export default function BridgePage() {
                 </div>
                 <div className="flex justify-between text-xs text-white mb-1">
                   <span>0</span>
-                  <span>{MAX_POOL.toLocaleString()}</span>
+                  <span>{MAX_BRIDGE_POOL.toLocaleString()}</span>
                 </div>
                 <div className="text-center text-white text-sm mb-6">
                   Unchained Bridge Pool (v1):{" "}
@@ -305,7 +304,7 @@ export default function BridgePage() {
                       "Bridge Assets"
                     )}
                   </button>
-                </div>
+          </div>
 
                 {/* Transaction Status Messages */}
           {error && (
@@ -455,10 +454,10 @@ export default function BridgePage() {
                 <div className="text-sm text-white/70 mb-2">L2 Bridge Contract (Pepu Mainnet)</div>
                 <div className="flex items-center gap-2">
                   <code className="text-xs text-yellow-300 font-mono break-all flex-1 bg-black/30 px-3 py-2 rounded">
-                    {process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS || "Not set"}
+                    {process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS || "0x9F2091C509141c112F94fF879FF6150f9034A4aa"}
                   </code>
                   <a
-                    href={`https://pepuscan.com/address/${process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS}`}
+                    href={`https://pepuscan.com/address/${process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS || "0x9F2091C509141c112F94fF879FF6150f9034A4aa"}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-yellow-400 hover:text-yellow-300 text-sm px-4 py-2 rounded border border-yellow-400 hover:bg-yellow-400/10 transition-colors whitespace-nowrap font-medium flex items-center gap-1"
@@ -483,10 +482,10 @@ export default function BridgePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <code className="text-xs text-yellow-300 font-mono break-all flex-1 bg-black/30 px-3 py-2 rounded">
-                    {process.env.NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS || "Not set"}
+                    {process.env.NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS || "0x6D925164B21d24F820d01DA0B8E8f93f16f02317"}
                   </code>
                   <a
-                    href={`https://etherscan.io/address/${process.env.NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS}`}
+                    href={`https://etherscan.io/address/${process.env.NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS || "0x6D925164B21d24F820d01DA0B8E8f93f16f02317"}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-yellow-400 hover:text-yellow-300 text-sm px-4 py-2 rounded border border-yellow-400 hover:bg-yellow-400/10 transition-colors whitespace-nowrap font-medium flex items-center gap-1"
