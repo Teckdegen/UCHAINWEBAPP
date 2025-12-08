@@ -98,20 +98,16 @@ export default function DashboardPage() {
         setPortfolioValue(cachedData.portfolioValue || "0.00")
         setCachedBalances(cachedData.balances || [])
         setCachedPortfolioValue(cachedData.portfolioValue || "0.00")
-        // If we have cache, don't show loading (unless it's the very first load)
-        const isFirstLoad = !localStorage.getItem("dashboard_loaded_once")
-        if (!isFirstLoad) {
-          setLoading(false)
-        }
-        localStorage.setItem("dashboard_loaded_once", "true")
       } catch (error) {
         console.error("Error loading cached balances:", error)
       }
     }
     
-    // On initial load or chain change, show loading
-    setIsInitialLoad(true)
-    setLoading(true)
+    // Only show loading if we don't have cached data (initial load)
+    // If we have cache, show it immediately and fetch in background
+    const hasCachedData = !!cached
+    setIsInitialLoad(!hasCachedData)
+    setLoading(!hasCachedData)
     
     fetchBalances()
     const interval = setInterval(fetchBalances, 30000)
