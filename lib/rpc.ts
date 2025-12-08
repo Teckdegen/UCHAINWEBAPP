@@ -3,34 +3,11 @@ import { createPublicClient, http } from "viem"
 import { mainnet } from "viem/chains"
 import { getEtherscanEthBalance } from "./etherscan"
 
-// Multiple RPC endpoints for Ethereum (fallback support)
-const ETH_RPC_URLS = [
-  "https://eth.leorpc.com/?api_key=FREE",
-  "https://eth.drpc.org",
-  "https://1rpc.io/eth",
-  "https://cloudflare-eth.com",
-  "https://cloudflare-eth.com/v1/mainnet",
-  "https://eth.llamarpc.com",
-  "https://ethereum.publicnode.com",
-  "https://ethereum.publicnode.com/archive",
-  "https://eth.api.onfinality.io/public",
-  "https://ethereum.public.blockpi.network/v1/rpc/public",
-  "https://eth.rpc.hypersync.xyz",
-  "https://public-eth.nownodes.io",
-  "https://eth.getblock.io/mainnet/",
-  "https://eth-mainnet.public.blastapi.io",
-  "https://gateway.tatum.io/ethereum-mainnet",
-  "https://rpc.mevblocker.io",
-  "https://eth.meowrpc.com",
-  "https://eth.rpc.subquery.network/public",
-  "https://ethereum.blinklabs.xyz",
-  "https://endpoints.omniatech.io/v1/eth/mainnet/public",
-  "https://eth-mainnet.g.alchemy.com/v2/demo",
-  "https://rpc.ankr.com/eth",
-]
+// Single ETH RPC endpoint (as per user requirement)
+const ETHEREUM_RPC = "https://eth.llamarpc.com"
 
 const RPC_URLS: Record<number, string | string[]> = {
-  1: ETH_RPC_URLS,
+  1: ETHEREUM_RPC,
   97741: "https://rpc-pepu-v2-mainnet-0.t.conduit.xyz",
 }
 
@@ -64,24 +41,20 @@ async function tryRpcEndpoints(urls: string[]): Promise<ethers.JsonRpcProvider> 
 export function getProvider(chainId: number): ethers.JsonRpcProvider {
   const rpcConfig = RPC_URLS[chainId] || RPC_URLS[1]
   
-  if (Array.isArray(rpcConfig)) {
-    // For Ethereum with multiple endpoints, return a provider that tries them
-    // We'll create a custom provider that tries endpoints
-    return new ethers.JsonRpcProvider(rpcConfig[0])
-  }
+  // Now RPC_URLS[1] is a string, not an array
+  const rpcUrl = typeof rpcConfig === "string" ? rpcConfig : rpcConfig[0]
   
-  return new ethers.JsonRpcProvider(rpcConfig)
+  return new ethers.JsonRpcProvider(rpcUrl)
 }
 
 // Get provider with automatic fallback
 export async function getProviderWithFallback(chainId: number): Promise<ethers.JsonRpcProvider> {
   const rpcConfig = RPC_URLS[chainId] || RPC_URLS[1]
   
-  if (Array.isArray(rpcConfig)) {
-    return await tryRpcEndpoints(rpcConfig)
-  }
+  // Now RPC_URLS[1] is a string, not an array
+  const rpcUrl = typeof rpcConfig === "string" ? rpcConfig : rpcConfig[0]
   
-  return new ethers.JsonRpcProvider(rpcConfig)
+  return new ethers.JsonRpcProvider(rpcUrl)
 }
 
 export function getChainName(chainId: number): string {
@@ -108,7 +81,7 @@ export async function getNativeBalance(address: string, chainId: number): Promis
     try {
       const client = createPublicClient({
         chain: mainnet,
-        transport: http(ETH_RPC_URLS[0]),
+        transport: http(ETHEREUM_RPC),
       })
       const balance = await client.getBalance({ address: address as `0x${string}` })
       return ethers.formatEther(balance)
@@ -143,7 +116,7 @@ export async function getTokenBalance(tokenAddress: string, userAddress: string,
     try {
       const client = createPublicClient({
         chain: mainnet,
-        transport: http(ETH_RPC_URLS[0]),
+        transport: http(ETHEREUM_RPC),
       })
       const [balance, decimals] = await Promise.all([
         client.readContract({

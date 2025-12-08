@@ -92,21 +92,22 @@ export async function getPepuTokenAddress(): Promise<string> {
 /**
  * Get the L1 pool balance (PEPU tokens available on Ethereum for bridging)
  * This checks the balance of the L1 bridge contract holding PEPU tokens
+ * Matches the Telegram bot logic exactly
  * @returns Pool balance as a formatted string
  */
 export async function getPoolBalance(): Promise<string> {
   try {
-    // Get provider for Ethereum mainnet (L1)
-    const l1Provider = getProvider(1)
+    // Get provider for Ethereum mainnet (L1) - using llamarpc.com
+    const ethereumProvider = getProvider(1)
     
     // Get the PEPU token address from L1 bridge contract
-    const l1BridgeContract = new ethers.Contract(L1_BRIDGE_CONTRACT, L1_BRIDGE_ABI, l1Provider)
+    const l1BridgeContract = new ethers.Contract(L1_BRIDGE_CONTRACT, L1_BRIDGE_ABI, ethereumProvider)
     const pepuTokenAddress = await l1BridgeContract.TOKEN()
     
     // Create token contract instance
-    const pepuTokenContract = new ethers.Contract(pepuTokenAddress, ERC20_ABI, l1Provider)
+    const pepuTokenContract = new ethers.Contract(pepuTokenAddress, ERC20_ABI, ethereumProvider)
     
-    // Get balance of L1 bridge contract
+    // Get balance of L1 bridge contract (matching bot code exactly)
     const balance = await pepuTokenContract.balanceOf(L1_BRIDGE_CONTRACT)
     
     // Format the balance using the token's decimals
