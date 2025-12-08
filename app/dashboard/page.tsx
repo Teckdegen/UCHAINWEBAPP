@@ -41,6 +41,9 @@ export default function DashboardPage() {
   const [ethPrice, setEthPrice] = useState<number>(0)
   const [balances, setBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [cachedBalances, setCachedBalances] = useState<any[]>([])
+  const [cachedPortfolioValue, setCachedPortfolioValue] = useState("0.00")
   const [chainId, setChainId] = useState(() => {
     // Initialize from localStorage or default to PEPU
     if (typeof window !== "undefined") {
@@ -83,9 +86,32 @@ export default function DashboardPage() {
     setWallets(wallets)
     setCurrentWalletIdState(getCurrentWalletId())
     
-    // Clear balances immediately when chain changes
-    setBalances([])
-    setPortfolioValue("0.00")
+    const wallet = getCurrentWallet() || wallets[0]
+    
+    // Try to load from cache first if available
+    const cacheKey = `balance_cache_${wallet.address}_${chainId}`
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached)
+        setBalances(cachedData.balances || [])
+        setPortfolioValue(cachedData.portfolioValue || "0.00")
+        setCachedBalances(cachedData.balances || [])
+        setCachedPortfolioValue(cachedData.portfolioValue || "0.00")
+        // If we have cache, don't show loading (unless it's the very first load)
+        const isFirstLoad = !localStorage.getItem("dashboard_loaded_once")
+        if (!isFirstLoad) {
+          setLoading(false)
+        }
+        localStorage.setItem("dashboard_loaded_once", "true")
+      } catch (error) {
+        console.error("Error loading cached balances:", error)
+      }
+    }
+    
+    // On initial load or chain change, show loading
+    setIsInitialLoad(true)
+    setLoading(true)
     
     fetchBalances()
     const interval = setInterval(fetchBalances, 30000)
@@ -100,11 +126,16 @@ export default function DashboardPage() {
   }, [chainId])
 
   const fetchBalances = async () => {
-    setLoading(true)
+    // Only show loading on initial load
+    if (isInitialLoad) {
+      setLoading(true)
+    }
+    
     try {
       const wallets = getWallets()
       if (wallets.length === 0) {
         setLoading(false)
+        setIsInitialLoad(false)
         return
       }
 
@@ -295,8 +326,6 @@ export default function DashboardPage() {
         }
       }
 
-      setBalances(allBalances)
-
       // Calculate total portfolio value
       // Only include bonded tokens (tokens with valid USD price)
       const totalValue = allBalances.reduce((sum, token) => {
@@ -309,11 +338,41 @@ export default function DashboardPage() {
         }
       }, 0)
 
-      setPortfolioValue(totalValue.toFixed(2))
+      const portfolioValueStr = totalValue.toFixed(2)
+      
+      // Update state
+      setBalances(allBalances)
+      setPortfolioValue(portfolioValueStr)
+      
+      // Update cache
+      setCachedBalances(allBalances)
+      setCachedPortfolioValue(portfolioValueStr)
+      
+      // Save to localStorage
+      const cacheKey = `balance_cache_${wallet.address}_${chainId}`
+      localStorage.setItem(cacheKey, JSON.stringify({
+        balances: allBalances,
+        portfolioValue: portfolioValueStr,
+        timestamp: Date.now(),
+      }))
+      
     } catch (error) {
       console.error("Error fetching balances:", error)
+      
+      // On error, use cached data if available (only if not initial load)
+      if (!isInitialLoad && cachedBalances.length > 0) {
+        console.log("[Dashboard] Using cached balances due to fetch error")
+        setBalances(cachedBalances)
+        setPortfolioValue(cachedPortfolioValue)
+      } else if (isInitialLoad) {
+        // On initial load error, show empty state
+        setBalances([])
+        setPortfolioValue("0.00")
+      }
+      // If not initial load and no cache, keep previous state (don't clear)
     } finally {
       setLoading(false)
+      setIsInitialLoad(false)
     }
   }
 
