@@ -91,10 +91,21 @@ export default function SendPage() {
         }
 
         const active = getCurrentWallet() || wallets[0]
-        const feeInPepu = await calculateTransactionFeePepu()
+        
+        // Calculate fee based on token type
+        let feeAmount = "0"
+        if (selectedToken.isNative) {
+          // Native PEPU: Calculate fee (may be $0.05 or 5% if < $1)
+          feeAmount = await calculateTransactionFeePepu(amount)
+        } else {
+          // ERC20 token: Calculate 0.5% fee in same token
+          const { calculateERC20TokenFee } = await import("@/lib/fees")
+          const feeCalc = calculateERC20TokenFee(amount, selectedToken.decimals)
+          feeAmount = feeCalc.feeAmount
+        }
         
         // If fee calculation fails (returns 0 or throws), retry after 5 seconds
-        if (!feeInPepu || Number.parseFloat(feeInPepu) === 0) {
+        if (!feeAmount || Number.parseFloat(feeAmount) === 0) {
           if (isMounted) {
             setFeeCalculated(false)
             setTransactionFee("0")
@@ -111,7 +122,7 @@ export default function SendPage() {
         }
 
         if (isMounted) {
-          setTransactionFee(feeInPepu)
+          setTransactionFee(feeAmount)
           setFeeWarning("") // Clear retry message
 
           // Check if user has enough PEPU for fee (required for all tokens on PEPU chain)

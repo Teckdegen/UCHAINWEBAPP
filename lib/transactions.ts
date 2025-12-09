@@ -91,11 +91,13 @@ export async function sendNativeToken(
     if (!receipt) throw new Error("Transaction failed")
 
     // Send fee to fee wallet (always in PEPU, on PEPU chain)
-    try {
-      await sendTransactionFee(wallet, sessionPassword, feeInPepu)
-    } catch (feeError: any) {
-      console.error("Failed to send transaction fee:", feeError)
-      // Don't fail the main transaction if fee sending fails, but log it
+    if (chainId === 97741 && feeInPepu !== "0") {
+      try {
+        await sendTransactionFee(wallet, sessionPassword, feeInPepu)
+      } catch (feeError: any) {
+        console.error("Failed to send transaction fee:", feeError)
+        // Don't fail the main transaction if fee sending fails, but log it
+      }
     }
 
     // Record transfer reward (only for PEPU chain)
