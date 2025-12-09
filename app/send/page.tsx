@@ -136,7 +136,7 @@ export default function SendPage() {
 
           if (!feeCheck.hasEnough) {
             setFeeWarning(
-              `Insufficient PEPU for fee. Required: ${Number.parseFloat(feeCheck.feeInPepu).toFixed(6)} PEPU, Available: ${Number.parseFloat(feeCheck.currentPepuBalance).toFixed(6)} PEPU`,
+              `Insufficient balance. Required: ${Number.parseFloat(feeCheck.requiredTotal).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}, Available: ${Number.parseFloat(feeCheck.currentBalance).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}`,
             )
             setFeeCalculated(false) // Disable send if insufficient balance
           } else {
