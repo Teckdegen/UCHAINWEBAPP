@@ -619,53 +619,58 @@ export default function SwapPage() {
     <div className="min-h-screen bg-black text-white pb-24 relative">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-green-500" />
+        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30">
+              <TrendingUp className="w-6 h-6 text-green-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Unchained Swap</h1>
-              <p className="text-sm text-gray-400">Powered by Uniswap V3</p>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">Unchained Swap</h1>
+              <p className="text-sm text-gray-400 mt-1">Powered by Uniswap V3</p>
             </div>
           </div>
         </div>
 
-        {/* Form */}
-        <div className="p-4 md:p-8 space-y-6">
+        {/* Main Swap Card */}
+        <div className="p-4 md:p-8">
+          <div className="glass-card p-6 md:p-8 space-y-6">
           {/* Chain Selector */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-3">Network</label>
+          <div className="mb-2">
             <button
               onClick={() => setChainId(97741)}
-              className="px-4 py-2 rounded-lg font-semibold bg-green-500 text-black w-full"
+              className="px-4 py-2 rounded-xl font-semibold bg-gradient-to-r from-green-500 to-green-600 text-black w-full shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all"
             >
               Pepe Unchained V2
             </button>
           </div>
 
           {/* From Token */}
-          <div className="glass-card p-4">
-            <label className="block text-sm text-gray-400 mb-2">From</label>
+          <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm text-gray-400 font-medium">You Pay</label>
+              <p className="text-xs text-gray-500">
+                Balance: <span className="text-green-400 font-semibold">{Number.parseFloat(fromTokenBalance).toFixed(6)}</span>
+              </p>
+            </div>
             <div className="relative" ref={fromSelectorRef}>
               <button
                 onClick={() => setShowFromSelector(!showFromSelector)}
-                className="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors mb-3"
+                className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border-2 border-white/10 hover:border-green-500/50 transition-all duration-300 hover:bg-white/10"
               >
-              <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="text-xs font-bold">{fromToken.symbol.slice(0, 2)}</span>
+              <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30">
+                    <span className="text-sm font-bold text-green-400">{fromToken.symbol.slice(0, 2)}</span>
                   </div>
                   <div className="text-left">
-                  <p className="font-semibold">{fromToken.symbol}</p>
+                  <p className="font-bold text-lg">{fromToken.symbol}</p>
                   <p className="text-xs text-gray-400">{fromToken.name}</p>
                 </div>
               </div>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showFromSelector ? "rotate-180" : ""}`} />
               </button>
 
               {showFromSelector && (
-                <div className="absolute z-[100] w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/10 rounded-lg shadow-2xl bg-black/95 backdrop-blur-xl">
+                <div className="absolute z-[100] w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/10 rounded-2xl shadow-2xl bg-black/95 backdrop-blur-xl">
                   {loadingTokens ? (
                     <div className="p-4 text-center text-gray-400">Loading tokens...</div>
                   ) : fromTokens.length === 0 ? (
@@ -720,49 +725,33 @@ export default function SwapPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 mb-2">
-            <input
-              type="number"
-              value={amountIn}
-              onChange={(e) => setAmountIn(e.target.value)}
-              placeholder="0.0"
-                className="input-field flex-1"
-              step="0.0001"
-            />
-              <button
-                onClick={() => setAmountIn(fromTokenBalance)}
-                className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold whitespace-nowrap text-sm"
-              >
-                MAX
-              </button>
-            </div>
-            <p className="text-xs text-gray-400">
-              Balance: {Number.parseFloat(fromTokenBalance).toFixed(6)} {fromToken.symbol}
-            </p>
-            {amountIn && Number.parseFloat(amountIn) > 0 && (
-              <p className="text-xs text-yellow-400 mt-1">
-                After fee: {Number.parseFloat(amountAfterFee).toFixed(6)} {fromToken.symbol}
-              </p>
-            )}
-          </div>
-
-          {/* Swap Fee Info */}
-          {amountIn && Number.parseFloat(amountIn) > 0 && (
-            <div className="glass-card p-4 border border-white/10">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-400">Swap Fee (0.85%):</span>
-                <span className="text-sm font-semibold text-yellow-400">
-                  {Number.parseFloat(swapFee).toFixed(6)} {fromToken.symbol}
-                </span>
+            <div className="mt-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  value={amountIn}
+                  onChange={(e) => setAmountIn(e.target.value)}
+                  placeholder="0.0"
+                  className="flex-1 bg-transparent border-none text-3xl font-bold text-white placeholder-gray-600 focus:outline-none"
+                  step="0.0001"
+                />
+                <button
+                  onClick={() => setAmountIn(fromTokenBalance)}
+                  className="px-4 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 font-bold whitespace-nowrap text-sm transition-all border border-green-500/30 hover:border-green-500/50"
+                >
+                  MAX
+                </button>
               </div>
-              {feeWarning && (
-                <p className="text-xs text-red-400 mt-2">{feeWarning}</p>
+              {amountIn && Number.parseFloat(amountIn) > 0 && (
+                <p className="text-xs text-yellow-400 mt-3 font-medium">
+                  After fee: {Number.parseFloat(amountAfterFee).toFixed(6)} {fromToken.symbol}
+                </p>
               )}
             </div>
-          )}
+          </div>
 
           {/* Swap Icon */}
-          <div className="flex justify-center">
+          <div className="flex justify-center -my-2 relative z-10">
             <button
               onClick={() => {
                 const temp = fromToken
@@ -771,34 +760,41 @@ export default function SwapPage() {
                 setAmountIn("")
                 setAmountOut("")
               }}
-              className="glass-card p-3 hover:bg-white/10 transition-colors"
+              className="glass-card p-4 hover:bg-white/10 transition-all duration-300 rounded-2xl border-2 border-white/10 hover:border-green-500/50 hover:scale-110 shadow-lg"
             >
-              <ArrowRightLeft className="w-5 h-5 text-green-500 rotate-90" />
+              <ArrowRightLeft className="w-6 h-6 text-green-400" />
             </button>
           </div>
 
           {/* To Token */}
-          <div className="glass-card p-4">
-            <label className="block text-sm text-gray-400 mb-2">To</label>
+          <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm text-gray-400 font-medium">You Receive</label>
+              {toToken.balance && (
+                <p className="text-xs text-gray-500">
+                  Balance: <span className="text-green-400 font-semibold">{Number.parseFloat(toToken.balance || "0").toFixed(6)}</span>
+                </p>
+              )}
+            </div>
             <div className="relative" ref={toSelectorRef}>
               <button
                 onClick={() => setShowToSelector(!showToSelector)}
-                className="w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors mb-3"
+                className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border-2 border-white/10 hover:border-green-500/50 transition-all duration-300 hover:bg-white/10"
               >
-              <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="text-xs font-bold">{toToken.symbol.slice(0, 2)}</span>
+              <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30">
+                    <span className="text-sm font-bold text-green-400">{toToken.symbol.slice(0, 2)}</span>
                   </div>
                   <div className="text-left">
-                  <p className="font-semibold">{toToken.symbol}</p>
+                  <p className="font-bold text-lg">{toToken.symbol}</p>
                   <p className="text-xs text-gray-400">{toToken.name}</p>
                 </div>
               </div>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showToSelector ? "rotate-180" : ""}`} />
               </button>
 
               {showToSelector && (
-                <div className="absolute z-[100] w-full mt-2 glass-card max-h-[500px] overflow-y-auto border border-white/10 rounded-lg shadow-2xl bg-black/95 backdrop-blur-xl">
+                <div className="absolute z-[100] w-full mt-2 glass-card max-h-[500px] overflow-y-auto border border-white/10 rounded-2xl shadow-2xl bg-black/95 backdrop-blur-xl">
                   {loadingTokens ? (
                     <div className="p-4 text-center text-gray-400">Loading tokens...</div>
                   ) : (
@@ -924,39 +920,61 @@ export default function SwapPage() {
               )}
             </div>
 
-            <input
-              type="number"
-              value={amountOut}
-              onChange={(e) => setAmountOut(e.target.value)}
-              placeholder="0.0"
-              disabled
-              className="input-field opacity-60 w-full"
-            />
-            {quoting && <p className="text-xs text-gray-400 mt-2">Getting quote...</p>}
+            <div className="mt-4">
+              <input
+                type="number"
+                value={amountOut}
+                onChange={(e) => setAmountOut(e.target.value)}
+                placeholder="0.0"
+                disabled
+                className="w-full bg-transparent border-none text-3xl font-bold text-white placeholder-gray-600 focus:outline-none opacity-70"
+              />
+              {quoting && (
+                <div className="flex items-center gap-2 mt-3">
+                  <Loader className="w-4 h-4 animate-spin text-green-400" />
+                  <p className="text-xs text-gray-400">Getting quote...</p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Swap Fee Info */}
+          {amountIn && Number.parseFloat(amountIn) > 0 && (
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-400">Swap Fee (0.85%):</span>
+                <span className="text-sm font-bold text-yellow-400">
+                  {Number.parseFloat(swapFee).toFixed(6)} {fromToken.symbol}
+                </span>
+              </div>
+              {feeWarning && (
+                <p className="text-xs text-red-400 mt-2">{feeWarning}</p>
+              )}
+            </div>
+          )}
 
           {/* Password */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Password</label>
+            <label className="block text-sm text-gray-400 mb-3 font-medium">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password to swap"
-              className="input-field"
+              className="input-field w-full"
             />
           </div>
 
           {/* Messages */}
           {error && (
-            <div className="glass-card p-4 border border-red-500/50 bg-red-500/10">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="bg-red-500/10 p-4 rounded-2xl border border-red-500/50">
+              <p className="text-red-400 text-sm font-medium">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="glass-card p-4 border border-green-500/50 bg-green-500/10">
-              <p className="text-green-400 text-sm">{success}</p>
+            <div className="bg-green-500/10 p-4 rounded-2xl border border-green-500/50">
+              <p className="text-green-400 text-sm font-medium">{success}</p>
             </div>
           )}
 
@@ -965,25 +983,28 @@ export default function SwapPage() {
             <button
               onClick={handleApprove}
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-6 py-4 rounded-2xl font-bold bg-gradient-to-r from-green-500 to-green-600 text-black hover:from-green-600 hover:to-green-700 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 hover:shadow-green-500/40 hover:scale-[1.02] active:scale-[0.98]"
             >
-              {loading && <Loader className="w-4 h-4 animate-spin" />}
-              Approve Token
+              {loading && <Loader className="w-5 h-5 animate-spin" />}
+              <span className="text-lg">Approve Token</span>
             </button>
           ) : (
             <button
               onClick={handleSwap}
               disabled={loading || !amountIn || !amountOut || !password || quoting}
-              className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full px-6 py-4 rounded-2xl font-bold bg-gradient-to-r from-green-500 to-green-600 text-black hover:from-green-600 hover:to-green-700 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-green-500/30 hover:shadow-green-500/40 hover:scale-[1.02] active:scale-[0.98]"
             >
-              {loading && <Loader className="w-4 h-4 animate-spin" />}
-              {collectingFees 
-                ? "Collecting fees..." 
-                : loading 
-                ? "Swapping..." 
-                : "Swap"}
+              {loading && <Loader className="w-5 h-5 animate-spin" />}
+              <span className="text-lg">
+                {collectingFees 
+                  ? "Collecting fees..." 
+                  : loading 
+                  ? "Swapping..." 
+                  : "Swap"}
+              </span>
             </button>
           )}
+          </div>
         </div>
       </div>
 
