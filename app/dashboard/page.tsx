@@ -124,7 +124,7 @@ export default function DashboardPage() {
   const fetchBalances = async () => {
     // Only show loading on initial load
     if (isInitialLoad) {
-      setLoading(true)
+    setLoading(true)
     }
     
     try {
@@ -474,32 +474,32 @@ export default function DashboardPage() {
           {/* Chain Selector (ETH / PEPU) */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
             <div className="flex gap-2">
-              <button
+            <button
                 onClick={() => {
                   setChainId(1)
                   setBalances([])
                   setPortfolioValue("0.00")
                   setLoading(true)
                 }}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                  chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-                }`}
-              >
-                Ethereum
-              </button>
-              <button
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+              }`}
+            >
+              Ethereum
+            </button>
+            <button
                 onClick={() => {
                   setChainId(97741)
                   setBalances([])
                   setPortfolioValue("0.00")
                   setLoading(true)
                 }}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                  chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-                }`}
-              >
-                PEPU
-              </button>
+              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+              }`}
+            >
+              PEPU
+            </button>
             </div>
           </div>
 
@@ -508,22 +508,22 @@ export default function DashboardPage() {
             // Ethereum: Send + Receive + Add Custom Token (+)
             <div className="space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                  <div className="flex justify-center mb-2">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <Send className="w-5 h-5 text-green-500" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold">Send</p>
-                </Link>
+            <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Send className="w-5 h-5 text-green-500" />
+                </div>
+              </div>
+              <p className="text-sm font-semibold">Send</p>
+            </Link>
 
-                <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                  <div className="flex justify-center mb-2">
-                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <ArrowDownLeft className="w-5 h-5 text-green-500" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold">Receive</p>
+            <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <ArrowDownLeft className="w-5 h-5 text-green-500" />
+                </div>
+              </div>
+              <p className="text-sm font-semibold">Receive</p>
                 </Link>
               </div>
 
@@ -552,7 +552,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <p className="text-sm font-semibold">Unchained Bridge</p>
-              </Link>
+            </Link>
 
               <Link href="/swap" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">

@@ -8,6 +8,7 @@ import { sendNativeToken, sendToken } from "@/lib/transactions"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
 import { isTokenBlacklisted } from "@/lib/blacklist"
 import { calculateTransactionFeePepu, checkTransactionFeeBalance } from "@/lib/fees"
+import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { ArrowUp, Loader, ChevronDown } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
@@ -196,83 +197,89 @@ export default function SendPage() {
       allTokens.push(nativeToken)
 
       // Get ERC-20 tokens
-      const provider = await getProviderWithFallback(chainId)
-
-      const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-      const currentBlock = await provider.getBlockNumber()
-      const lookback = chainId === 1 ? 50000 : 10000
-      const fromBlock = Math.max(0, currentBlock - lookback)
-
-      try {
-        const addressTopic = ethers.zeroPadValue(wallet.address, 32)
-
-        const [logsFrom, logsTo] = await Promise.all([
-          provider.getLogs({
-            fromBlock,
-            toBlock: "latest",
-            topics: [transferTopic, addressTopic],
-          }),
-          provider.getLogs({
-            fromBlock,
-            toBlock: "latest",
-            topics: [transferTopic, null, addressTopic],
-          }),
-        ])
-
-        const logs = [...logsFrom, ...logsTo]
-
-        let tokenAddresses = [...new Set(logs.map((log) => log.address.toLowerCase()))]
-
-        // Always include important ETH tokens so balances show even without recent transfers
-        if (chainId === 1) {
-          const baseForceTokens = [
-            // USDC
-            "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-            // Previously added custom token
-            "0x93aa0ccd1e5628d3a841c4dbdf602d9eb04085d6",
-          ]
-          const custom = getSavedEthCustomTokens()
-          const forceTokens = [...baseForceTokens, ...custom].map((t) => t.toLowerCase())
-          for (const token of forceTokens) {
-            if (!tokenAddresses.includes(token)) {
-              tokenAddresses.push(token)
-            }
-          }
-        }
-
-        // Filter out blacklisted tokens
-        const filteredTokenAddresses = tokenAddresses.filter(
-          (addr) => !isTokenBlacklisted(addr, chainId)
-        )
-
-        for (const tokenAddress of filteredTokenAddresses) {
-          try {
-            const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
-            const [balance, decimals, symbol, name] = await Promise.all([
-              contract.balanceOf(wallet.address),
-              contract.decimals(),
-              contract.symbol().catch(() => "???"),
-              contract.name().catch(() => "Unknown Token"),
-            ])
-
-            const balanceFormatted = ethers.formatUnits(balance, decimals)
-
-            if (Number.parseFloat(balanceFormatted) > 0) {
+      if (chainId === 1) {
+        // For ETH chain, use getAllEthTokenBalances which includes price fetching
+        try {
+          const ethTokens = await getAllEthTokenBalances(wallet.address)
+          
+          // Filter out blacklisted tokens and convert to Token format
+          for (const ethToken of ethTokens) {
+            if (!isTokenBlacklisted(ethToken.address, chainId)) {
               allTokens.push({
-                address: tokenAddress,
-                name,
-                symbol,
-                decimals: Number(decimals),
-                balance: balanceFormatted,
+                address: ethToken.address,
+                name: ethToken.name,
+                symbol: ethToken.symbol,
+                decimals: ethToken.decimals,
+                balance: ethToken.balanceFormatted,
                 isNative: false,
               })
             }
-          } catch (error) {
-            console.error(`Error fetching token ${tokenAddress}:`, error)
           }
+        } catch (error) {
+          console.error("Error loading ETH tokens:", error)
         }
-      } catch (error) {
-        console.error("Error scanning for tokens:", error)
+      } else {
+        // For PEPU chain, use the existing log scanning method
+        const provider = await getProviderWithFallback(chainId)
+
+        const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        const currentBlock = await provider.getBlockNumber()
+        const lookback = 10000
+        const fromBlock = Math.max(0, currentBlock - lookback)
+
+        try {
+          const addressTopic = ethers.zeroPadValue(wallet.address, 32)
+
+          const [logsFrom, logsTo] = await Promise.all([
+            provider.getLogs({
+              fromBlock,
+              toBlock: "latest",
+              topics: [transferTopic, addressTopic],
+            }),
+            provider.getLogs({
+              fromBlock,
+              toBlock: "latest",
+              topics: [transferTopic, null, addressTopic],
+            }),
+          ])
+
+          const logs = [...logsFrom, ...logsTo]
+          let tokenAddresses = [...new Set(logs.map((log) => log.address.toLowerCase()))]
+
+          // Filter out blacklisted tokens
+          const filteredTokenAddresses = tokenAddresses.filter(
+            (addr) => !isTokenBlacklisted(addr, chainId)
+          )
+
+          for (const tokenAddress of filteredTokenAddresses) {
+            try {
+              const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider)
+              const [balance, decimals, symbol, name] = await Promise.all([
+                contract.balanceOf(wallet.address),
+                contract.decimals(),
+                contract.symbol().catch(() => "???"),
+                contract.name().catch(() => "Unknown Token"),
+              ])
+
+              const balanceFormatted = ethers.formatUnits(balance, decimals)
+
+              if (Number.parseFloat(balanceFormatted) > 0) {
+                allTokens.push({
+                  address: tokenAddress,
+                  name,
+                  symbol,
+                  decimals: Number(decimals),
+                  balance: balanceFormatted,
+                  isNative: false,
+                })
+              }
+            } catch (error) {
+              console.error(`Error fetching token ${tokenAddress}:`, error)
+            }
+          }
+        } catch (error) {
+          console.error("Error scanning for tokens:", error)
+        }
       }
 
       setTokens(allTokens)

@@ -1,7 +1,6 @@
 import { ethers } from "ethers"
 import { getProvider, getProviderWithFallback } from "./rpc"
 import { getEtherscanTokenBalance } from "./etherscan"
-import { fetchGeckoTerminalData } from "./gecko"
 import { getPepuPriceByContract } from "./coingecko"
 import { PEPU_TOKEN_ADDRESS_ETH } from "./config"
 
@@ -36,6 +35,40 @@ const ERC20_ABI = [
     type: "function",
   },
 ]
+
+// Uniswap V2 Pair ABI (for price calculation)
+const UNISWAP_V2_PAIR_ABI = [
+  {
+    constant: true,
+    inputs: [],
+    name: "token0",
+    outputs: [{ name: "", type: "address" }],
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "token1",
+    outputs: [{ name: "", type: "address" }],
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [],
+    name: "getReserves",
+    outputs: [
+      { name: "reserve0", type: "uint112" },
+      { name: "reserve1", type: "uint112" },
+      { name: "blockTimestampLast", type: "uint32" },
+    ],
+    type: "function",
+  },
+]
+
+// WETH address on Ethereum mainnet
+const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+// Uniswap V2 Factory address
+const UNISWAP_V2_FACTORY_ADDRESS = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f"
 
 // Popular tokens to check via RPC (matching bot code)
 const KNOWN_TOKENS = [
@@ -121,6 +154,160 @@ export interface TokenBalance {
 function formatTokenAmount(amount: bigint, decimals: number): string {
   const num = Number(ethers.formatUnits(amount, decimals))
   return num.toLocaleString(undefined, { maximumFractionDigits: 6 })
+}
+
+/**
+ * Get ETH price in USD from CoinGecko
+ */
+async function getEthPriceInUSD(): Promise<number | null> {
+  try {
+    const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+    const data = await response.json()
+    return data.ethereum?.usd || null
+  } catch (error) {
+    console.warn("[ETH Tokens] Could not fetch ETH price from CoinGecko")
+    return null
+  }
+}
+
+/**
+ * Find Uniswap V2 pair address for a token
+ */
+async function findUniswapV2Pair(tokenAddress: string, provider: ethers.JsonRpcProvider): Promise<string | null> {
+  try {
+    const FACTORY_ABI = [
+      {
+        constant: true,
+        inputs: [
+          { name: "tokenA", type: "address" },
+          { name: "tokenB", type: "address" },
+        ],
+        name: "getPair",
+        outputs: [{ name: "pair", type: "address" }],
+        type: "function",
+      },
+    ]
+
+    const factory = new ethers.Contract(UNISWAP_V2_FACTORY_ADDRESS, FACTORY_ABI, provider)
+    const pairAddress = await factory.getPair(tokenAddress, WETH_ADDRESS)
+
+    if (pairAddress === ethers.ZeroAddress) {
+      return null
+    }
+
+    return pairAddress
+  } catch (error) {
+    return null
+  }
+}
+
+/**
+ * Get token price from Uniswap V2 DEX
+ */
+async function getTokenPriceFromDex(
+  tokenAddress: string,
+  tokenDecimals: number,
+  provider: ethers.JsonRpcProvider,
+): Promise<{ priceInUsd: number | null; source: string } | null> {
+  try {
+    const pairAddress = await findUniswapV2Pair(tokenAddress, provider)
+
+    if (!pairAddress) {
+      return null
+    }
+
+    const pairContract = new ethers.Contract(pairAddress, UNISWAP_V2_PAIR_ABI, provider)
+
+    const [token0, token1, reserves] = await Promise.all([
+      pairContract.token0(),
+      pairContract.token1(),
+      pairContract.getReserves(),
+    ])
+
+    const reserve0 = reserves[0]
+    const reserve1 = reserves[1]
+
+    // Determine which reserve is the token and which is WETH
+    const isToken0 = token0.toLowerCase() === tokenAddress.toLowerCase()
+
+    const tokenReserve = isToken0 ? reserve0 : reserve1
+    const wethReserve = isToken0 ? reserve1 : reserve0
+
+    // Calculate price in ETH
+    const tokenAmount = Number(ethers.formatUnits(tokenReserve, tokenDecimals))
+    const wethAmount = Number(ethers.formatEther(wethReserve))
+
+    if (tokenAmount === 0) {
+      return null
+    }
+
+    const priceInEth = wethAmount / tokenAmount
+
+    // Get ETH price in USD
+    const ethPriceUsd = await getEthPriceInUSD()
+
+    if (!ethPriceUsd) {
+      return {
+        priceInUsd: null,
+        source: "Uniswap V2 (no ETH price)",
+      }
+    }
+
+    const priceInUsd = priceInEth * ethPriceUsd
+
+    return {
+      priceInUsd,
+      source: "Uniswap V2",
+    }
+  } catch (error) {
+    console.warn(`[ETH Tokens] Error fetching DEX price for ${tokenAddress}:`, error)
+    return null
+  }
+}
+
+/**
+ * Get token price from CoinGecko API
+ */
+async function getTokenPriceFromAPI(tokenAddress: string): Promise<{ priceInUsd: number; source: string } | null> {
+  try {
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${tokenAddress}&vs_currencies=usd`,
+    )
+
+    const data = await response.json()
+    const price = data[tokenAddress.toLowerCase()]?.usd
+
+    if (price) {
+      return {
+        priceInUsd: price,
+        source: "CoinGecko API",
+      }
+    }
+
+    return null
+  } catch (error) {
+    return null
+  }
+}
+
+/**
+ * Get token price for ETH ERC20 tokens
+ * Tries CoinGecko API first, then Uniswap V2 DEX as fallback
+ */
+async function getEthTokenPrice(
+  tokenAddress: string,
+  tokenDecimals: number,
+  provider: ethers.JsonRpcProvider,
+): Promise<{ priceInUsd: number | null; source: string } | null> {
+  // Try CoinGecko API first (faster)
+  const apiPrice = await getTokenPriceFromAPI(tokenAddress)
+  if (apiPrice) {
+    return apiPrice
+  }
+
+  // Try DEX price as fallback
+  const dexPrice = await getTokenPriceFromDex(tokenAddress, tokenDecimals, provider)
+  return dexPrice
 }
 
 /**
@@ -236,7 +423,7 @@ export async function getAllEthTokenBalances(walletAddress: string): Promise<Tok
       )
     }
 
-    // Fetch prices for tokens (especially PEPU from CoinGecko)
+    // Fetch prices for tokens
     for (const token of tokens) {
       try {
         // If it's PEPU, use CoinGecko
@@ -248,10 +435,10 @@ export async function getAllEthTokenBalances(walletAddress: string): Promise<Tok
             token.usdValue = (balanceNum * token.priceUsd).toFixed(2)
           }
         } else {
-          // For other tokens, try GeckoTerminal as well
-          const geckoData = await fetchGeckoTerminalData(token.address, "ethereum")
-          if (geckoData?.price_usd) {
-            token.priceUsd = parseFloat(geckoData.price_usd)
+          // For other ERC20 tokens, use CoinGecko API + Uniswap V2 fallback
+          const priceInfo = await getEthTokenPrice(token.address, token.decimals, provider)
+          if (priceInfo?.priceInUsd) {
+            token.priceUsd = priceInfo.priceInUsd
             const balanceNum = Number(ethers.formatUnits(token.balance, token.decimals))
             token.usdValue = (balanceNum * token.priceUsd).toFixed(2)
           }
@@ -320,16 +507,17 @@ export async function getEthTokenInfo(
           tokenInfo.usdValue = (balanceNum * tokenInfo.priceUsd).toFixed(2)
         }
       } else {
-        // For other tokens, try GeckoTerminal
-        const geckoData = await fetchGeckoTerminalData(tokenAddress, "ethereum")
-        if (geckoData?.price_usd) {
-          tokenInfo.priceUsd = parseFloat(geckoData.price_usd)
+        // For other ERC20 tokens, use CoinGecko API + Uniswap V2 fallback
+        const priceInfo = await getEthTokenPrice(tokenAddress, Number(decimals), provider)
+        if (priceInfo?.priceInUsd) {
+          tokenInfo.priceUsd = priceInfo.priceInUsd
           const balanceNum = Number(ethers.formatUnits(balance, Number(decimals)))
           tokenInfo.usdValue = (balanceNum * tokenInfo.priceUsd).toFixed(2)
         }
       }
     } catch (error) {
       // Price fetching is optional
+      console.warn(`[ETH Tokens] Could not fetch price for ${tokenAddress}:`, error)
     }
 
     return tokenInfo
