@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Unchained Web Wallet",
   description: "Non-custodial crypto wallet for ETH and PEPU",
   icons: {
-    icon: "/logo.png",
+    icon: "https://pbs.twimg.com/profile_images/1990713242805506049/IL1CQ-9l_400x400.jpg",
   },
     generator: 'v0.app'
 }
