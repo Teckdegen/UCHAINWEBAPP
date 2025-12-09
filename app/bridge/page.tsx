@@ -318,11 +318,11 @@ export default function BridgePage() {
                 </div>
 
                 {/* Transaction Status Messages */}
-          {error && (
+                {error && (
                   <div className="text-red-400 text-sm mb-4 text-center bg-red-500/10 border border-red-500/20 rounded-xl p-3">
                     {error}
-            </div>
-          )}
+                  </div>
+                )}
 
                 {loading && txHash && (
                   <div className="backdrop-blur-sm bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-4 text-blue-100 text-center">
@@ -352,8 +352,8 @@ export default function BridgePage() {
                     <div className="text-xs text-gray-300">
                       🔄 Please wait while we confirm your transaction...
                     </div>
-            </div>
-          )}
+                  </div>
+                )}
 
                 {successTx && (
                   <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-4 text-green-100 text-center">
@@ -401,12 +401,12 @@ export default function BridgePage() {
                       ⏱️ Your tokens will arrive on Ethereum mainnet in approximately 30 seconds
                     </div>
 
-          <button
+                    <button
                       onClick={handleDismissSuccess}
                       className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-colors"
-          >
+                    >
                       Continue Bridging
-          </button>
+                    </button>
                   </div>
                 )}
 
