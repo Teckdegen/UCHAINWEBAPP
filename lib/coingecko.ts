@@ -7,8 +7,9 @@ const PEPU_ETH_CONTRACT = "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6"
 // Get price by contract address (most reliable method)
 export async function getPepuPriceByContract(): Promise<number> {
   try {
+    // Use the token_price endpoint for Ethereum tokens
     const response = await fetch(
-      `${COINGECKO_API}?contract_addresses=${PEPU_ETH_CONTRACT}&vs_currencies=usd`,
+      `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${PEPU_ETH_CONTRACT}&vs_currencies=usd`,
       {
         headers: {
           Accept: "application/json",
@@ -17,6 +18,7 @@ export async function getPepuPriceByContract(): Promise<number> {
     )
 
     if (!response.ok) {
+      console.error(`CoinGecko API error: ${response.status} - ${response.statusText}`)
       throw new Error(`CoinGecko API error: ${response.status}`)
     }
 
@@ -24,13 +26,22 @@ export async function getPepuPriceByContract(): Promise<number> {
     const contractKey = PEPU_ETH_CONTRACT.toLowerCase()
 
     if (data[contractKey] && data[contractKey].usd) {
+      console.log(`[CoinGecko] PEPU price fetched: $${data[contractKey].usd}`)
       return data[contractKey].usd
     }
 
-    return 0
+    // If not found by contract, try by ID as fallback
+    console.warn(`[CoinGecko] PEPU not found by contract address, trying by ID...`)
+    return await getPepuPriceById()
   } catch (error) {
     console.error("Error fetching PEPU price by contract:", error)
-    return 0
+    // Try fallback by ID
+    try {
+      return await getPepuPriceById()
+    } catch (fallbackError) {
+      console.error("Error fetching PEPU price by ID (fallback):", fallbackError)
+      return 0
+    }
   }
 }
 

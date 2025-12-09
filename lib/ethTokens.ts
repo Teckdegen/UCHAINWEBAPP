@@ -428,11 +428,15 @@ export async function getAllEthTokenBalances(walletAddress: string): Promise<Tok
       try {
         // If it's PEPU, use CoinGecko
         if (token.address.toLowerCase() === PEPU_TOKEN_ADDRESS_ETH.toLowerCase()) {
+          console.log(`[ETH Tokens] Fetching PEPU price from CoinGecko for ${token.symbol}...`)
           const price = await getPepuPriceByContract()
           if (price > 0) {
             token.priceUsd = price
             const balanceNum = Number(ethers.formatUnits(token.balance, token.decimals))
             token.usdValue = (balanceNum * token.priceUsd).toFixed(2)
+            console.log(`[ETH Tokens] PEPU price set: $${price}, USD value: $${token.usdValue}`)
+          } else {
+            console.warn(`[ETH Tokens] PEPU price returned 0, token may not be listed on CoinGecko`)
           }
         } else {
           // For other ERC20 tokens, use CoinGecko API + Uniswap V2 fallback
