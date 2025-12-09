@@ -3,3 +3,4 @@ node_modules
 sdk/dist/
 test-wallet-connect.html
 extension/
+contracts/
