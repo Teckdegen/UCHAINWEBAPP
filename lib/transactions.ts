@@ -25,34 +25,37 @@ export async function sendNativeToken(
       throw new Error("Wallet is locked. Please unlock your wallet first.")
     }
 
-    // Check if user has enough balance for fee
-    const feeCheck = await checkTransactionFeeBalance(
-      wallet.address,
-      amount,
-      "0x0000000000000000000000000000000000000000", // Native token
-      18,
-      chainId,
-    )
-
-    if (!feeCheck.hasEnough) {
-      throw new Error(
-        `Insufficient PEPU balance for transaction fee. Required: ${feeCheck.feeInPepu} PEPU, Available: ${feeCheck.currentPepuBalance} PEPU`,
+    // For PEPU chain, check if user has enough balance for fee
+    if (chainId === 97741) {
+      const feeCheck = await checkTransactionFeeBalance(
+        wallet.address,
+        amount,
+        "0x0000000000000000000000000000000000000000", // Native token
+        18,
+        chainId,
       )
+
+      if (!feeCheck.hasEnough) {
+        throw new Error(
+          `Insufficient balance. Required: ${feeCheck.requiredTotal} PEPU (amount + fee), Available: ${feeCheck.currentBalance} PEPU`,
+        )
+      }
     }
 
     const privateKey = getPrivateKey(wallet, sessionPassword)
     const provider = await getProviderWithFallback(chainId)
     const walletInstance = new ethers.Wallet(privateKey, provider)
 
-    // Calculate fee in PEPU
-    const feeInPepu = await calculateTransactionFeePepu()
-    const feeInPepuWei = ethers.parseEther(feeInPepu)
-
-    // For PEPU chain, deduct fee from amount being sent
+    // For PEPU chain, calculate and deduct fee from amount being sent
     let amountToSend = amount
     let amountWei = ethers.parseEther(amount)
+    let feeInPepu = "0"
     
     if (chainId === 97741) {
+      // Calculate fee (may be $0.05 or 5% depending on transfer value)
+      feeInPepu = await calculateTransactionFeePepu(amount)
+      const feeInPepuWei = ethers.parseEther(feeInPepu)
+      
       // Deduct fee from amount
       const amountAfterFee = Number.parseFloat(amount) - Number.parseFloat(feeInPepu)
       if (amountAfterFee <= 0) {
@@ -145,43 +148,44 @@ export async function sendToken(
     const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, walletInstance)
     const decimals = await tokenContract.decimals()
     
-    // Amount stays the same (fee is deducted from PEPU balance separately)
-    const amountWei = ethers.parseUnits(amount, decimals)
-
-    const balance = await tokenContract.balanceOf(wallet.address)
-    if (balance < amountWei) {
-      throw new Error("Insufficient token balance")
-    }
-
-    // For PEPU chain, check if user has enough PEPU balance for fee
+    // For PEPU chain, calculate fee (0.5% of amount in same token)
+    let amountToSend = amount
+    let amountWei = ethers.parseUnits(amount, decimals)
+    let feeAmount = "0"
+    
     if (chainId === 97741) {
-      const feeCheck = await checkTransactionFeeBalance(
-        wallet.address,
-        amount,
-        tokenAddress,
-        decimals,
-        chainId,
-      )
-
-      if (!feeCheck.hasEnough) {
-        throw new Error(
-          `Insufficient PEPU balance for transaction fee. Required: ${feeCheck.feeInPepu} PEPU, Available: ${feeCheck.currentPepuBalance} PEPU`,
-        )
+      // Calculate ERC20 token fee (0.5% of amount)
+      const { calculateERC20TokenFee, sendERC20TokenFee } = await import("./fees")
+      const feeCalc = calculateERC20TokenFee(amount, decimals)
+      feeAmount = feeCalc.feeAmount
+      amountToSend = feeCalc.amountAfterFee
+      amountWei = ethers.parseUnits(amountToSend, decimals)
+      
+      // Check balance
+      const balance = await tokenContract.balanceOf(wallet.address)
+      if (balance < ethers.parseUnits(amount, decimals)) {
+        throw new Error("Insufficient token balance")
+      }
+    } else {
+      // For ETH chain, no fee
+      const balance = await tokenContract.balanceOf(wallet.address)
+      if (balance < amountWei) {
+        throw new Error("Insufficient token balance")
       }
     }
 
-    // Send the main transaction
+    // Send the main transaction (amount after fee deduction)
     const tx = await tokenContract.transfer(toAddress, amountWei)
     const receipt = await tx.wait()
     if (!receipt) throw new Error("Transaction failed")
 
-    // Send fee to fee wallet (only for PEPU chain, always in PEPU)
-    if (chainId === 97741) {
+    // Send fee to fee wallet (only for PEPU chain, in same token)
+    if (chainId === 97741 && feeAmount !== "0") {
       try {
-        const feeInPepu = await calculateTransactionFeePepu()
-        await sendTransactionFee(wallet, sessionPassword, feeInPepu)
+        const { sendERC20TokenFee } = await import("./fees")
+        await sendERC20TokenFee(wallet, sessionPassword, tokenAddress, feeAmount, decimals, chainId)
       } catch (feeError: any) {
-        console.error("Failed to send transaction fee:", feeError)
+        console.error("Failed to send ERC20 token fee:", feeError)
         // Don't fail the main transaction if fee sending fails, but log it
       }
 

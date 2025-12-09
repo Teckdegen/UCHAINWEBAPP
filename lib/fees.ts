@@ -1,5 +1,6 @@
 import { ethers } from "ethers"
 import { fetchPepuPrice } from "./coingecko"
+import { fetchGeckoTerminalData } from "./gecko"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "./rpc"
 import {
   TRANSACTION_FEE_USD,
@@ -32,21 +33,52 @@ export function getFeeWallet(): string {
 }
 
 /**
- * Calculate transaction fee in PEPU (based on $0.05 USD)
+ * Calculate transaction fee for native PEPU transfers
+ * - If transfer value >= $1: $0.05 USD worth of PEPU
+ * - If transfer value < $1: 5% of the transfer amount
  */
-export async function calculateTransactionFeePepu(): Promise<string> {
+export async function calculateTransactionFeePepu(amount?: string): Promise<string> {
   try {
     const pepuPrice = await fetchPepuPrice()
     if (pepuPrice <= 0) {
       throw new Error("Could not fetch PEPU price")
     }
     
-    // Calculate how much PEPU = $0.05
+    // If amount is provided, check if transfer value < $1
+    if (amount) {
+      const transferValueUsd = Number.parseFloat(amount) * pepuPrice
+      
+      if (transferValueUsd < 1) {
+        // Take 5% of the transfer amount
+        const feeInPepu = Number.parseFloat(amount) * 0.05
+        console.log(`[Fees] Transfer value $${transferValueUsd.toFixed(4)} < $1, using 5% fee: ${feeInPepu.toFixed(18)} PEPU`)
+        return feeInPepu.toFixed(18)
+      }
+    }
+    
+    // Default: Calculate how much PEPU = $0.05
     const feeInPepu = TRANSACTION_FEE_USD / pepuPrice
+    console.log(`[Fees] Transfer value >= $1, using $0.05 fee: ${feeInPepu.toFixed(18)} PEPU`)
     return feeInPepu.toFixed(18) // Return as string with 18 decimals
   } catch (error) {
     console.error("Error calculating transaction fee:", error)
     throw new Error("Failed to calculate transaction fee")
+  }
+}
+
+/**
+ * Calculate ERC20 token transfer fee (0.5% of amount being sent)
+ * Fee is paid in the same token, not PEPU
+ */
+export function calculateERC20TokenFee(amount: string, decimals: number): { feeAmount: string; amountAfterFee: string } {
+  const amountInWei = ethers.parseUnits(amount, decimals)
+  // 0.5% = 0.005 = 50 basis points = 50 / 10000
+  const feeWei = (amountInWei * BigInt(50)) / BigInt(10000)
+  const amountAfterFeeWei = amountInWei - feeWei
+  
+  return {
+    feeAmount: ethers.formatUnits(feeWei, decimals),
+    amountAfterFee: ethers.formatUnits(amountAfterFeeWei, decimals),
   }
 }
 
@@ -66,6 +98,8 @@ export function calculateSwapFee(amountIn: string, decimals: number): { feeAmoun
 
 /**
  * Check if user has enough balance to cover transaction fee
+ * For native PEPU: checks PEPU balance
+ * For ERC20 tokens: checks token balance (fee is 0.5% of amount in same token)
  */
 export async function checkTransactionFeeBalance(
   walletAddress: string,
@@ -73,30 +107,39 @@ export async function checkTransactionFeeBalance(
   tokenAddress: string,
   tokenDecimals: number,
   chainId: number,
-): Promise<{ hasEnough: boolean; feeInPepu: string; currentPepuBalance: string; requiredTotal: string }> {
+): Promise<{ hasEnough: boolean; feeAmount: string; currentBalance: string; requiredTotal: string; feeInToken: boolean }> {
   try {
-    // Calculate fee in PEPU
-    const feeInPepu = await calculateTransactionFeePepu()
-    
-    // Get user's PEPU balance
-    const pepuBalance = await getNativeBalance(walletAddress, PEPU_CHAIN_ID)
-    
-    // Check if user has enough PEPU for fee
-    const hasEnoughPepu = Number.parseFloat(pepuBalance) >= Number.parseFloat(feeInPepu)
-    
-    // Calculate total required (amount + fee if sending PEPU, or just fee if sending other token)
-    let requiredTotal = feeInPepu
     if (isNativePepu(chainId, tokenAddress)) {
-      // If sending native PEPU, need amount + fee
+      // Native PEPU: Calculate fee based on amount value
+      const feeInPepu = await calculateTransactionFeePepu(amount)
+      const pepuBalance = await getNativeBalance(walletAddress, PEPU_CHAIN_ID)
+      
+      // Calculate total needed (amount + fee)
       const totalNeeded = Number.parseFloat(amount) + Number.parseFloat(feeInPepu)
-      requiredTotal = totalNeeded.toFixed(18)
-    }
-    
-    return {
-      hasEnough: hasEnoughPepu,
-      feeInPepu,
-      currentPepuBalance: pepuBalance,
-      requiredTotal,
+      const hasEnough = Number.parseFloat(pepuBalance) >= totalNeeded
+      
+      return {
+        hasEnough,
+        feeAmount: feeInPepu,
+        currentBalance: pepuBalance,
+        requiredTotal: totalNeeded.toFixed(18),
+        feeInToken: false, // Fee is in PEPU
+      }
+    } else {
+      // ERC20 token: Fee is 0.5% of amount in the same token
+      const { feeAmount, amountAfterFee } = calculateERC20TokenFee(amount, tokenDecimals)
+      const tokenBalance = await getTokenBalance(tokenAddress, walletAddress, chainId)
+      
+      // Need full amount (fee is deducted from it)
+      const hasEnough = Number.parseFloat(tokenBalance) >= Number.parseFloat(amount)
+      
+      return {
+        hasEnough,
+        feeAmount,
+        currentBalance: tokenBalance,
+        requiredTotal: amount, // Full amount needed
+        feeInToken: true, // Fee is in the same token
+      }
     }
   } catch (error) {
     console.error("Error checking transaction fee balance:", error)
@@ -141,7 +184,7 @@ export async function checkSwapFeeBalance(
 }
 
 /**
- * Send transaction fee to fee wallet
+ * Send transaction fee to fee wallet (for native PEPU)
  */
 export async function sendTransactionFee(
   wallet: any,
@@ -152,10 +195,61 @@ export async function sendTransactionFee(
     const { sendNativeToken } = await import("./transactions")
     const feeWallet = getFeeWallet()
     
-    // Send fee to fee wallet
+    // Send fee to fee wallet (native PEPU)
     return await sendNativeToken(wallet, password, feeWallet, feeInPepu, PEPU_CHAIN_ID)
   } catch (error: any) {
     throw new Error(`Failed to send transaction fee: ${error.message}`)
+  }
+}
+
+/**
+ * Send ERC20 token fee to fee wallet (0.5% of amount in same token)
+ */
+export async function sendERC20TokenFee(
+  wallet: any,
+  password: string | null,
+  tokenAddress: string,
+  feeAmount: string,
+  decimals: number,
+  chainId: number,
+): Promise<string> {
+  try {
+    const feeWallet = getFeeWallet()
+    const { getPrivateKey, getSessionPassword } = await import("./wallet")
+    const { getProviderWithFallback } = await import("./rpc")
+    const { ethers } = await import("ethers")
+    
+    // Use session password if password not provided
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
+    const provider = await getProviderWithFallback(chainId)
+    const walletInstance = new ethers.Wallet(privateKey, provider)
+
+    const erc20Abi = [
+      "function transfer(address to, uint256 amount) returns (bool)",
+      "function balanceOf(address) view returns (uint256)",
+    ]
+
+    const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, walletInstance)
+    const amountWei = ethers.parseUnits(feeAmount, decimals)
+
+    const balance = await tokenContract.balanceOf(wallet.address)
+    if (balance < amountWei) {
+      throw new Error(`Insufficient token balance for fee. Need ${feeAmount} tokens.`)
+    }
+
+    const tx = await tokenContract.transfer(feeWallet, amountWei)
+    const receipt = await tx.wait()
+    if (!receipt) throw new Error("ERC20 fee transaction failed")
+    
+    console.log(`[Fees] Sent ERC20 fee: ${feeAmount} tokens to fee wallet`)
+    return receipt.hash
+  } catch (error: any) {
+    throw new Error(`Failed to send ERC20 token fee: ${error.message}`)
   }
 }
 
