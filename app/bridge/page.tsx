@@ -454,7 +454,6 @@ export default function BridgePage() {
             </div>
           </div>
         </div>
-      </div>
 
       <BottomNav active="bridge" />
     </div>
