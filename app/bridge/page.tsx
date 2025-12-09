@@ -182,102 +182,113 @@ export default function BridgePage() {
 
   return (
     <div className="min-h-screen bg-[#0e0e0f] pb-24">
-      <div className="max-w-md mx-auto">
-        {/* Header */}
-        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-green-500" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">Unchained Bridge</h1>
-              <p className="text-sm text-gray-400">Bridge PEPU from L2 → L1</p>
-            </div>
+      {/* Header */}
+      <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-green-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Unchained Bridge</h1>
+            <p className="text-sm text-gray-400">Bridge PEPU from L2 → L1</p>
           </div>
         </div>
+      </div>
 
-        {/* Main Bridge Card */}
-        <div className="p-4 sm:p-8">
+      {/* Main Bridge Card */}
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
           <div className="relative">
             {/* Glass effect overlay */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.12] via-white/[0.05] to-transparent rounded-3xl pointer-events-none"></div>
 
             {/* Main card */}
             <div className="relative backdrop-blur-xl bg-white/[0.05] rounded-3xl shadow-2xl border border-white/[0.15] overflow-hidden">
-              {/* Card Header */}
-              <div className="relative p-6 border-b border-white/[0.12]">
-                <h2 className="text-3xl font-bold text-white text-center">Unchained Bridge</h2>
-                <p className="text-white/70 mt-1 text-center">Bridge PEPU from L2 → L1</p>
-              </div>
-
               {/* Card Body */}
-              <div className="relative p-6">
-          {/* Network Info */}
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                      <span className="text-xs">L2</span>
+              <div className="relative p-8 sm:p-10 lg:p-12">
+                {/* Network Info */}
+                <div className="mb-8">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
+                      <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-green-400">L2</span>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-400">From</div>
+                        <div className="text-white font-semibold">Pepe Unchained V2</div>
+                      </div>
                     </div>
-                    <span className="text-white text-sm">
-                      From <span className="font-bold">Pepe Unchained V2 Mainnet</span>
+                    <div className="text-2xl text-gray-500">→</div>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-blue-400">L1</span>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-400">To</div>
+                        <div className="text-white font-semibold">Ethereum Mainnet</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pool Status */}
+                <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-green-500/10 to-blue-500/10 border border-white/[0.15]">
+                  <div className="text-center mb-4">
+                    <div className="text-sm text-gray-400 mb-1">Bridge Pool Status</div>
+                    <div className="text-2xl font-bold text-white mb-2">
+                      {loadingPool ? (
+                        <span className="text-gray-400">Loading...</span>
+                      ) : (
+                        <span>{formattedPool} <span className="text-lg text-gray-400">PEPU</span></span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Max Capacity: {MAX_BRIDGE_POOL.toLocaleString()} PEPU
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar */}
+                  <div className="w-full h-6 bg-black/50 border border-white/[0.2] rounded-full mb-2 relative overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-green-500 to-blue-500 rounded-full transition-all duration-700 shadow-lg shadow-green-500/30"
+                      style={{ width: `${percent}%` }}
+                    ></div>
+                    <span className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-bold text-white drop-shadow-lg">
+                      {loadingPool ? "..." : `${percent.toFixed(2)}%`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                      <span className="text-xs">L1</span>
-                    </div>
-                    <span className="text-white text-sm">
-                      To <span className="font-bold">Ethereum Mainnet</span>
-                    </span>
-            </div>
-          </div>
-
-                {/* Progress Bar */}
-                <div className="w-full h-5 bg-black border border-white/[0.2] rounded-full mb-2 relative">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all duration-700"
-                    style={{ width: `${percent}%` }}
-                  ></div>
-                  <span className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-bold text-white">
-                    {loadingPool ? "..." : `${percent.toFixed(2)}%`}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs text-white mb-1">
-                  <span>0</span>
-                  <span>{MAX_BRIDGE_POOL.toLocaleString()}</span>
-                </div>
-                <div className="text-center text-white text-sm mb-6">
-                  Unchained Bridge Pool (v1):{" "}
-                  {loadingPool ? (
-                    <span className="font-bold">Loading...</span>
-                  ) : (
-                    <span className="font-bold">{formattedPool} PEPU</span>
-                  )}
+                  <div className="flex justify-between text-xs text-gray-400">
+                    <span>0</span>
+                    <span>{MAX_BRIDGE_POOL.toLocaleString()}</span>
+                  </div>
                 </div>
 
                 {/* Amount Input */}
-                <div className="mb-4">
-                  <label className="block text-white text-sm mb-1">You Send</label>
-                  <div className="text-green-500 text-xs mb-1">Enter amount to bridge</div>
-              <input
-                type="number"
-                    className="w-full bg-white/[0.06] backdrop-blur-sm border border-white/[0.2] rounded-lg px-2 py-1 text-white text-base sm:text-lg focus:outline-none placeholder:text-xs focus:ring-2 focus:ring-white/20 focus:border-white/30"
-                value={amount}
-                    onChange={handleInputChange}
-                    min="0"
-                    step="any"
-                    placeholder="Enter amount"
-                  />
+                <div className="mb-6">
+                  <label className="block text-white text-sm font-semibold mb-2">Amount to Bridge</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      className="w-full bg-white/[0.08] backdrop-blur-sm border-2 border-white/[0.2] rounded-xl px-4 py-4 text-white text-xl font-semibold focus:outline-none placeholder:text-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all"
+                      value={amount}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="any"
+                      placeholder="0.00"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <span className="text-gray-400 font-semibold">PEPU</span>
+                    </div>
+                  </div>
                   {hasInsufficientL1Pool && amount && (
-                    <div className="text-orange-400 text-xs mt-1">
+                    <div className="text-orange-400 text-sm mt-2 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
                       ⚠️ Insufficient pool funds. Try a smaller amount.
-            </div>
-          )}
-                  <div className="flex justify-between text-xs text-gray-300 mt-1">
-                    <span>Available:</span>
-                    <span className="text-white">
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center text-sm text-gray-400 mt-3 px-1">
+                    <span>Available Balance:</span>
+                    <span className="text-white font-semibold">
                       {Number.parseFloat(balance).toLocaleString(undefined, {
-                        maximumFractionDigits: 3,
+                        maximumFractionDigits: 6,
                       })}{" "}
                       PEPU
                     </span>
@@ -285,26 +296,26 @@ export default function BridgePage() {
                 </div>
 
                 {/* Bridge Button */}
-                <div className="relative w-full mb-4">
+                <div className="relative w-full mb-6">
                   <button
-                    className={`w-full font-bold text-sm sm:text-base py-1.5 sm:py-2 rounded-full border transition-colors ${
+                    className={`w-full font-bold text-lg py-4 rounded-xl border transition-all ${
                       isBridgeDisabled
                         ? "bg-white/[0.05] text-white/30 cursor-not-allowed border-white/[0.08] backdrop-blur-sm"
-                        : "bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white hover:scale-[1.02] shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 border-transparent"
+                        : "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white hover:scale-[1.02] shadow-xl shadow-orange-500/30 hover:shadow-orange-500/40 border-transparent active:scale-[0.98]"
                     }`}
                     disabled={isBridgeDisabled}
                     onClick={handleBridge}
                   >
                     {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader className="w-4 h-4 animate-spin" />
+                      <span className="flex items-center justify-center gap-3">
+                        <Loader className="w-5 h-5 animate-spin" />
                         Bridging...
                       </span>
                     ) : (
-                      "Bridge Assets"
+                      "Bridge PEPU"
                     )}
                   </button>
-          </div>
+                </div>
 
                 {/* Transaction Status Messages */}
           {error && (
@@ -401,18 +412,18 @@ export default function BridgePage() {
 
                 {/* Bridge Info */}
                 {!loading && !txHash && !successTx && (
-                  <div className="backdrop-blur-sm bg-white/[0.03] border border-white/[0.1] rounded-lg p-4">
-                    <div className="flex justify-between text-xs text-gray-300 mb-2">
-                      <span>Recipient address</span>
-                      <span className="text-white">{shortenAddress(walletAddress)}</span>
+                  <div className="backdrop-blur-sm bg-white/[0.05] border border-white/[0.15] rounded-xl p-6 space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b border-white/[0.1]">
+                      <span className="text-sm text-gray-400">Recipient Address</span>
+                      <span className="text-white font-mono text-sm">{shortenAddress(walletAddress)}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-300 mb-2">
-                      <span>Time spend</span>
-                      <span className="text-white">≈ 30s</span>
+                    <div className="flex justify-between items-center py-2 border-b border-white/[0.1]">
+                      <span className="text-sm text-gray-400">Estimated Time</span>
+                      <span className="text-white font-semibold">≈ 30 seconds</span>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-300 mb-2">
-                      <span>You will receive</span>
-                      <span className="text-white">
+                    <div className="flex justify-between items-center py-2 border-b border-white/[0.1]">
+                      <span className="text-sm text-gray-400">You Will Receive</span>
+                      <span className="text-green-400 font-bold text-lg">
                         {amount && !isNaN(Number(amount))
                           ? `${receivedAmount.toLocaleString(undefined, {
                               maximumFractionDigits: 6,
@@ -420,9 +431,9 @@ export default function BridgePage() {
                           : "0 PEPU"}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs text-gray-300">
-                      <span>Fees ({(feePercentage * 100).toFixed(1)}%)</span>
-                      <span className="text-white">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm text-gray-400">Bridge Fee ({(feePercentage * 100).toFixed(1)}%)</span>
+                      <span className="text-red-400 font-semibold">
                         {amount && !isNaN(Number(amount))
                           ? `${bridgeFee.toLocaleString(undefined, {
                               maximumFractionDigits: 6,
@@ -435,72 +446,10 @@ export default function BridgePage() {
               </div>
 
               {/* Card Footer */}
-              <div className="relative backdrop-blur-sm bg-white/[0.03] px-6 py-4 border-t border-white/[0.1]">
-                <p className="text-xs text-white/70 text-center">
-                  Bridge fee: {(feePercentage * 100).toFixed(1)}% | No token restrictions
+              <div className="relative backdrop-blur-sm bg-white/[0.03] px-8 py-4 border-t border-white/[0.1]">
+                <p className="text-xs text-white/60 text-center">
+                  Bridge Fee: {(feePercentage * 100).toFixed(1)}% • Estimated Time: ~30 seconds • No Token Restrictions
                 </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Contract Addresses Section */}
-          <div className="mt-8 relative">
-            <div className="text-center text-white text-lg mb-4 font-semibold">
-              Contract Addresses
-            </div>
-            <div className="space-y-3">
-              {/* L2 Bridge Contract */}
-              <div className="backdrop-blur-sm bg-white/[0.05] rounded-xl p-4 border border-white/[0.15] shadow-lg">
-                <div className="text-sm text-white/70 mb-2">L2 Bridge Contract (Pepu Mainnet)</div>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs text-yellow-300 font-mono break-all flex-1 bg-black/30 px-3 py-2 rounded">
-                    {process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS || "0x9F2091C509141c112F94fF879FF6150f9034A4aa"}
-                  </code>
-                  <a
-                    href={`https://pepuscan.com/address/${process.env.NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS || "0x9F2091C509141c112F94fF879FF6150f9034A4aa"}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-yellow-400 hover:text-yellow-300 text-sm px-4 py-2 rounded border border-yellow-400 hover:bg-yellow-400/10 transition-colors whitespace-nowrap font-medium flex items-center gap-1"
-                  >
-                    View on PepuScan
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-
-              {/* L1 Bridge Contract */}
-              <div className="backdrop-blur-sm bg-white/[0.05] rounded-xl p-4 border border-white/[0.15] shadow-lg">
-                <div className="text-sm text-white/70 mb-2">
-                  L1 Bridge Contract (Ethereum Mainnet)
-                </div>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs text-yellow-300 font-mono break-all flex-1 bg-black/30 px-3 py-2 rounded">
-                    {process.env.NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS || "0x6D925164B21d24F820d01DA0B8E8f93f16f02317"}
-                  </code>
-                  <a
-                    href={`https://etherscan.io/address/${process.env.NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS || "0x6D925164B21d24F820d01DA0B8E8f93f16f02317"}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-yellow-400 hover:text-yellow-300 text-sm px-4 py-2 rounded border border-yellow-400 hover:bg-yellow-400/10 transition-colors whitespace-nowrap font-medium flex items-center gap-1"
-                  >
-                    View on Etherscan
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                      />
-                    </svg>
-                  </a>
-                </div>
               </div>
             </div>
           </div>
