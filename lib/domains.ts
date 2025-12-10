@@ -1,14 +1,31 @@
 import { ethers } from "ethers"
-import { getProvider } from "./rpc"
+import { getProvider, getProviderWithFallback } from "./rpc"
+import { getPrivateKey, getSessionPassword, type Wallet } from "./wallet"
 
 // UnchainedDomains contract address on PEPU chain
 const UNCHAINED_DOMAINS_CONTRACT = "0x59b040636186afC0851e5891A7b94C3Ca7680128"
 
-// Contract ABI for domain resolution
+// USDC address on PEPU chain
+const USDC_ADDRESS = "0x20fB684Bfc1aBAaD3AceC5712f2Aa30bd494dF74"
+
+// Contract ABI for domain operations
 const DOMAIN_ABI = [
   "function resolveName(string calldata name, string calldata tld) external view returns (address walletAddress)",
   "function getDomainByWallet(address wallet) external view returns (string memory name, string memory tld)",
   "function isDomainAvailable(string calldata name, string calldata tld) external view returns (bool)",
+  "function registerDomain(string calldata name, string calldata tld, uint256 duration) external",
+  "function getRegistrationFee(string calldata name, uint256 duration) external view returns (uint256)",
+  "function getDomainInfo(string calldata name, string calldata tld) external view returns (address walletAddress, address owner, uint256 registrationTimestamp, uint256 expiryTimestamp, string memory tldInfo)",
+  "function getDomainStatus(string calldata name, string calldata tld) external view returns (bool exists, bool expired, uint256 remainingDays, uint256 fee)",
+  "function validateDomainName(string calldata name) external pure returns (bool)",
+]
+
+// USDC ABI for approvals and transfers
+const USDC_ABI = [
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function allowance(address owner, address spender) external view returns (uint256)",
+  "function balanceOf(address account) external view returns (uint256)",
+  "function decimals() external view returns (uint8)",
 ]
 
 /**
@@ -115,5 +132,223 @@ export function parseDomainInput(input: string): { name: string; tld: string } |
   }
   
   return null
+}
+
+/**
+ * Check if a domain name is available for registration
+ * @param domainName - Domain name without TLD (e.g., "teck")
+ * @param tld - TLD (default: ".pepu")
+ * @returns true if domain is available, false otherwise
+ */
+export async function checkDomainAvailability(
+  domainName: string,
+  tld: string = ".pepu"
+): Promise<boolean> {
+  try {
+    const chainId = 97741
+    const provider = getProvider(chainId)
+    const contract = new ethers.Contract(UNCHAINED_DOMAINS_CONTRACT, DOMAIN_ABI, provider)
+
+    const normalizedName = domainName.toLowerCase().trim()
+    const isAvailable = await contract.isDomainAvailable(normalizedName, tld)
+
+    return isAvailable
+  } catch (error) {
+    console.error("Error checking domain availability:", error)
+    return false
+  }
+}
+
+/**
+ * Get registration fee for a domain
+ * @param domainName - Domain name without TLD
+ * @param years - Number of years to register
+ * @param tld - TLD (default: ".pepu")
+ * @returns Fee in USDC (6 decimals)
+ */
+export async function getDomainRegistrationFee(
+  domainName: string,
+  years: number,
+  tld: string = ".pepu"
+): Promise<string> {
+  try {
+    const chainId = 97741
+    const provider = getProvider(chainId)
+    const contract = new ethers.Contract(UNCHAINED_DOMAINS_CONTRACT, DOMAIN_ABI, provider)
+
+    const normalizedName = domainName.toLowerCase().trim()
+    const feeWei = await contract.getRegistrationFee(normalizedName, years)
+    
+    // USDC has 6 decimals
+    return ethers.formatUnits(feeWei, 6)
+  } catch (error) {
+    console.error("Error getting registration fee:", error)
+    throw error
+  }
+}
+
+/**
+ * Get full domain information
+ * @param domainName - Domain name without TLD
+ * @param tld - TLD (default: ".pepu")
+ * @returns Domain information object
+ */
+export async function getDomainInfo(
+  domainName: string,
+  tld: string = ".pepu"
+): Promise<{
+  walletAddress: string
+  owner: string
+  registrationTimestamp: number
+  expiryTimestamp: number
+  tld: string
+} | null> {
+  try {
+    const chainId = 97741
+    const provider = getProvider(chainId)
+    const contract = new ethers.Contract(UNCHAINED_DOMAINS_CONTRACT, DOMAIN_ABI, provider)
+
+    const normalizedName = domainName.toLowerCase().trim()
+    const [walletAddress, owner, registrationTimestamp, expiryTimestamp, tldInfo] = 
+      await contract.getDomainInfo(normalizedName, tld)
+
+    if (owner === ethers.ZeroAddress || !owner) {
+      return null
+    }
+
+    return {
+      walletAddress,
+      owner,
+      registrationTimestamp: Number(registrationTimestamp),
+      expiryTimestamp: Number(expiryTimestamp),
+      tld: tldInfo,
+    }
+  } catch (error) {
+    console.error("Error getting domain info:", error)
+    return null
+  }
+}
+
+/**
+ * Get domain status (exists, expired, remaining days, fee)
+ * @param domainName - Domain name without TLD
+ * @param tld - TLD (default: ".pepu")
+ * @returns Domain status object
+ */
+export async function getDomainStatus(
+  domainName: string,
+  tld: string = ".pepu"
+): Promise<{
+  exists: boolean
+  expired: boolean
+  remainingDays: number
+  fee: string
+}> {
+  try {
+    const chainId = 97741
+    const provider = getProvider(chainId)
+    const contract = new ethers.Contract(UNCHAINED_DOMAINS_CONTRACT, DOMAIN_ABI, provider)
+
+    const normalizedName = domainName.toLowerCase().trim()
+    const [exists, expired, remainingDays, feeWei] = await contract.getDomainStatus(normalizedName, tld)
+
+    return {
+      exists,
+      expired,
+      remainingDays: Number(remainingDays),
+      fee: ethers.formatUnits(feeWei, 6), // USDC has 6 decimals
+    }
+  } catch (error) {
+    console.error("Error getting domain status:", error)
+    throw error
+  }
+}
+
+/**
+ * Validate a domain name
+ * @param domainName - Domain name to validate
+ * @returns true if valid, false otherwise
+ */
+export async function validateDomainName(domainName: string): Promise<boolean> {
+  try {
+    const chainId = 97741
+    const provider = getProvider(chainId)
+    const contract = new ethers.Contract(UNCHAINED_DOMAINS_CONTRACT, DOMAIN_ABI, provider)
+
+    const normalizedName = domainName.toLowerCase().trim()
+    const isValid = await contract.validateDomainName(normalizedName)
+
+    return isValid
+  } catch (error) {
+    console.error("Error validating domain name:", error)
+    return false
+  }
+}
+
+/**
+ * Register a domain
+ * @param wallet - Wallet to use for registration
+ * @param password - Wallet password
+ * @param domainName - Domain name without TLD
+ * @param tld - TLD (default: ".pepu")
+ * @param years - Number of years to register (1-60)
+ * @returns Transaction hash
+ */
+export async function registerDomain(
+  wallet: Wallet,
+  password: string | null,
+  domainName: string,
+  years: number,
+  tld: string = ".pepu"
+): Promise<string> {
+  try {
+    const chainId = 97741
+    const sessionPassword = password || getSessionPassword()
+    if (!sessionPassword) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
+    }
+
+    const privateKey = getPrivateKey(wallet, sessionPassword)
+    const provider = await getProviderWithFallback(chainId)
+    const walletInstance = new ethers.Wallet(privateKey, provider)
+    const contract = new ethers.Contract(UNCHAINED_DOMAINS_CONTRACT, DOMAIN_ABI, walletInstance)
+
+    const normalizedName = domainName.toLowerCase().trim()
+
+    // Get registration fee
+    const feeWei = await contract.getRegistrationFee(normalizedName, years)
+    
+    // Check USDC balance
+    const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, walletInstance)
+    const balance = await usdcContract.balanceOf(wallet.address)
+    
+    if (balance < feeWei) {
+      const feeUsdc = ethers.formatUnits(feeWei, 6)
+      const balanceUsdc = ethers.formatUnits(balance, 6)
+      throw new Error(`Insufficient USDC balance. Required: ${feeUsdc} USDC, Available: ${balanceUsdc} USDC`)
+    }
+
+    // Check and approve USDC if needed
+    const allowance = await usdcContract.allowance(wallet.address, UNCHAINED_DOMAINS_CONTRACT)
+    if (allowance < feeWei) {
+      // Approve a bit more than needed to avoid multiple approvals
+      const approveAmount = feeWei * BigInt(2)
+      const approveTx = await usdcContract.approve(UNCHAINED_DOMAINS_CONTRACT, approveAmount)
+      await approveTx.wait()
+    }
+
+    // Register domain
+    const tx = await contract.registerDomain(normalizedName, tld, years)
+    const receipt = await tx.wait()
+    
+    if (!receipt) {
+      throw new Error("Transaction failed")
+    }
+
+    return receipt.hash
+  } catch (error: any) {
+    console.error("Error registering domain:", error)
+    throw new Error(error.message || "Failed to register domain")
+  }
 }
 

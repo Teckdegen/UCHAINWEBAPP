@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Wallet, Send, Globe, Settings, ImageIcon } from "lucide-react"
+import { Wallet, Send, Globe, Settings, ImageIcon, Hash } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface BottomNavProps {
@@ -35,11 +35,21 @@ export default function BottomNav({ active = "dashboard" }: BottomNavProps) {
 
           {chainId === 97741 && (
             <Link
+              href="/domains"
+              className={`flex flex-col items-center gap-1 transition-colors ${isActive("domains")}`}
+            >
+              <Hash className="w-5 h-5" />
+              <span className="text-xs font-semibold">Domains</span>
+            </Link>
+          )}
+
+          {chainId === 97741 && (
+            <Link
               href="/browser"
               className={`flex flex-col items-center gap-1 transition-colors ${isActive("browser")}`}
             >
               <Globe className="w-5 h-5" />
-              <span className="text-xs font-semibold">Unchained Browser</span>
+              <span className="text-xs font-semibold">Browser</span>
             </Link>
           )}
 
