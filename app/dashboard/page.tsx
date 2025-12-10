@@ -22,6 +22,7 @@ import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
+import { getDomainByWallet } from "@/lib/domains"
 import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins, Clock, Gift } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [cachedBalances, setCachedBalances] = useState<any[]>([])
   const [cachedPortfolioValue, setCachedPortfolioValue] = useState("0.00")
+  const [walletDomains, setWalletDomains] = useState<Record<string, string>>({})
   const [chainId, setChainId] = useState(() => {
     // Initialize from localStorage or default to PEPU
     if (typeof window !== "undefined") {
@@ -391,15 +393,20 @@ export default function DashboardPage() {
                 >
                   <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
                     <span className="text-xs font-bold text-green-400">
-                      {wallets.find((w) => w.id === currentWalletId)?.name?.[0] ||
-                        wallets[0].name?.[0] ||
-                        "W"}
+                      {(() => {
+                        const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
+                        const displayName = walletDomains[activeWallet?.id || ""] || activeWallet?.name || "W"
+                        return displayName[0]?.toUpperCase() || "W"
+                      })()}
                     </span>
                   </div>
                   <div className="text-left">
                     <p className="text-xs text-gray-400">Active Wallet</p>
                     <p className="text-sm font-semibold">
-                      {wallets.find((w) => w.id === currentWalletId)?.name || wallets[0].name || "My Wallet"}
+                      {(() => {
+                        const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
+                        return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My Wallet"
+                      })()}
                     </p>
                   </div>
                 </button>
@@ -419,7 +426,9 @@ export default function DashboardPage() {
                           wallet.id === currentWalletId ? "bg-green-500/10" : ""
                         }`}
                       >
-                        <span className="font-semibold">{wallet.name || "Wallet"}</span>
+                        <span className="font-semibold">
+                          {walletDomains[wallet.id] || wallet.name || "Wallet"}
+                        </span>
                         <span className="font-mono text-[10px] text-gray-400">
                           {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
                         </span>

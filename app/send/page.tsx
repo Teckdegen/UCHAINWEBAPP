@@ -9,7 +9,8 @@ import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/li
 import { isTokenBlacklisted } from "@/lib/blacklist"
 import { calculateTransactionFeePepu, checkTransactionFeeBalance } from "@/lib/fees"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
-import { ArrowUp, Loader, ChevronDown } from "lucide-react"
+import { resolvePepuDomain, isPepuDomain, parseDomainInput } from "@/lib/domains"
+import { ArrowUp, Loader, ChevronDown, CheckCircle } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
 
@@ -46,6 +47,9 @@ export default function SendPage() {
   const [transactionFee, setTransactionFee] = useState<string>("0")
   const [feeWarning, setFeeWarning] = useState("")
   const [feeCalculated, setFeeCalculated] = useState(false)
+  const [resolvedAddress, setResolvedAddress] = useState<string>("")
+  const [resolvingDomain, setResolvingDomain] = useState(false)
+  const [domainInput, setDomainInput] = useState("")
   const tokenSelectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -320,6 +324,35 @@ export default function SendPage() {
       return
     }
 
+    // Resolve domain if it's a .pepu domain
+    let finalRecipient = recipient.trim()
+    if (chainId === 97741 && isPepuDomain(recipient)) {
+      if (resolvedAddress) {
+        finalRecipient = resolvedAddress
+      } else {
+        // Try to resolve again
+        const parsed = parseDomainInput(recipient)
+        if (parsed) {
+          const address = await resolvePepuDomain(parsed.name, parsed.tld)
+          if (address) {
+            finalRecipient = address
+          } else {
+            setError("Domain not found or expired")
+            return
+          }
+        } else {
+          setError("Invalid domain format")
+          return
+        }
+      }
+    }
+
+    // Validate address format
+    if (!ethers.isAddress(finalRecipient)) {
+      setError("Invalid recipient address")
+      return
+    }
+
     if (Number.parseFloat(amount) > Number.parseFloat(balance)) {
       setError("Insufficient balance")
       return
@@ -334,9 +367,9 @@ export default function SendPage() {
 
       let txHash: string
       if (selectedToken.isNative) {
-        txHash = await sendNativeToken(active, password, recipient, amount, chainId)
+        txHash = await sendNativeToken(active, password, finalRecipient, amount, chainId)
       } else {
-        txHash = await sendToken(active, password, selectedToken.address, recipient, amount, chainId)
+        txHash = await sendToken(active, password, selectedToken.address, finalRecipient, amount, chainId)
       }
 
       // Store transaction in history with full link
@@ -471,14 +504,57 @@ export default function SendPage() {
 
           {/* Recipient */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Recipient Address</label>
+            <label className="block text-sm text-gray-400 mb-2">
+              Recipient Address {chainId === 97741 && <span className="text-green-400">or .pepu domain</span>}
+            </label>
             <input
               type="text"
               value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              placeholder="0x..."
+              onChange={async (e) => {
+                const value = e.target.value.trim()
+                setRecipient(value)
+                setResolvedAddress("")
+                setDomainInput("")
+                
+                // Only resolve domains on PEPU chain
+                if (chainId === 97741 && isPepuDomain(value)) {
+                  setResolvingDomain(true)
+                  const parsed = parseDomainInput(value)
+                  if (parsed) {
+                    setDomainInput(`${parsed.name}${parsed.tld}`)
+                    const address = await resolvePepuDomain(parsed.name, parsed.tld)
+                    if (address) {
+                      setResolvedAddress(address)
+                    } else {
+                      setResolvedAddress("")
+                    }
+                  }
+                  setResolvingDomain(false)
+                }
+              }}
+              placeholder={chainId === 97741 ? "0x... or teck.pepu" : "0x..."}
               className="input-field"
             />
+            {resolvingDomain && (
+              <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
+                <Loader className="w-3 h-3 animate-spin" />
+                Resolving domain...
+              </p>
+            )}
+            {resolvedAddress && domainInput && (
+              <div className="mt-2 glass-card p-3 border border-green-500/30 bg-green-500/10">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-400">Domain: {domainInput}</p>
+                    <p className="text-sm text-green-400 font-mono break-all">{resolvedAddress}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {recipient && isPepuDomain(recipient) && !resolvedAddress && !resolvingDomain && chainId === 97741 && (
+              <p className="text-xs text-red-400 mt-1">Domain not found or expired</p>
+            )}
           </div>
 
           {/* Amount */}

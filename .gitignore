@@ -4,3 +4,11 @@ sdk/dist/
 test-wallet-connect.html
 extension/
 contracts/
+
+# Hardhat
+cache/
+artifacts/
+deployments/
+.env
+.env.local
+*.log

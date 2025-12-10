@@ -37,15 +37,15 @@ Unchained Web Wallet - A non-custodial, multi-chain cryptocurrency wallet built 
 npm install
 ```
 
-### Environment Variables
+### Configuration
 
-Create a `.env.local` file:
+All configuration values are hardcoded in `lib/config.ts`:
+- Bridge contract addresses
+- Fee wallet addresses
+- Token addresses
+- Chain configurations
 
-```env
-# Optional: SuperBridge contract addresses
-NEXT_PUBLIC_SUPERBRIDGE_L2_ADDRESS=0x0000000000000000000000000000000000000000
-NEXT_PUBLIC_SUPERBRIDGE_L1_ADDRESS=0x0000000000000000000000000000000000000000
-```
+No environment variables are required.
 
 ### Development
 

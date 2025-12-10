@@ -727,14 +727,14 @@ export default function SwapPage() {
 
             <div className="mt-4">
               <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  value={amountIn}
-                  onChange={(e) => setAmountIn(e.target.value)}
-                  placeholder="0.0"
+            <input
+              type="number"
+              value={amountIn}
+              onChange={(e) => setAmountIn(e.target.value)}
+              placeholder="0.0"
                   className="flex-1 bg-transparent border-none text-3xl font-bold text-white placeholder-gray-600 focus:outline-none"
-                  step="0.0001"
-                />
+              step="0.0001"
+            />
                 <button
                   onClick={() => setAmountIn(fromTokenBalance)}
                   className="px-4 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 font-bold whitespace-nowrap text-sm transition-all border border-green-500/30 hover:border-green-500/50"
@@ -921,12 +921,12 @@ export default function SwapPage() {
             </div>
 
             <div className="mt-4">
-              <input
-                type="number"
-                value={amountOut}
-                onChange={(e) => setAmountOut(e.target.value)}
-                placeholder="0.0"
-                disabled
+            <input
+              type="number"
+              value={amountOut}
+              onChange={(e) => setAmountOut(e.target.value)}
+              placeholder="0.0"
+              disabled
                 className="w-full bg-transparent border-none text-3xl font-bold text-white placeholder-gray-600 focus:outline-none opacity-70"
               />
               {quoting && (
