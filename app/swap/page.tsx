@@ -85,6 +85,21 @@ export default function SwapPage() {
 
     // No password required to enter page
     updateActivity()
+    
+    // Load PEPU balance immediately
+    const loadPepuBalance = async () => {
+      try {
+        const active = getCurrentWallet() || wallets[0]
+        const balance = await getNativeBalance(active.address, chainId)
+        console.log(`[Swap] Initial PEPU balance:`, balance)
+        setFromToken((prev) => ({ ...prev, balance }))
+        setWalletAddress(active.address)
+      } catch (error) {
+        console.error("[Swap] Error loading initial PEPU balance:", error)
+      }
+    }
+    
+    loadPepuBalance()
     loadTokens()
   }, [router, chainId])
 
@@ -316,8 +331,15 @@ export default function SwapPage() {
       // Always update fromToken with the latest balance from loaded tokens
       if (matchingToken) {
         setFromToken(matchingToken)
-      } else if (pepuToken && fromToken.isNative) {
-        // If fromToken is native but not found, use PEPU token
+      } else if (pepuToken) {
+        // Always ensure PEPU token is set if it's native
+        if (fromToken.isNative) {
+          setFromToken(pepuToken)
+        }
+      }
+      
+      // If fromToken is PEPU native but doesn't have balance, update it
+      if (fromToken.isNative && (!fromToken.balance || fromToken.balance === "0") && pepuToken) {
         setFromToken(pepuToken)
       }
 
@@ -492,7 +514,7 @@ export default function SwapPage() {
 
   const handleSwap = async () => {
     if (!amountIn || !amountOut) {
-      setError("Missing required fields")
+      setError("Please enter an amount to swap")
       return
     }
 
@@ -501,9 +523,18 @@ export default function SwapPage() {
       return
     }
 
+    // Check if user has enough balance
+    const balance = Number.parseFloat(fromToken.balance || "0")
+    const amount = Number.parseFloat(amountIn)
+    if (balance < amount) {
+      setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${amount.toFixed(6)}`)
+      return
+    }
+
     setLoading(true)
     setCollectingFees(true)
     setError("")
+    setSuccess("")
     try {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
@@ -537,7 +568,13 @@ export default function SwapPage() {
 
       // Now proceed with the swap
       setCollectingFees(false)
-      const txHash = await executeSwap(fromToken, toToken, amountIn, amountOut, wallets[0], password, 0.5, chainId)
+      
+      // amountOut was already calculated based on amountAfterFee in the quote
+      // So we need to use amountAfterFee for the swap execution
+      const { calculateSwapFee } = await import("@/lib/fees")
+      const { amountAfterFee } = calculateSwapFee(amountIn, fromToken.decimals)
+      
+      const txHash = await executeSwap(fromToken, toToken, amountAfterFee, amountOut, wallets[0], password, 0.5, chainId)
 
       // Record swap reward (only for PEPU chain)
       if (chainId === 97741) {
