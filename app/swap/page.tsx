@@ -540,7 +540,7 @@ export default function SwapPage() {
       if (wallets.length === 0) throw new Error("No wallet found")
 
       // First, send the swap fee
-      const { sendSwapFee, calculateSwapFee } = await import("@/lib/fees")
+      const { sendSwapFee } = await import("@/lib/fees")
       const { getSessionPassword } = await import("@/lib/wallet")
       const sessionPassword = password || getSessionPassword()
       
@@ -571,7 +571,6 @@ export default function SwapPage() {
       
       // amountOut was already calculated based on amountAfterFee in the quote
       // So we need to use amountAfterFee for the swap execution
-      const { calculateSwapFee } = await import("@/lib/fees")
       const { amountAfterFee } = calculateSwapFee(amountIn, fromToken.decimals)
       
       const txHash = await executeSwap(fromToken, toToken, amountAfterFee, amountOut, wallets[0], password, 0.5, chainId)
