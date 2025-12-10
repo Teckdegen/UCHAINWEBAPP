@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getWalletState, updateActivity } from "@/lib/wallet"
+import { getWallets, getWalletState, updateActivity, getCurrentWallet, getCurrentWalletId } from "@/lib/wallet"
 import { getNativeBalance } from "@/lib/rpc"
 import { getFeePercentage, executeBridge, getPoolBalance } from "@/lib/bridge"
 import { MAX_BRIDGE_POOL } from "@/lib/config"
@@ -39,14 +39,45 @@ export default function BridgePage() {
     loadBridgeData()
   }, [router])
 
+  // Reload balance when wallet changes (check localStorage for current wallet ID)
+  useEffect(() => {
+    let lastWalletId = getCurrentWalletId()
+    
+    const checkWalletChange = () => {
+      const currentWalletId = getCurrentWalletId()
+      if (currentWalletId !== lastWalletId) {
+        lastWalletId = currentWalletId
+        loadBridgeData()
+      }
+    }
+
+    // Check for wallet changes periodically
+    const interval = setInterval(checkWalletChange, 1000)
+    
+    // Also check on focus
+    window.addEventListener("focus", checkWalletChange)
+    
+    // Listen for storage changes (when wallet is switched)
+    window.addEventListener("storage", checkWalletChange)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener("focus", checkWalletChange)
+      window.removeEventListener("storage", checkWalletChange)
+    }
+  }, [])
+
   const loadBridgeData = async () => {
     try {
       const wallets = getWallets()
       if (wallets.length === 0) return
 
+      // Get the currently selected wallet
+      const active = getCurrentWallet() || wallets[0]
+
       setLoadingPool(true)
       const [pepuBalance, fee, poolBal] = await Promise.all([
-        getNativeBalance(wallets[0].address, 97741),
+        getNativeBalance(active.address, 97741),
         getFeePercentage(97741),
         getPoolBalance(),
       ])
@@ -97,7 +128,10 @@ export default function BridgePage() {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
 
-      const hash = await executeBridge(wallets[0], null, amount, 97741)
+      // Get the currently selected wallet
+      const active = getCurrentWallet() || wallets[0]
+
+      const hash = await executeBridge(active, null, amount, 97741)
       setTxHash(hash)
 
       const receivedAmount = Number.parseFloat(amount) * receivePercentage
@@ -173,7 +207,8 @@ export default function BridgePage() {
     loading || !amount || Number.parseFloat(amount) <= 0 || hasInsufficientL1Pool
 
   const wallets = getWallets()
-  const walletAddress = wallets.length > 0 ? wallets[0].address : ""
+  const active = wallets.length > 0 ? (getCurrentWallet() || wallets[0]) : null
+  const walletAddress = active ? active.address : ""
 
   function shortenAddress(addr: string) {
     if (!addr) return ""
