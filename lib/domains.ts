@@ -188,6 +188,42 @@ export async function getDomainRegistrationFee(
 }
 
 /**
+ * Get registration fee for a domain by days
+ * @param domainName - Domain name without TLD
+ * @param days - Number of days to register (up to 60 years = 21,900 days)
+ * @param tld - TLD (default: ".pepu")
+ * @returns Fee in USDC (6 decimals)
+ */
+export async function getDomainRegistrationFeeByDays(
+  domainName: string,
+  days: number,
+  tld: string = ".pepu"
+): Promise<string> {
+  try {
+    const chainId = 97741
+    const provider = getProvider(chainId)
+    const contract = new ethers.Contract(UNCHAINED_DOMAINS_CONTRACT, DOMAIN_ABI, provider)
+
+    const normalizedName = domainName.toLowerCase().trim()
+    
+    // Get base fee (1 year fee)
+    const baseFeeWei = await contract.getRegistrationFee(normalizedName, 1)
+    
+    // Calculate fee for days: (baseFee * days) / 365
+    // Use BigInt for precise calculation
+    const daysBigInt = BigInt(Math.floor(days))
+    const daysPerYear = BigInt(365)
+    const feeWei = (baseFeeWei * daysBigInt) / daysPerYear
+    
+    // USDC has 6 decimals
+    return ethers.formatUnits(feeWei, 6)
+  } catch (error) {
+    console.error("Error getting registration fee by days:", error)
+    throw error
+  }
+}
+
+/**
  * Get full domain information
  * @param domainName - Domain name without TLD
  * @param tld - TLD (default: ".pepu")
@@ -291,7 +327,7 @@ export async function validateDomainName(domainName: string): Promise<boolean> {
  * @param password - Wallet password
  * @param domainName - Domain name without TLD
  * @param tld - TLD (default: ".pepu")
- * @param years - Number of years to register (1-60)
+ * @param years - Number of years to register (1-60, can be decimal for days)
  * @returns Transaction hash
  */
 export async function registerDomain(
@@ -315,8 +351,10 @@ export async function registerDomain(
 
     const normalizedName = domainName.toLowerCase().trim()
 
-    // Get registration fee
-    const feeWei = await contract.getRegistrationFee(normalizedName, years)
+    // Get registration fee (contract accepts whole years, so round up to ensure user gets at least what they paid for)
+    // Note: years can be a decimal (from days conversion), so we round up
+    const yearsRounded = Math.ceil(years)
+    const feeWei = await contract.getRegistrationFee(normalizedName, yearsRounded)
     
     // Check USDC balance
     const usdcContract = new ethers.Contract(USDC_ADDRESS, USDC_ABI, walletInstance)
@@ -337,8 +375,9 @@ export async function registerDomain(
       await approveTx.wait()
     }
 
-    // Register domain
-    const tx = await contract.registerDomain(normalizedName, tld, years)
+    // Register domain (contract requires whole years, round up to ensure user gets at least the duration they paid for)
+    const yearsRounded = Math.ceil(years)
+    const tx = await contract.registerDomain(normalizedName, tld, yearsRounded)
     const receipt = await tx.wait()
     
     if (!receipt) {

@@ -6,6 +6,7 @@ import { getWallets, getCurrentWallet } from "@/lib/wallet"
 import {
   checkDomainAvailability,
   getDomainRegistrationFee,
+  getDomainRegistrationFeeByDays,
   getDomainInfo,
   getDomainStatus,
   validateDomainName,
@@ -27,6 +28,8 @@ export default function DomainsPage() {
   const [domainStatus, setDomainStatus] = useState<any>(null)
   const [registrationFee, setRegistrationFee] = useState<string>("0")
   const [years, setYears] = useState(1)
+  const [days, setDays] = useState(365)
+  const [inputMode, setInputMode] = useState<"years" | "days">("days")
   const [loadingFee, setLoadingFee] = useState(false)
   const [usdcBalance, setUsdcBalance] = useState("0")
   const [loadingBalance, setLoadingBalance] = useState(false)
@@ -150,12 +153,19 @@ export default function DomainsPage() {
     }
   }
 
-  const updateFee = async (domainName: string, yearsValue: number) => {
-    if (!domainName || yearsValue < 1 || yearsValue > 60) return
+  const updateFee = async (domainName: string, yearsValue: number, daysValue?: number) => {
+    if (!domainName) return
 
     setLoadingFee(true)
     try {
-      const fee = await getDomainRegistrationFee(domainName, yearsValue, ".pepu")
+      let fee: string
+      if (inputMode === "days" && daysValue !== undefined) {
+        if (daysValue < 1 || daysValue > 21900) return // Max 60 years = 21,900 days
+        fee = await getDomainRegistrationFeeByDays(domainName, daysValue, ".pepu")
+      } else {
+        if (yearsValue < 1 || yearsValue > 60) return
+        fee = await getDomainRegistrationFee(domainName, yearsValue, ".pepu")
+      }
       setRegistrationFee(fee)
     } catch (err: any) {
       console.error("Error calculating fee:", err)
@@ -167,9 +177,22 @@ export default function DomainsPage() {
   useEffect(() => {
     if (showRegisterForm && searchQuery.trim() && isAvailable) {
       const domainName = searchQuery.trim().toLowerCase().replace(".pepu", "")
-      updateFee(domainName, years)
+      if (inputMode === "days") {
+        updateFee(domainName, years, days)
+      } else {
+        updateFee(domainName, years)
+      }
     }
-  }, [years, showRegisterForm, searchQuery, isAvailable])
+  }, [years, days, inputMode, showRegisterForm, searchQuery, isAvailable])
+
+  // Sync days and years when switching modes
+  useEffect(() => {
+    if (inputMode === "days") {
+      setDays(Math.round(years * 365))
+    } else {
+      setYears(Math.max(1, Math.min(60, Math.ceil(days / 365))))
+    }
+  }, [inputMode])
 
   const handleRegister = async () => {
     if (!searchQuery.trim()) {
@@ -182,12 +205,20 @@ export default function DomainsPage() {
       return
     }
 
-    if (years < 1 || years > 60) {
-      setError("Please select a valid number of years (1-60)")
-      return
-    }
-
     const domainName = searchQuery.trim().toLowerCase().replace(".pepu", "")
+
+    // Validate input based on mode
+    if (inputMode === "days") {
+      if (days < 1 || days > 21900) {
+        setError("Please enter a valid number of days (1-21,900 days, max 60 years)")
+        return
+      }
+    } else {
+      if (years < 1 || years > 60) {
+        setError("Please select a valid number of years (1-60)")
+        return
+      }
+    }
 
     setRegistering(true)
     setError("")
@@ -199,15 +230,32 @@ export default function DomainsPage() {
 
       const wallet = getCurrentWallet() || wallets[0]
 
-      // Check USDC balance
+      // Convert days to years (round up to ensure user gets at least the days they paid for)
+      const yearsToRegister = inputMode === "days" ? Math.ceil(days / 365) : years
+      
+      // Recalculate fee based on actual years that will be registered (important for days mode)
+      const actualFee = await getDomainRegistrationFee(domainName, yearsToRegister, ".pepu")
+      
+      // Check USDC balance with actual fee
       const balance = await getTokenBalance(USDC_ADDRESS, wallet.address, PEPU_CHAIN_ID)
-      if (Number.parseFloat(balance) < Number.parseFloat(registrationFee)) {
+      if (Number.parseFloat(balance) < Number.parseFloat(actualFee)) {
         throw new Error(
-          `Insufficient USDC balance. Required: ${Number.parseFloat(registrationFee).toFixed(2)} USDC, Available: ${Number.parseFloat(balance).toFixed(2)} USDC`
+          `Insufficient USDC balance. Required: ${Number.parseFloat(actualFee).toFixed(2)} USDC, Available: ${Number.parseFloat(balance).toFixed(2)} USDC`
         )
       }
-
-      const txHash = await registerDomain(wallet, password, domainName, years, ".pepu")
+      
+      // Recalculate fee based on actual years that will be registered
+      const actualFee = await getDomainRegistrationFee(domainName, yearsToRegister, ".pepu")
+      
+      // Check USDC balance with actual fee
+      const balance = await getTokenBalance(USDC_ADDRESS, wallet.address, PEPU_CHAIN_ID)
+      if (Number.parseFloat(balance) < Number.parseFloat(actualFee)) {
+        throw new Error(
+          `Insufficient USDC balance. Required: ${Number.parseFloat(actualFee).toFixed(2)} USDC, Available: ${Number.parseFloat(balance).toFixed(2)} USDC`
+        )
+      }
+      
+      const txHash = await registerDomain(wallet, password, domainName, yearsToRegister, ".pepu")
       
       setSuccess(`Domain registered successfully! Transaction: https://pepuscan.com/tx/${txHash}`)
       setPassword("")
@@ -397,37 +445,112 @@ export default function DomainsPage() {
             <div className="glass-card p-6 space-y-4">
               <h3 className="text-lg font-bold">Register Domain</h3>
 
-              {/* Years Selector */}
+              {/* Input Mode Toggle */}
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Registration Period (Years)</label>
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="number"
-                    min="1"
-                    max="60"
-                    value={years}
-                    onChange={(e) => {
-                      const value = Number.parseInt(e.target.value) || 1
-                      setYears(Math.max(1, Math.min(60, value)))
-                    }}
-                    className="input-field flex-1"
-                  />
-                  <div className="flex gap-1">
-                    {[1, 5, 10, 20, 60].map((y) => (
-                      <button
-                        key={y}
-                        onClick={() => setYears(y)}
-                        className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
-                          years === y
-                            ? "bg-green-500 text-black"
-                            : "bg-white/10 text-gray-400 hover:bg-white/20"
-                        }`}
-                      >
-                        {y}y
-                      </button>
-                    ))}
-                  </div>
+                <label className="block text-sm text-gray-400 mb-2">Registration Period</label>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={() => setInputMode("days")}
+                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
+                      inputMode === "days"
+                        ? "bg-green-500 text-black"
+                        : "bg-white/10 text-gray-400 hover:bg-white/20"
+                    }`}
+                  >
+                    Days
+                  </button>
+                  <button
+                    onClick={() => setInputMode("years")}
+                    className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
+                      inputMode === "years"
+                        ? "bg-green-500 text-black"
+                        : "bg-white/10 text-gray-400 hover:bg-white/20"
+                    }`}
+                  >
+                    Years
+                  </button>
                 </div>
+
+                {/* Days Input */}
+                {inputMode === "days" && (
+                  <div className="space-y-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="21900"
+                      value={days}
+                      onChange={(e) => {
+                        const value = Number.parseInt(e.target.value) || 1
+                        const clampedValue = Math.max(1, Math.min(21900, value))
+                        setDays(clampedValue)
+                        setYears(Math.ceil(clampedValue / 365))
+                      }}
+                      placeholder="Enter days (1-21,900)"
+                      className="input-field w-full"
+                    />
+                    <p className="text-xs text-gray-500">
+                      {days} days = {Math.ceil(days / 365)} year{Math.ceil(days / 365) !== 1 ? "s" : ""} (rounded up)
+                    </p>
+                    <div className="flex gap-1 flex-wrap">
+                      {[30, 90, 180, 365, 730, 1095, 1825].map((d) => (
+                        <button
+                          key={d}
+                          onClick={() => {
+                            setDays(d)
+                            setYears(Math.ceil(d / 365))
+                          }}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            days === d
+                              ? "bg-green-500 text-black"
+                              : "bg-white/10 text-gray-400 hover:bg-white/20"
+                          }`}
+                        >
+                          {d}d
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Years Input */}
+                {inputMode === "years" && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="number"
+                        min="1"
+                        max="60"
+                        value={years}
+                        onChange={(e) => {
+                          const value = Number.parseInt(e.target.value) || 1
+                          const clampedValue = Math.max(1, Math.min(60, value))
+                          setYears(clampedValue)
+                          setDays(clampedValue * 365)
+                        }}
+                        className="input-field flex-1"
+                      />
+                      <div className="flex gap-1">
+                        {[1, 5, 10, 20, 60].map((y) => (
+                          <button
+                            key={y}
+                            onClick={() => {
+                              setYears(y)
+                              setDays(y * 365)
+                            }}
+                            className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                              years === y
+                                ? "bg-green-500 text-black"
+                                : "bg-white/10 text-gray-400 hover:bg-white/20"
+                            }`}
+                          >
+                            {y}y
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">{years} year{years !== 1 ? "s" : ""} = {years * 365} days</p>
+                  </div>
+                )}
               </div>
 
               {/* Fee Display */}
