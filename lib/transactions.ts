@@ -50,11 +50,12 @@ export async function sendNativeToken(
     let amountToSend = amount
     let amountWei = ethers.parseEther(amount)
     let feeInPepu = "0"
+    let feeInPepuWei = ethers.parseEther("0")
     
     if (chainId === 97741) {
       // Calculate fee (may be $0.05 or 5% depending on transfer value)
       feeInPepu = await calculateTransactionFeePepu(amount)
-      const feeInPepuWei = ethers.parseEther(feeInPepu)
+      feeInPepuWei = ethers.parseEther(feeInPepu)
       
       // Deduct fee from amount
       const amountAfterFee = Number.parseFloat(amount) - Number.parseFloat(feeInPepu)

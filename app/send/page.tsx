@@ -298,15 +298,27 @@ export default function SendPage() {
       }
 
       setTokens(allTokens)
-      if (allTokens.length > 0 && !selectedToken) {
-        setSelectedToken(allTokens[0])
-        setBalance(allTokens[0].balance)
-      } else if (selectedToken) {
-        const updated = allTokens.find((t) => t.address === selectedToken.address)
-        if (updated) {
-          setSelectedToken(updated)
-          setBalance(updated.balance)
+      if (allTokens.length > 0) {
+        if (!selectedToken) {
+          // No token selected, select the first one
+          setSelectedToken(allTokens[0])
+          setBalance(allTokens[0].balance)
+        } else {
+          // Try to find the selected token in the new list
+          const updated = allTokens.find((t) => t.address === selectedToken.address)
+          if (updated) {
+            setSelectedToken(updated)
+            setBalance(updated.balance)
+          } else {
+            // Selected token doesn't exist on this chain, select the first one
+            setSelectedToken(allTokens[0])
+            setBalance(allTokens[0].balance)
+          }
         }
+      } else {
+        // No tokens available, clear selection
+        setSelectedToken(null)
+        setBalance("0")
       }
     } catch (error) {
       console.error("Error loading tokens:", error)
@@ -431,6 +443,7 @@ export default function SendPage() {
                 onClick={() => {
                   setChainId(1)
                   setSelectedToken(null)
+                  setTokens([])
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
@@ -442,6 +455,7 @@ export default function SendPage() {
                 onClick={() => {
                   setChainId(97741)
                   setSelectedToken(null)
+                  setTokens([])
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
