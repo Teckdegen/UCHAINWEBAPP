@@ -244,17 +244,6 @@ export default function DomainsPage() {
         )
       }
       
-      // Recalculate fee based on actual years that will be registered
-      const actualFee = await getDomainRegistrationFee(domainName, yearsToRegister, ".pepu")
-      
-      // Check USDC balance with actual fee
-      const balance = await getTokenBalance(USDC_ADDRESS, wallet.address, PEPU_CHAIN_ID)
-      if (Number.parseFloat(balance) < Number.parseFloat(actualFee)) {
-        throw new Error(
-          `Insufficient USDC balance. Required: ${Number.parseFloat(actualFee).toFixed(2)} USDC, Available: ${Number.parseFloat(balance).toFixed(2)} USDC`
-        )
-      }
-      
       const txHash = await registerDomain(wallet, password, domainName, yearsToRegister, ".pepu")
       
       setSuccess(`Domain registered successfully! Transaction: https://pepuscan.com/tx/${txHash}`)

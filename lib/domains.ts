@@ -376,7 +376,6 @@ export async function registerDomain(
     }
 
     // Register domain (contract requires whole years, round up to ensure user gets at least the duration they paid for)
-    const yearsRounded = Math.ceil(years)
     const tx = await contract.registerDomain(normalizedName, tld, yearsRounded)
     const receipt = await tx.wait()
     
