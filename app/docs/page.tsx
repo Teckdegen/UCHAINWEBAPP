@@ -1,6 +1,7 @@
 "use client"
 
 import { Code, Book, Wallet } from "lucide-react"
+import { RainbowKitDemo } from "@/components/RainbowKitDemo"
 
 export default function DocsPage() {
   return (
@@ -94,23 +95,90 @@ export function App() {
           </p>
         </section>
 
+        {/* Wallet Connect Features */}
+        <section className="glass-card p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-green-500" />
+            Wallet Connect Features
+          </h2>
+          <p className="text-xs text-gray-300 mb-4">
+            Unchained Wallet supports all standard WalletConnect features, similar to MetaMask:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-green-400">Connection Features</h3>
+              <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
+                <li>Session Proposals (dApp connection requests)</li>
+                <li>Session Management (approve/reject connections)</li>
+                <li>Multi-chain support (Ethereum Mainnet)</li>
+                <li>Account switching</li>
+                <li>Chain switching</li>
+                <li>Session persistence</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-green-400">Transaction & Signing</h3>
+              <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
+                <li>eth_sendTransaction</li>
+                <li>eth_signTransaction</li>
+                <li>eth_sign (legacy message signing)</li>
+                <li>personal_sign (EIP-191)</li>
+                <li>eth_signTypedData (EIP-712)</li>
+                <li>eth_signTypedData_v4</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-green-400">Event Handling</h3>
+              <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
+                <li>chainChanged events</li>
+                <li>accountsChanged events</li>
+                <li>Session disconnect events</li>
+                <li>Session update events</li>
+              </ul>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-green-400">Advanced Features</h3>
+              <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
+                <li>WalletConnect URI pairing</li>
+                <li>Deep linking support</li>
+                <li>Session restoration</li>
+                <li>Request approval/rejection</li>
+                <li>Multi-session support</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+            <p className="text-xs text-green-300">
+              ✅ <strong>Full Compatibility:</strong> Unchained Wallet supports all standard WalletConnect methods that MetaMask supports, 
+              making it a drop-in replacement for dApp integrations.
+            </p>
+          </div>
+        </section>
+
         {/* RainbowKit Example (Injected Unchained Wallet) */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Wallet className="w-4 h-4 text-green-500" />
-            RainbowKit · Use Unchained as the Injected Wallet
+            RainbowKit · Use Unchained Extension
           </h2>
           <p className="text-xs text-gray-300">
-            If you are already using <code>@rainbow-me/rainbowkit</code>, you can keep your existing setup and let
-            RainbowKit detect the Unchained browser extension (it exposes a standard injected{" "}
-            <code>window.ethereum</code> with <code>isUnchained: true</code>).
+            If you are already using <code>@rainbow-me/rainbowkit</code>, you can configure it to show the Unchained Wallet extension. 
+            The extension exposes a standard injected <code>window.ethereum</code> with <code>isUnchained: true</code>.
           </p>
+          <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg mb-4">
+            <p className="text-xs text-yellow-300">
+              💡 <strong>Note:</strong> Make sure users have the Unchained Wallet browser extension installed. 
+              RainbowKit will automatically detect it as an injected wallet.
+            </p>
+          </div>
           <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
             <code>{`import '@rainbow-me/rainbowkit/styles.css';
+
 import { RainbowKitProvider, ConnectButton, connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { injectedWallet } from '@rainbow-me/rainbowkit/wallets';
-import { WagmiConfig, createConfig, http } from 'wagmi';
+import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // 1. Your own RPC URL for mainnet (required)
 const RPC_URL = 'https://your-ethereum-rpc.example.com';
@@ -122,8 +190,7 @@ const connectors = connectorsForWallets([
     wallets: [
       injectedWallet({
         chains: [mainnet],
-        // Optional: this will show "Unchained Wallet" instead of "Browser Wallet"
-        projectId: 'unchained-wallet',
+        shimDisconnect: true,
       }),
     ],
   },
@@ -137,21 +204,42 @@ const config = createConfig({
   connectors,
 });
 
+const queryClient = new QueryClient();
+
 export function App() {
   return (
-    <WagmiConfig config={config}>
-      <RainbowKitProvider>
-        {/* RainbowKit will detect the Unchained extension as the injected wallet */}
-        <ConnectButton />
-      </RainbowKitProvider>
-    </WagmiConfig>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider chains={[mainnet]}>
+          {/* RainbowKit will detect the Unchained extension as "Unchained Wallet" */}
+          <ConnectButton />
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   );
 }`}</code>
           </pre>
           <p className="text-xs text-gray-300">
-            With this setup, the RainbowKit <code>ConnectButton</code> will use the Unchained browser extension as its
-            injected wallet, so users get the same Unchained connect/sign experience.
+            With this setup, the RainbowKit <code>ConnectButton</code> will show "Unchained Wallet" in the wallet selection modal 
+            when the extension is installed. Users can connect and use all standard WalletConnect features.
           </p>
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-xs text-blue-300">
+              🔍 <strong>How it works:</strong> RainbowKit scans for injected wallets via <code>window.ethereum</code>. 
+              When the Unchained extension is installed, it injects <code>window.ethereum</code> with <code>isUnchained: true</code>, 
+              which RainbowKit will detect and display in the connect modal.
+            </p>
+          </div>
+          
+          {/* Live Demo */}
+          <div className="mt-6 p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/30 rounded-lg">
+            <h3 className="text-sm font-semibold text-green-400 mb-3">🎯 Live Demo</h3>
+            <p className="text-xs text-gray-300 mb-4">
+              Try connecting with RainbowKit below. The Unchained Wallet extension will appear as "Unchained Wallet" 
+              with the custom logo when installed.
+            </p>
+            <RainbowKitDemo />
+          </div>
         </section>
 
         {/* Plain JavaScript Example */}

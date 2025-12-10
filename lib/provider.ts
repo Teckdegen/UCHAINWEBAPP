@@ -100,6 +100,12 @@ export class UnchainedProvider {
       isMetaMask: true,
       isCoinbaseWallet: true,
       isUnchained: true,
+      
+      // Custom metadata for RainbowKit and other wallet connectors
+      _unchainedMetadata: {
+        name: 'Unchained Wallet',
+        iconUrl: 'https://pbs.twimg.com/profile_images/1990713242805506049/IL1CQ-9l_400x400.jpg',
+      },
 
       request: async (args: { method: string; params?: any[] }) => {
         return self.handleRequest(args)
