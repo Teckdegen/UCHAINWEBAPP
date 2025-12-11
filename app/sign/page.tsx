@@ -283,25 +283,76 @@ export default function SignPage() {
 
       setTxAnalysis(txData)
 
-      // Estimate gas - PEPU only
-      if (tx.to) {
+      // Calculate actual gas fee from PEPU RPC - PEPU only
+      try {
+        const provider = getProvider(97741)
+        const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
+        
+        if (wallet && tx.to) {
+          // Get real-time gas price from PEPU RPC
+          const feeData = await provider.getFeeData()
+          const gasPrice = feeData.gasPrice || BigInt(0)
+          
+          // Use provided gas limit if available, otherwise estimate
+          let gasLimit: bigint
+          if (tx.gas) {
+            gasLimit = BigInt(tx.gas)
+          } else {
+            // Estimate gas limit from RPC
+            try {
+              const estimatedGas = await provider.estimateGas({
+                to: tx.to,
+                value: tx.value || "0x0",
+                data: tx.data || "0x",
+                from: wallet.address,
+              })
+              gasLimit = estimatedGas
+            } catch (estimateError) {
+              // If estimation fails, use a default safe value
+              console.warn("Gas estimation failed, using default:", estimateError)
+              gasLimit = BigInt(21000) // Default for simple transfers
+            }
+          }
+          
+          // Calculate actual fee: gasLimit * gasPrice
+          const gasCost = gasLimit * gasPrice
+          const feeInPepu = ethers.formatEther(gasCost.toString())
+          
+          // Format to show reasonable precision (up to 6 decimal places)
+          const feeNum = Number.parseFloat(feeInPepu)
+          if (feeNum < 0.000001) {
+            setGasEstimate(feeNum.toExponential(2))
+          } else if (feeNum < 1) {
+            setGasEstimate(feeNum.toFixed(6))
+          } else {
+            setGasEstimate(feeNum.toFixed(4))
+          }
+        } else {
+          // Fallback if no wallet or tx.to
+          setGasEstimate("Calculating...")
+        }
+      } catch (e) {
+        console.error("Error calculating gas fee from RPC:", e)
+        // Try to get at least the gas price even if estimation fails
         try {
           const provider = getProvider(97741)
-          const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
-          if (wallet) {
-            const estimate = await provider.estimateGas({
-              to: tx.to,
-              value: tx.value || "0x0",
-              data: tx.data || "0x",
-              from: wallet.address,
-            })
-            const gasPrice = await provider.getFeeData()
-            const gasCost = estimate * (gasPrice.gasPrice || BigInt(0))
-            setGasEstimate(ethers.formatEther(gasCost.toString()))
+          const feeData = await provider.getFeeData()
+          const gasPrice = feeData.gasPrice || BigInt(0)
+          // Use default gas limit of 21000 for simple transfers
+          const defaultGasLimit = BigInt(21000)
+          const gasCost = defaultGasLimit * gasPrice
+          const feeInPepu = ethers.formatEther(gasCost.toString())
+          const feeNum = Number.parseFloat(feeInPepu)
+          if (feeNum < 0.000001) {
+            setGasEstimate(feeNum.toExponential(2))
+          } else if (feeNum < 1) {
+            setGasEstimate(feeNum.toFixed(6))
+          } else {
+            setGasEstimate(feeNum.toFixed(4))
           }
-        } catch (e) {
-          console.error("Error estimating gas:", e)
-          setGasEstimate("~0.001")
+        } catch (fallbackError) {
+          console.error("Fallback gas calculation failed:", fallbackError)
+          setGasEstimate("Unable to calculate")
         }
       }
     } catch (e) {
