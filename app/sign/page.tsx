@@ -84,8 +84,10 @@ export default function SignPage() {
       return
     }
 
+    // Force PEPU chain only
     const provider = getUnchainedProvider()
-    setSelectedChainId(provider.getChainId())
+    provider.setChainId(97741)
+    setSelectedChainId(97741)
 
     const wcRequestId = searchParams.get("wc_request")
     if (wcRequestId) {
@@ -191,8 +193,8 @@ export default function SignPage() {
             txData.recipient = decoded[0]
             txData.contractAddress = tx.to
 
-            // Fetch token info
-            const provider = getProvider(selectedChainId)
+            // Fetch token info - PEPU only
+            const provider = getProvider(97741)
             try {
               const tokenContract = new ethers.Contract(tx.to, ERC20_ABI, provider)
               const [name, symbol, decimals] = await Promise.all([
@@ -227,8 +229,8 @@ export default function SignPage() {
             txData.spender = decoded[0]
             txData.contractAddress = tx.to
 
-            // Fetch token info
-            const provider = getProvider(selectedChainId)
+            // Fetch token info - PEPU only
+            const provider = getProvider(97741)
             try {
               const tokenContract = new ethers.Contract(tx.to, ERC20_ABI, provider)
               const [name, symbol, decimals] = await Promise.all([
@@ -263,9 +265,9 @@ export default function SignPage() {
           txData.contractAddress = tx.to
           txData.functionName = functionSig
 
-          // Try to get contract name from code
+          // Try to get contract name from code - PEPU only
           try {
-            const provider = getProvider(selectedChainId)
+            const provider = getProvider(97741)
             const code = await provider.getCode(tx.to)
             if (code && code !== "0x") {
               setContractName("Smart Contract")
@@ -281,10 +283,10 @@ export default function SignPage() {
 
       setTxAnalysis(txData)
 
-      // Estimate gas
+      // Estimate gas - PEPU only
       if (tx.to) {
         try {
-          const provider = getProvider(selectedChainId)
+          const provider = getProvider(97741)
           const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
           if (wallet) {
             const estimate = await provider.estimateGas({
@@ -333,7 +335,8 @@ export default function SignPage() {
 
       if (method === "eth_sendTransaction") {
         const tx = params[0] || params
-        const rpcProvider = getProvider(selectedChainId)
+        // Force PEPU chain
+        const rpcProvider = getProvider(97741)
         const walletInstance = new ethers.Wallet(privateKey, rpcProvider)
 
         const txRequest: any = {
@@ -346,10 +349,9 @@ export default function SignPage() {
           txRequest.gasLimit = tx.gas
         }
 
+        // Always use PEPU chain
         const provider = getUnchainedProvider()
-        if (provider.getChainId() !== selectedChainId) {
-          provider.setChainId(selectedChainId)
-        }
+        provider.setChainId(97741)
 
         const txResponse = await walletInstance.sendTransaction(txRequest)
         result = txResponse.hash
@@ -477,18 +479,7 @@ export default function SignPage() {
   }
 
   const getExplorerUrl = (address: string) => {
-    if (selectedChainId === 1) {
-      return `https://etherscan.io/address/${address}`
-    } else if (selectedChainId === 97741) {
-      return `https://pepuscan.com/address/${address}`
-    }
-    return "#"
-  }
-
-  const handleChainChange = (chainId: number) => {
-    setSelectedChainId(chainId)
-    const provider = getUnchainedProvider()
-    provider.setChainId(chainId)
+    return `https://pepuscan.com/address/${address}`
   }
 
   if (!params) {
@@ -581,35 +572,15 @@ export default function SignPage() {
           </div>
         </div>
 
-        {/* Chain Selector */}
+        {/* Network Info - PEPU Only */}
         {method === "eth_sendTransaction" && (
           <div className="glass-card rounded-xl p-4 border border-white/10">
-            <span className="text-gray-400 text-sm mb-3 block">Network</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleChainChange(1)}
-                className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
-                  selectedChainId === 1
-                    ? "bg-green-500 text-black shadow-lg"
-                    : "bg-white/10 text-gray-400 hover:bg-white/20"
-                }`}
-              >
-                Ethereum
-              </button>
-              <button
-                onClick={() => handleChainChange(97741)}
-                className={`flex-1 px-4 py-3 rounded-lg font-semibold transition-all ${
-                  selectedChainId === 97741
-                    ? "bg-green-500 text-black shadow-lg"
-                    : "bg-white/10 text-gray-400 hover:bg-white/20"
-                }`}
-              >
-                PEPU
-              </button>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className="text-gray-400 text-sm">Network</span>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Selected: {getChainName(selectedChainId)}
-            </p>
+            <p className="text-white font-semibold mt-2">PEPU Chain</p>
+            <p className="text-xs text-gray-500 mt-1">Chain ID: 97741</p>
           </div>
         )}
 
@@ -775,14 +746,14 @@ export default function SignPage() {
                       </div>
                       <div>
                         <p className="font-bold text-lg">Native Transfer</p>
-                        <p className="text-xs text-gray-400">{selectedChainId === 1 ? "ETH" : "PEPU"}</p>
+                        <p className="text-xs text-gray-400">PEPU</p>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 text-sm">Amount</span>
                         <span className="text-white font-bold text-xl">
-                          {txAnalysis.amount} {selectedChainId === 1 ? "ETH" : "PEPU"}
+                          {txAnalysis.amount} PEPU
                         </span>
                       </div>
                       <div className="flex justify-between items-center pt-2 border-t border-white/10">
@@ -838,7 +809,7 @@ export default function SignPage() {
                         <div className="flex justify-between items-center pt-2 border-t border-white/10">
                           <span className="text-gray-400 text-sm">Value</span>
                           <span className="text-white font-bold">
-                            {ethers.formatEther(txData.value)} {selectedChainId === 1 ? "ETH" : "PEPU"}
+                            {ethers.formatEther(txData.value)} PEPU
                           </span>
                         </div>
                       )}
@@ -869,7 +840,7 @@ export default function SignPage() {
                   <div className="bg-white/5 rounded-lg p-4">
                     <span className="text-gray-400 text-sm">Amount</span>
                     <p className="text-white text-xl font-bold mt-2">
-                      {ethers.formatEther(txData.value)} {selectedChainId === 1 ? "ETH" : "PEPU"}
+                      {ethers.formatEther(txData.value)} PEPU
                     </p>
                   </div>
                 )}
