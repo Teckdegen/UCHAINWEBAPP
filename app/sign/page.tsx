@@ -881,7 +881,7 @@ export default function SignPage() {
                     <span className="text-gray-400 text-sm">Estimated Gas Fee</span>
                   </div>
                   <p className="text-white font-semibold">
-                    {gasEstimate || "~0.001"} {selectedChainId === 1 ? "ETH" : "PEPU"}
+                    {gasEstimate || "~0.001"} PEPU
                   </p>
                 </div>
               </div>
