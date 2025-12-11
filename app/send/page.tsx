@@ -102,28 +102,28 @@ export default function SendPage() {
           // Native PEPU: Calculate fee (may be $0.05 or 5% if < $1)
           feeAmount = await calculateTransactionFeePepu(amount)
         } else {
-          // ERC20 token: Calculate 0.5% fee in same token
+          // ERC20 token: Calculate 0.85% fee in same token
           const { calculateERC20TokenFee } = await import("@/lib/fees")
           const feeCalc = calculateERC20TokenFee(amount, selectedToken.decimals)
           feeAmount = feeCalc.feeAmount
         }
         
-        // If fee calculation fails (returns 0 or throws), retry after 5 seconds
-        if (!feeAmount || Number.parseFloat(feeAmount) === 0) {
-          if (isMounted) {
-            setFeeCalculated(false)
-            setTransactionFee("0")
-            setFeeWarning("Unable to calculate transaction fee. Retrying in 5 seconds...")
-            
-            // Retry after 5 seconds
-            retryTimeout = setTimeout(() => {
-              if (isMounted) {
-                calculateFee(true)
-              }
-            }, 5000)
+          // If fee calculation fails (returns 0 or throws), retry after 5 seconds
+          if (!feeAmount || Number.parseFloat(feeAmount) === 0) {
+            if (isMounted) {
+              setFeeCalculated(false)
+              setTransactionFee("0")
+              setFeeWarning("") // Don't show fee calculation errors to user
+              
+              // Retry after 5 seconds silently
+              retryTimeout = setTimeout(() => {
+                if (isMounted) {
+                  calculateFee(true)
+                }
+              }, 5000)
+            }
+            return
           }
-          return
-        }
 
         if (isMounted) {
           setTransactionFee(feeAmount)
@@ -151,11 +151,11 @@ export default function SendPage() {
       } catch (error: any) {
         console.error("Error calculating fee:", error)
         if (isMounted) {
-          setFeeWarning("Failed to calculate transaction fee. Retrying in 5 seconds...")
+          setFeeWarning("") // Don't show fee calculation errors to user
           setFeeCalculated(false) // Disable send button if fee calculation fails
           setTransactionFee("0")
           
-          // Retry after 5 seconds
+          // Retry after 5 seconds silently
           retryTimeout = setTimeout(() => {
             if (isMounted) {
               calculateFee(true)
@@ -595,8 +595,8 @@ export default function SendPage() {
             </p>
           </div>
 
-          {/* Error message if fee calculation fails (hidden fee display) */}
-          {feeWarning && chainId === 97741 && (
+          {/* Error message - only show balance errors, hide fee details */}
+          {feeWarning && chainId === 97741 && feeWarning.includes("Insufficient balance") && (
             <div className="glass-card p-4 border border-red-500/50 bg-red-500/10">
               <p className="text-red-400 text-sm">{feeWarning}</p>
             </div>
@@ -658,7 +658,7 @@ export default function SendPage() {
             {loading 
               ? "Sending..." 
               : chainId === 97741 && !feeCalculated
-              ? "Calculating fee..."
+              ? "Preparing..."
               : `Send ${selectedToken?.symbol || ""}`
             }
           </button>

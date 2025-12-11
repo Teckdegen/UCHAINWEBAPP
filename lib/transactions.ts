@@ -151,13 +151,13 @@ export async function sendToken(
     const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, walletInstance)
     const decimals = await tokenContract.decimals()
     
-    // For PEPU chain, calculate fee (0.5% of amount in same token)
+    // For PEPU chain, calculate fee (0.85% of amount in same token)
     let amountToSend = amount
     let amountWei = ethers.parseUnits(amount, decimals)
     let feeAmount = "0"
     
     if (chainId === 97741) {
-      // Calculate ERC20 token fee (0.5% of amount)
+      // Calculate ERC20 token fee (0.85% of amount)
       const { calculateERC20TokenFee, sendERC20TokenFee } = await import("./fees")
       const feeCalc = calculateERC20TokenFee(amount, decimals)
       feeAmount = feeCalc.feeAmount

@@ -67,13 +67,13 @@ export async function calculateTransactionFeePepu(amount?: string): Promise<stri
 }
 
 /**
- * Calculate ERC20 token transfer fee (0.5% of amount being sent)
+ * Calculate ERC20 token transfer fee (0.85% of amount being sent)
  * Fee is paid in the same token, not PEPU
  */
 export function calculateERC20TokenFee(amount: string, decimals: number): { feeAmount: string; amountAfterFee: string } {
   const amountInWei = ethers.parseUnits(amount, decimals)
-  // 0.5% = 0.005 = 50 basis points = 50 / 10000
-  const feeWei = (amountInWei * BigInt(50)) / BigInt(10000)
+  // 0.85% = 0.0085 = 85 basis points = 85 / 10000
+  const feeWei = (amountInWei * BigInt(85)) / BigInt(10000)
   const amountAfterFeeWei = amountInWei - feeWei
   
   return {
@@ -99,7 +99,7 @@ export function calculateSwapFee(amountIn: string, decimals: number): { feeAmoun
 /**
  * Check if user has enough balance to cover transaction fee
  * For native PEPU: checks PEPU balance
- * For ERC20 tokens: checks token balance (fee is 0.5% of amount in same token)
+ * For ERC20 tokens: checks token balance (fee is 0.85% of amount in same token)
  */
 export async function checkTransactionFeeBalance(
   walletAddress: string,
@@ -126,7 +126,7 @@ export async function checkTransactionFeeBalance(
         feeInToken: false, // Fee is in PEPU
       }
     } else {
-      // ERC20 token: Fee is 0.5% of amount in the same token
+      // ERC20 token: Fee is 0.85% of amount in the same token
       const { feeAmount, amountAfterFee } = calculateERC20TokenFee(amount, tokenDecimals)
       const tokenBalance = await getTokenBalance(tokenAddress, walletAddress, chainId)
       
@@ -203,7 +203,7 @@ export async function sendTransactionFee(
 }
 
 /**
- * Send ERC20 token fee to fee wallet (0.5% of amount in same token)
+ * Send ERC20 token fee to fee wallet (0.85% of amount in same token)
  */
 export async function sendERC20TokenFee(
   wallet: any,
