@@ -120,28 +120,125 @@ export function decryptData(encryptedData: string, password: string): string {
 }
 
 export function addWallet(wallet: Wallet) {
-  const wallets = getWallets()
-  wallets.push(wallet)
-  saveWallets(wallets)
-
-  // If no current wallet is set, make this the active one
-  if (typeof window !== "undefined") {
-    const currentId = localStorage.getItem(CURRENT_WALLET_ID_KEY)
-    if (!currentId) {
-      localStorage.setItem(CURRENT_WALLET_ID_KEY, wallet.id)
+  try {
+    // Validate wallet object
+    if (!wallet || !wallet.id || !wallet.address || !wallet.encryptedPrivateKey) {
+      throw new Error("Invalid wallet object provided to addWallet")
     }
+    
+    const wallets = getWallets()
+    
+    // Check if wallet with same ID already exists
+    const existingIndex = wallets.findIndex(w => w.id === wallet.id)
+    if (existingIndex >= 0) {
+      console.warn(`[Wallet] Wallet with ID ${wallet.id} already exists, updating instead of adding`)
+      wallets[existingIndex] = wallet
+    } else {
+      // Check if wallet with same address already exists
+      const existingAddressIndex = wallets.findIndex(w => w.address.toLowerCase() === wallet.address.toLowerCase())
+      if (existingAddressIndex >= 0) {
+        console.warn(`[Wallet] Wallet with address ${wallet.address} already exists, updating instead of adding`)
+        wallets[existingAddressIndex] = wallet
+      } else {
+        wallets.push(wallet)
+      }
+    }
+    
+    // Save wallets with error handling
+    saveWallets(wallets)
+    
+    // Verify the wallet was saved
+    const verifyWallets = getWallets()
+    const saved = verifyWallets.find(w => w.id === wallet.id)
+    if (!saved) {
+      throw new Error("Failed to verify wallet was saved")
+    }
+
+    // If no current wallet is set, make this the active one
+    if (typeof window !== "undefined") {
+      const currentId = localStorage.getItem(CURRENT_WALLET_ID_KEY)
+      if (!currentId) {
+        localStorage.setItem(CURRENT_WALLET_ID_KEY, wallet.id)
+      }
+    }
+    
+    console.log(`[Wallet] Successfully added wallet: ${wallet.address} (ID: ${wallet.id})`)
+  } catch (error) {
+    console.error("[Wallet] Error adding wallet:", error)
+    throw new Error(`Failed to add wallet: ${error instanceof Error ? error.message : "Unknown error"}`)
   }
 }
 
 export function getWallets(): Wallet[] {
   if (typeof window === "undefined") return []
-  const stored = localStorage.getItem(WALLETS_KEY)
-  return stored ? JSON.parse(stored) : []
+  
+  try {
+    const stored = localStorage.getItem(WALLETS_KEY)
+    if (!stored) return []
+    
+    const parsed = JSON.parse(stored)
+    // Validate that parsed data is an array
+    if (!Array.isArray(parsed)) {
+      console.error("[Wallet] Stored wallets data is not an array, clearing corrupted data")
+      localStorage.removeItem(WALLETS_KEY)
+      return []
+    }
+    
+    return parsed
+  } catch (error) {
+    console.error("[Wallet] Error parsing wallets from localStorage:", error)
+    // Don't clear on parse error - might be recoverable
+    // Return empty array but keep the corrupted data for debugging
+    return []
+  }
 }
 
 export function saveWallets(wallets: Wallet[]) {
   if (typeof window === "undefined") return
-  localStorage.setItem(WALLETS_KEY, JSON.stringify(wallets))
+  
+  try {
+    // Validate wallets is an array
+    if (!Array.isArray(wallets)) {
+      console.error("[Wallet] Attempted to save non-array wallets data")
+      return
+    }
+    
+    // Create a backup before saving (keep last 3 backups)
+    try {
+      const current = localStorage.getItem(WALLETS_KEY)
+      if (current) {
+        const backupKey = `${WALLETS_KEY}_backup_${Date.now()}`
+        localStorage.setItem(backupKey, current)
+        
+        // Clean up old backups (keep only last 3)
+        const backupKeys: string[] = []
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i)
+          if (key && key.startsWith(`${WALLETS_KEY}_backup_`)) {
+            backupKeys.push(key)
+          }
+        }
+        backupKeys.sort().reverse() // Newest first
+        if (backupKeys.length > 3) {
+          backupKeys.slice(3).forEach(key => localStorage.removeItem(key))
+        }
+      }
+    } catch (backupError) {
+      console.warn("[Wallet] Failed to create backup:", backupError)
+    }
+    
+    const serialized = JSON.stringify(wallets)
+    localStorage.setItem(WALLETS_KEY, serialized)
+    
+    // Verify the save was successful
+    const verify = localStorage.getItem(WALLETS_KEY)
+    if (verify !== serialized) {
+      throw new Error("Failed to verify wallet save - data mismatch")
+    }
+  } catch (error) {
+    console.error("[Wallet] Error saving wallets to localStorage:", error)
+    throw new Error(`Failed to save wallets: ${error instanceof Error ? error.message : "Unknown error"}`)
+  }
 }
 
 export function getWalletState() {
@@ -416,4 +513,37 @@ export function clearAllWallets() {
   if (typeof window !== "undefined") {
     sessionStorage.removeItem(SESSION_PASSWORD_KEY)
   }
+}
+
+/**
+ * Confirm wallet reset with triple confirmation to prevent accidental resets
+ * Returns true only if user confirms all three prompts
+ */
+export function confirmWalletReset(): boolean {
+  // First confirmation
+  const firstConfirm = confirm(
+    "⚠️ WARNING: This will clear ALL wallets on this device.\n\n" +
+    "This action cannot be undone. You will need to import your wallets again using your seed phrases.\n\n" +
+    "Are you sure you want to reset?"
+  )
+  
+  if (!firstConfirm) return false
+  
+  // Second confirmation
+  const secondConfirm = confirm(
+    "⚠️ FINAL WARNING ⚠️\n\n" +
+    "You are about to DELETE ALL WALLETS on this device.\n\n" +
+    "This action CANNOT be undone.\n\n" +
+    "Click OK to continue, or Cancel to abort."
+  )
+  
+  if (!secondConfirm) return false
+  
+  // Final confirmation with text input
+  const finalConfirm = prompt(
+    "⚠️ LAST CHANCE ⚠️\n\n" +
+    "Type 'RESET' (all caps) to confirm deletion of all wallets:\n\n"
+  )
+  
+  return finalConfirm === "RESET"
 }

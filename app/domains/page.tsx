@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getCurrentWallet, clearAllWallets } from "@/lib/wallet"
+import { getWallets, getCurrentWallet, clearAllWallets, confirmWalletReset } from "@/lib/wallet"
 import {
   checkDomainAvailability,
   getDomainRegistrationFee,
@@ -583,13 +583,7 @@ export default function DomainsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (
-                      confirm(
-                        "⚠️ WARNING: This will clear ALL wallets on this device.\n\n" +
-                        "This action cannot be undone. You will need to import your wallets again using your seed phrases.\n\n" +
-                        "Are you sure you want to reset?"
-                      )
-                    ) {
+                    if (confirmWalletReset()) {
                       clearAllWallets()
                       router.push("/setup")
                     }

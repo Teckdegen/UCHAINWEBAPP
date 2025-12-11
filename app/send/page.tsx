@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getWalletState, updateActivity, getCurrentWallet, clearAllWallets } from "@/lib/wallet"
+import { getWallets, getWalletState, updateActivity, getCurrentWallet, clearAllWallets, confirmWalletReset } from "@/lib/wallet"
 import { getSavedEthCustomTokens } from "@/lib/customTokens"
 import { sendNativeToken, sendToken } from "@/lib/transactions"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback } from "@/lib/rpc"
@@ -615,13 +615,7 @@ export default function SendPage() {
             <button
               type="button"
               onClick={() => {
-                if (
-                  confirm(
-                    "⚠️ WARNING: This will clear ALL wallets on this device.\n\n" +
-                    "This action cannot be undone. You will need to import your wallets again using your seed phrases.\n\n" +
-                    "Are you sure you want to reset?"
-                  )
-                ) {
+                if (confirmWalletReset()) {
                   clearAllWallets()
                   router.push("/setup")
                 }
