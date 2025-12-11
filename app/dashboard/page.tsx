@@ -383,6 +383,38 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold gradient-text">Unchained</h1>
             <p className="text-sm text-gray-400">Web Wallet</p>
           </div>
+          
+          {/* Chain Toggle Switch - Centered */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            <span className={`text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
+              ETH
+            </span>
+            <button
+              onClick={() => {
+                const newChainId = chainId === 1 ? 97741 : 1
+                setChainId(newChainId)
+                setBalances([])
+                setPortfolioValue("0.00")
+                setLoading(true)
+                localStorage.setItem("selected_chain", newChainId.toString())
+              }}
+              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                chainId === 97741 ? 'bg-green-500' : 'bg-gray-600'
+              }`}
+              role="switch"
+              aria-checked={chainId === 97741}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                  chainId === 97741 ? 'translate-x-8' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium transition-colors ${chainId === 97741 ? 'text-white' : 'text-gray-500'}`}>
+              PEPU
+            </span>
+          </div>
+          
           <div className="flex items-center gap-3">
             {/* Wallet selector */}
             {wallets.length > 0 && (
@@ -482,37 +514,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Chain Selector (ETH / PEPU) */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
-            <div className="flex gap-2">
-            <button
-                onClick={() => {
-                  setChainId(1)
-                  setBalances([])
-                  setPortfolioValue("0.00")
-                  setLoading(true)
-                }}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-              }`}
-            >
-              Ethereum
-            </button>
-            <button
-                onClick={() => {
-                  setChainId(97741)
-                  setBalances([])
-                  setPortfolioValue("0.00")
-                  setLoading(true)
-                }}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
-              }`}
-            >
-              PEPU
-            </button>
-            </div>
-          </div>
 
           {/* Quick Actions */}
           {chainId === 1 ? (
