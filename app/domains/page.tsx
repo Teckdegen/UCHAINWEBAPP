@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getWallets, getCurrentWallet } from "@/lib/wallet"
+import { getWallets, getCurrentWallet, clearAllWallets } from "@/lib/wallet"
 import {
   checkDomainAvailability,
   getDomainRegistrationFee,
@@ -14,7 +14,7 @@ import {
   getDomainByWallet,
 } from "@/lib/domains"
 import { getTokenBalance } from "@/lib/rpc"
-import { Search, Loader, CheckCircle, XCircle, Globe } from "lucide-react"
+import { Search, Loader, CheckCircle, XCircle, Globe, RotateCcw } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 
 const USDC_ADDRESS = "0x20fB684Bfc1aBAaD3AceC5712f2Aa30bd494dF74"
@@ -580,6 +580,25 @@ export default function DomainsPage() {
                   placeholder="Enter your wallet password"
                   className="input-field"
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      confirm(
+                        "⚠️ WARNING: This will clear ALL wallets on this device.\n\n" +
+                        "This action cannot be undone. You will need to import your wallets again using your seed phrases.\n\n" +
+                        "Are you sure you want to reset?"
+                      )
+                    ) {
+                      clearAllWallets()
+                      router.push("/setup")
+                    }
+                  }}
+                  className="mt-2 text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Forgot Password? Reset Wallet
+                </button>
               </div>
 
               {/* Register Button */}

@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { unlockWallet } from "@/lib/wallet"
-import { Eye, EyeOff } from "lucide-react"
+import { unlockWallet, clearAllWallets } from "@/lib/wallet"
+import { Eye, EyeOff, RotateCcw } from "lucide-react"
 
 export default function UnlockPage() {
   const router = useRouter()
@@ -30,6 +30,19 @@ export default function UnlockPage() {
       setError("Error unlocking wallet")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleReset = () => {
+    if (
+      confirm(
+        "⚠️ WARNING: This will clear ALL wallets on this device.\n\n" +
+        "This action cannot be undone. You will need to import your wallets again using your seed phrases.\n\n" +
+        "Are you sure you want to reset?"
+      )
+    ) {
+      clearAllWallets()
+      router.push("/setup")
     }
   }
 
@@ -67,6 +80,14 @@ export default function UnlockPage() {
 
           <button onClick={handleUnlock} disabled={loading} className="btn-primary w-full disabled:opacity-50">
             {loading ? "Unlocking..." : "Unlock"}
+          </button>
+
+          <button
+            onClick={handleReset}
+            className="w-full mt-3 px-4 py-2 text-sm text-red-400 hover:text-red-300 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors flex items-center justify-center gap-2"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset Wallet (Forgot Password)
           </button>
         </div>
       </div>

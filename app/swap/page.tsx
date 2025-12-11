@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { ethers } from "ethers"
-import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
+import { getWallets, getWalletState, updateActivity, getCurrentWallet, clearAllWallets } from "@/lib/wallet"
 import { getSwapQuote, approveToken, executeSwap, checkAllowance } from "@/lib/swap"
 import { getNativeBalance, getTokenBalance, getProviderWithFallback, getTokenInfo } from "@/lib/rpc"
 import { isTokenBlacklisted } from "@/lib/blacklist"
 import { calculateSwapFee, checkSwapFeeBalance } from "@/lib/fees"
-import { TrendingUp, Loader, ArrowRightLeft, ChevronDown, ExternalLink } from "lucide-react"
+import { TrendingUp, Loader, ArrowRightLeft, ChevronDown, ExternalLink, RotateCcw } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import TokenDetailsModal from "@/components/TokenDetailsModal"
 
@@ -999,6 +999,25 @@ export default function SwapPage() {
               placeholder="Enter your password to swap"
               className="input-field w-full"
             />
+            <button
+              type="button"
+              onClick={() => {
+                if (
+                  confirm(
+                    "⚠️ WARNING: This will clear ALL wallets on this device.\n\n" +
+                    "This action cannot be undone. You will need to import your wallets again using your seed phrases.\n\n" +
+                    "Are you sure you want to reset?"
+                  )
+                ) {
+                  clearAllWallets()
+                  router.push("/setup")
+                }
+              }}
+              className="mt-2 text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Forgot Password? Reset Wallet
+            </button>
           </div>
 
           {/* Messages */}

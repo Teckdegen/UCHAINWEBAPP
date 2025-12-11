@@ -403,3 +403,17 @@ export async function createWalletFromExistingMnemonic(
     derivationIndex: nextIndex,
   }
 }
+
+export function clearAllWallets() {
+  // Clear all wallet data
+  localStorage.removeItem(WALLETS_KEY)
+  localStorage.removeItem(WALLET_STATE_KEY)
+  localStorage.removeItem(CURRENT_WALLET_ID_KEY)
+  localStorage.removeItem(SESSION_PASSWORD_KEY)
+  localStorage.removeItem(PERSIST_PASSWORD_KEY)
+  
+  // Clear session storage as well
+  if (typeof window !== "undefined") {
+    sessionStorage.removeItem(SESSION_PASSWORD_KEY)
+  }
+}
