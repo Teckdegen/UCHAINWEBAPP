@@ -384,38 +384,37 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-400">Web Wallet</p>
           </div>
           
-          {/* Chain Toggle Switch - Centered */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
-            <span className={`text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
-              ETH
-            </span>
-            <button
-              onClick={() => {
-                const newChainId = chainId === 1 ? 97741 : 1
-                setChainId(newChainId)
-                setBalances([])
-                setPortfolioValue("0.00")
-                setLoading(true)
-                localStorage.setItem("selected_chain", newChainId.toString())
-              }}
-              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                chainId === 97741 ? 'bg-green-500' : 'bg-gray-600'
-              }`}
-              role="switch"
-              aria-checked={chainId === 97741}
-            >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                  chainId === 97741 ? 'translate-x-8' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className={`text-xs font-medium transition-colors ${chainId === 97741 ? 'text-white' : 'text-gray-500'}`}>
-              PEPU
-            </span>
-          </div>
-          
           <div className="flex items-center gap-3">
+            {/* Chain Toggle Switch - Top Right */}
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
+                ETH
+              </span>
+              <button
+                onClick={() => {
+                  const newChainId = chainId === 1 ? 97741 : 1
+                  setChainId(newChainId)
+                  setBalances([])
+                  setPortfolioValue("0.00")
+                  setLoading(true)
+                  localStorage.setItem("selected_chain", newChainId.toString())
+                }}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                  chainId === 97741 ? 'bg-green-500' : 'bg-gray-600'
+                }`}
+                role="switch"
+                aria-checked={chainId === 97741}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                    chainId === 97741 ? 'translate-x-8' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className={`text-xs font-medium transition-colors ${chainId === 97741 ? 'text-white' : 'text-gray-500'}`}>
+                PEPU
+              </span>
+            </div>
             {/* Wallet selector */}
             {wallets.length > 0 && (
               <div className="relative">
@@ -522,18 +521,14 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
               <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Send className="w-5 h-5 text-green-500" />
-                </div>
+                <Send className="w-6 h-6 text-green-500" />
               </div>
               <p className="text-sm font-semibold">Send</p>
             </Link>
 
             <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
               <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <ArrowDownLeft className="w-5 h-5 text-green-500" />
-                </div>
+                <ArrowDownLeft className="w-6 h-6 text-green-500" />
               </div>
               <p className="text-sm font-semibold">Receive</p>
                 </Link>
@@ -559,45 +554,35 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link href="/bridge" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-green-500" />
-                  </div>
+                  <Zap className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Unchained Bridge</p>
             </Link>
 
               <Link href="/swap" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-green-500" />
-                  </div>
+                  <TrendingUp className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Unchained Swap</p>
               </Link>
 
               <Link href="/tokens" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Coins className="w-5 h-5 text-green-500" />
-                  </div>
+                  <Coins className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Tokens</p>
               </Link>
 
               <Link href="/transactions" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-green-500" />
-                  </div>
+                  <Clock className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Transactions</p>
               </Link>
 
               <Link href="/rewards" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Coins className="w-5 h-5 text-green-500" />
-                  </div>
+                  <Gift className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Rewards</p>
               </Link>
