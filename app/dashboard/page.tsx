@@ -456,27 +456,29 @@ export default function DashboardPage() {
       {/* Portfolio */}
       <div className="max-w-6xl mx-auto px-4 mt-8">
         <div className="glass-card p-8 mb-8">
-          <p className="text-gray-400 text-sm mb-2">Portfolio Value</p>
-          <h2 className="text-5xl font-bold gradient-text mb-2">${portfolioValue}</h2>
-          {chainId === 97741 && pepuPrice > 0 && (
-            <p className="text-sm text-gray-400 mb-4">
-              PEPU Price: ${pepuPrice.toFixed(8)}
-            </p>
-          )}
-          {chainId === 1 && ethPrice > 0 && (
-            <p className="text-sm text-gray-400 mb-4">
-              ETH Price: ${ethPrice.toFixed(2)}
-            </p>
-          )}
+          <div className="text-center">
+            <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Portfolio Value</p>
+            <h2 className="text-6xl font-bold gradient-text mb-3 tracking-tight">${portfolioValue}</h2>
+            {chainId === 97741 && pepuPrice > 0 && (
+              <p className="text-xs text-gray-500 mb-2">
+                PEPU Price: ${pepuPrice.toFixed(8)}
+              </p>
+            )}
+            {chainId === 1 && ethPrice > 0 && (
+              <p className="text-xs text-gray-500 mb-2">
+                ETH Price: ${ethPrice.toFixed(2)}
+              </p>
+            )}
+          </div>
 
           {/* Active wallet display inside portfolio */}
           {wallets.length > 0 && (
-            <div className="mb-4 text-xs text-gray-400">
-              <span className="mr-1">Wallet:</span>
-              <span className="font-mono text-green-400">
+            <div className="mb-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">Active Wallet</p>
+              <p className="text-xs font-mono text-gray-400">
                 {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(0, 6)}...
                 {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(-4)}
-              </span>
+              </p>
             </div>
           )}
 
