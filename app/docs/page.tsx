@@ -1,7 +1,6 @@
 "use client"
 
 import { Code, Book, Wallet } from "lucide-react"
-import { RainbowKitDemo } from "@/components/RainbowKitDemo"
 
 export default function DocsPage() {
   return (
@@ -241,16 +240,6 @@ export function ConnectUnchainedButton() {
               🔍 <strong>How it works:</strong> The button checks for <code>window.ethereum.isUnchained</code> to detect the extension. 
               When users click connect, it calls <code>eth_requestAccounts</code> which opens the Unchained Wallet approval UI.
             </p>
-          </div>
-          
-          {/* Live Demo */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/30 rounded-lg">
-            <h3 className="text-sm font-semibold text-green-400 mb-3">🎯 Live Demo</h3>
-            <p className="text-xs text-gray-300 mb-4">
-              Try connecting with RainbowKit below. The Unchained Wallet extension will appear as "Unchained Wallet" 
-              with the custom logo when installed.
-            </p>
-            <RainbowKitDemo />
           </div>
         </section>
 
