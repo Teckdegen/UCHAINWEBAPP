@@ -3,18 +3,9 @@
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getWalletState } from "@/lib/wallet"
-import { ArrowLeft, Home, RefreshCw, Plus, X, ExternalLink, Monitor, History, Trash2 } from "lucide-react"
+import { ArrowLeft, Home, RefreshCw, Plus, X, Monitor, History, Trash2 } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import Link from "next/link"
-
-const POPULAR_DAPPS = [
-  { name: "Uniswap", url: "https://app.uniswap.org", icon: "🦄" },
-  { name: "Aave", url: "https://app.aave.com", icon: "👻" },
-  { name: "Curve", url: "https://curve.fi", icon: "📈" },
-  { name: "OpenSea", url: "https://opensea.io", icon: "🌊" },
-  { name: "Lido", url: "https://lido.fi", icon: "🔷" },
-  { name: "Compound", url: "https://compound.finance", icon: "💱" },
-]
 
 export default function BrowserPage() {
   const router = useRouter()
@@ -643,35 +634,10 @@ export default function BrowserPage() {
             />
           </div>
         ) : (
-          <div className="p-4 md:p-6 space-y-6 overflow-y-auto h-full">
-            <div>
-              <h2 className="text-lg font-bold mb-4">Popular Apps</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {POPULAR_DAPPS.map((dapp) => (
-                  <button
-                    key={dapp.name}
-                    onClick={() => openNewTab(dapp.url)}
-                    className="glass-card p-4 text-center hover:bg-white/10 transition-all group"
-                  >
-                    <div className="text-3xl mb-2">{dapp.icon}</div>
-                    <p className="text-sm font-semibold mb-1">{dapp.name}</p>
-                    <div className="flex items-center justify-center gap-1 text-xs text-gray-400 group-hover:text-green-400">
-                      Open <ExternalLink className="w-3 h-3" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="glass-card p-6">
-              <h3 className="font-bold mb-3">Unchained Browser Features</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>• Integrated wallet access across all apps</li>
-                <li>• Multiple tabs for browsing</li>
-                <li>• Full browsing history tracking</li>
-                <li>• Desktop site mode for mobile</li>
-                <li>• All transactions signed securely</li>
-              </ul>
+          <div className="flex items-center justify-center h-full p-4">
+            <div className="text-center max-w-md">
+              <h2 className="text-xl font-bold mb-2">Unchained Browser</h2>
+              <p className="text-gray-400 text-sm mb-6">Enter a URL in the search bar above to get started</p>
             </div>
           </div>
         )}
