@@ -23,7 +23,7 @@ import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
 import { getDomainByWallet } from "@/lib/domains"
-import { Send, ArrowDownLeft, Zap, TrendingUp, Menu, Globe, ImageIcon, Coins, Clock, Gift } from "lucide-react"
+import { Send, Download, Network, ArrowLeftRight, Menu, Globe, ImageIcon, Coins, History, Gift } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
@@ -379,42 +379,38 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="glass-card rounded-none p-6 border-b border-white/10 relative z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold gradient-text">Unchained</h1>
-            <p className="text-sm text-gray-400">Web Wallet</p>
+          {/* Chain Toggle Switch - Top Left */}
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
+              ETH
+            </span>
+            <button
+              onClick={() => {
+                const newChainId = chainId === 1 ? 97741 : 1
+                setChainId(newChainId)
+                setBalances([])
+                setPortfolioValue("0.00")
+                setLoading(true)
+                localStorage.setItem("selected_chain", newChainId.toString())
+              }}
+              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                chainId === 97741 ? 'bg-green-500' : 'bg-gray-600'
+              }`}
+              role="switch"
+              aria-checked={chainId === 97741}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                  chainId === 97741 ? 'translate-x-8' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-medium transition-colors ${chainId === 97741 ? 'text-white' : 'text-gray-500'}`}>
+              PEPU
+            </span>
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Chain Toggle Switch - Top Right */}
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
-                ETH
-              </span>
-              <button
-                onClick={() => {
-                  const newChainId = chainId === 1 ? 97741 : 1
-                  setChainId(newChainId)
-                  setBalances([])
-                  setPortfolioValue("0.00")
-                  setLoading(true)
-                  localStorage.setItem("selected_chain", newChainId.toString())
-                }}
-                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                  chainId === 97741 ? 'bg-green-500' : 'bg-gray-600'
-                }`}
-                role="switch"
-                aria-checked={chainId === 97741}
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                    chainId === 97741 ? 'translate-x-8' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-              <span className={`text-xs font-medium transition-colors ${chainId === 97741 ? 'text-white' : 'text-gray-500'}`}>
-                PEPU
-              </span>
-            </div>
             {/* Wallet selector */}
             {wallets.length > 0 && (
               <div className="relative">
@@ -528,7 +524,7 @@ export default function DashboardPage() {
 
             <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
               <div className="flex justify-center mb-2">
-                <ArrowDownLeft className="w-6 h-6 text-green-500" />
+                <Download className="w-6 h-6 text-green-500" />
               </div>
               <p className="text-sm font-semibold">Receive</p>
                 </Link>
@@ -554,14 +550,14 @@ export default function DashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link href="/bridge" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <Zap className="w-6 h-6 text-green-500" />
+                  <Network className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Unchained Bridge</p>
             </Link>
 
               <Link href="/swap" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <TrendingUp className="w-6 h-6 text-green-500" />
+                  <ArrowLeftRight className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Unchained Swap</p>
               </Link>
@@ -575,7 +571,7 @@ export default function DashboardPage() {
 
               <Link href="/transactions" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
                 <div className="flex justify-center mb-2">
-                  <Clock className="w-6 h-6 text-green-500" />
+                  <History className="w-6 h-6 text-green-500" />
                 </div>
                 <p className="text-sm font-semibold">Transactions</p>
               </Link>
