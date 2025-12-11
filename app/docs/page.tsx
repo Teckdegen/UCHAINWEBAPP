@@ -155,79 +155,91 @@ export function App() {
           </div>
         </section>
 
-        {/* RainbowKit Example (Injected Unchained Wallet) */}
+        {/* Custom Connect Button Example */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <Wallet className="w-4 h-4 text-green-500" />
-            RainbowKit · Use Unchained Extension
+            Custom Connect Button · Use Unchained Extension
           </h2>
           <p className="text-xs text-gray-300">
-            If you are already using <code>@rainbow-me/rainbowkit</code>, you can configure it to show the Unchained Wallet extension. 
-            The extension exposes a standard injected <code>window.ethereum</code> with <code>isUnchained: true</code>.
+            Since RainbowKit v2 requires wagmi v2 (and this project uses wagmi v3), we provide a simple custom connect button 
+            that works directly with the Unchained Wallet extension. The extension exposes a standard injected <code>window.ethereum</code> 
+            with <code>isUnchained: true</code>.
           </p>
           <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg mb-4">
             <p className="text-xs text-yellow-300">
-              💡 <strong>Note:</strong> Make sure users have the Unchained Wallet browser extension installed. 
-              RainbowKit will automatically detect it as an injected wallet.
+              💡 <strong>Note:</strong> RainbowKit v2 is incompatible with wagmi v3. Use this custom solution or wait for RainbowKit v3 support.
             </p>
           </div>
           <pre className="text-[11px] bg-black/70 rounded p-3 border border-white/10 overflow-x-auto">
-            <code>{`import '@rainbow-me/rainbowkit/styles.css';
+            <code>{`"use client"
 
-import { RainbowKitProvider, ConnectButton, connectorsForWallets } from '@rainbow-me/rainbowkit';
-import { injectedWallet } from '@rainbow-me/rainbowkit/wallets';
-import { WagmiProvider, createConfig, http } from 'wagmi';
-import { mainnet } from 'wagmi/chains';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState, useEffect } from "react"
 
-// 1. Your own RPC URL for mainnet (required)
-const RPC_URL = 'https://your-ethereum-rpc.example.com';
+export function ConnectUnchainedButton() {
+  const [isInstalled, setIsInstalled] = useState(false)
+  const [connected, setConnected] = useState(false)
+  const [account, setAccount] = useState<string | null>(null)
 
-// 2. Configure RainbowKit to use only the injected (Unchained) wallet
-const connectors = connectorsForWallets([
-  {
-    groupName: 'Unchained',
-    wallets: [
-      injectedWallet({
-        chains: [mainnet],
-        shimDisconnect: true,
-      }),
-    ],
-  },
-]);
+  useEffect(() => {
+    // Check if Unchained Wallet extension is installed
+    if (typeof window !== 'undefined') {
+      const ethereum = (window as any).ethereum
+      if (ethereum?.isUnchained) {
+        setIsInstalled(true)
+      }
+    }
+  }, [])
 
-const config = createConfig({
-  chains: [mainnet],
-  transports: {
-    [mainnet.id]: http(RPC_URL),
-  },
-  connectors,
-});
+  const handleConnect = async () => {
+    try {
+      const ethereum = (window as any).ethereum
+      if (!ethereum) {
+        alert('Unchained Wallet not detected. Please install the extension.')
+        return
+      }
 
-const queryClient = new QueryClient();
+      // Request connection
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
+      if (accounts && accounts.length > 0) {
+        setConnected(true)
+        setAccount(accounts[0])
+      }
+    } catch (error: any) {
+      console.error('Connection failed:', error)
+      alert(error.message || 'Failed to connect to Unchained Wallet')
+    }
+  }
 
-export function App() {
+  const handleDisconnect = () => {
+    setConnected(false)
+    setAccount(null)
+  }
+
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider chains={[mainnet]}>
-          {/* RainbowKit will detect the Unchained extension as "Unchained Wallet" */}
-          <ConnectButton />
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
+    <div>
+      {!connected ? (
+        <button onClick={handleConnect} className="connect-button">
+          {isInstalled ? 'Connect Unchained Wallet' : 'Connect Wallet'}
+        </button>
+      ) : (
+        <div>
+          <p>Connected: {account}</p>
+          <button onClick={handleDisconnect}>Disconnect</button>
+        </div>
+      )}
+    </div>
+  )
 }`}</code>
           </pre>
           <p className="text-xs text-gray-300">
-            With this setup, the RainbowKit <code>ConnectButton</code> will show "Unchained Wallet" in the wallet selection modal 
-            when the extension is installed. Users can connect and use all standard WalletConnect features.
+            This simple custom connect button works directly with the Unchained Wallet extension via <code>window.ethereum</code>. 
+            It detects when the extension is installed and allows users to connect seamlessly.
           </p>
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
             <p className="text-xs text-blue-300">
-              🔍 <strong>How it works:</strong> RainbowKit scans for injected wallets via <code>window.ethereum</code>. 
-              When the Unchained extension is installed, it injects <code>window.ethereum</code> with <code>isUnchained: true</code>, 
-              which RainbowKit will detect and display in the connect modal.
+              🔍 <strong>How it works:</strong> The button checks for <code>window.ethereum.isUnchained</code> to detect the extension. 
+              When users click connect, it calls <code>eth_requestAccounts</code> which opens the Unchained Wallet approval UI.
             </p>
           </div>
           
