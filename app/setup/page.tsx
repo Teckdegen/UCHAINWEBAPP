@@ -41,11 +41,23 @@ export default function SetupPage() {
     setLoading(true)
     try {
       const wallet = await createWallet(password, walletName || "My Wallet", 1)
-      addWallet(wallet) // This will automatically register userId with API
+      
+      // Save wallet to localStorage immediately
+      addWallet(wallet)
+      
+      // Verify wallet was saved by reading it back
+      const savedWallets = getWallets()
+      const saved = savedWallets.find(w => w.id === wallet.id)
+      if (!saved) {
+        throw new Error("Failed to save wallet - wallet not found after save")
+      }
+      
       // Auto-unlock using the same password so signing doesn't require /unlock
       unlockWallet(password)
+      
       const mnemonic = getMnemonic(wallet, password)
       setMnemonic(mnemonic || "")
+      
       // Prepare quiz
       if (mnemonic) {
         const words = mnemonic.split(" ")
@@ -59,7 +71,8 @@ export default function SetupPage() {
       }
       setMode("menu")
     } catch (err: any) {
-      setError(err.message)
+      console.error("[Setup] Error creating wallet:", err)
+      setError(err.message || "Failed to create wallet. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -74,7 +87,17 @@ export default function SetupPage() {
     setLoading(true)
     try {
       const wallet = await importWalletFromMnemonic(seedPhrase.trim(), password, walletName || "Imported Wallet", 1)
+      
+      // Save wallet to localStorage immediately
       addWallet(wallet)
+      
+      // Verify wallet was saved by reading it back
+      const savedWallets = getWallets()
+      const saved = savedWallets.find(w => w.id === wallet.id)
+      if (!saved) {
+        throw new Error("Failed to save wallet - wallet not found after save")
+      }
+      
       // Auto-unlock so signing doesn't require /unlock
       unlockWallet(password)
       setSeedPhrase("")
@@ -82,6 +105,7 @@ export default function SetupPage() {
       setPassword("")
       router.push("/dashboard")
     } catch (err: any) {
+      console.error("[Setup] Error importing seed:", err)
       setError(err.message || "Failed to import seed phrase")
     } finally {
       setLoading(false)
@@ -97,7 +121,17 @@ export default function SetupPage() {
     setLoading(true)
     try {
       const wallet = await importWalletFromPrivateKey(privateKey.trim(), password, walletName || "Imported Wallet", 1)
+      
+      // Save wallet to localStorage immediately
       addWallet(wallet)
+      
+      // Verify wallet was saved by reading it back
+      const savedWallets = getWallets()
+      const saved = savedWallets.find(w => w.id === wallet.id)
+      if (!saved) {
+        throw new Error("Failed to save wallet - wallet not found after save")
+      }
+      
       // Auto-unlock so signing doesn't require /unlock
       unlockWallet(password)
       setPrivateKey("")
@@ -105,6 +139,7 @@ export default function SetupPage() {
       setPassword("")
       router.push("/dashboard")
     } catch (err: any) {
+      console.error("[Setup] Error importing private key:", err)
       setError(err.message || "Failed to import private key")
     } finally {
       setLoading(false)

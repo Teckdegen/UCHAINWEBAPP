@@ -15,6 +15,7 @@ import {
   setAutoLockSeconds,
   getCurrentWallet,
   deleteWallet,
+  clearAllWallets,
 } from "@/lib/wallet"
 import { deleteAllCookies } from "@/lib/cookies"
 import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key } from "lucide-react"
@@ -73,9 +74,11 @@ export default function SettingsPage() {
   }
 
   const handleReset = () => {
+    // Use the proper clearAllWallets function instead of localStorage.clear()
+    // This ensures we only clear wallet-related data, not everything
     if (confirm("Are you sure? This will delete all wallets, localStorage, and cookies. Make sure you have saved your seed phrases.")) {
-      // Clear all localStorage
-      localStorage.clear()
+      // Clear all wallet data using the proper function
+      clearAllWallets()
       
       // Delete all cookies (including unchained_user_id)
       deleteAllCookies()

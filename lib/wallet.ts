@@ -172,9 +172,22 @@ export function addWallet(wallet: Wallet) {
 export function getWallets(): Wallet[] {
   if (typeof window === "undefined") return []
   
+  // Check if localStorage is available
+  try {
+    const testKey = "__localStorage_test__"
+    localStorage.setItem(testKey, "test")
+    localStorage.removeItem(testKey)
+  } catch (e) {
+    console.error("[Wallet] localStorage is not available:", e)
+    return []
+  }
+  
   try {
     const stored = localStorage.getItem(WALLETS_KEY)
-    if (!stored) return []
+    if (!stored) {
+      console.log("[Wallet] No wallets found in localStorage")
+      return []
+    }
     
     const parsed = JSON.parse(stored)
     // Validate that parsed data is an array
@@ -184,23 +197,77 @@ export function getWallets(): Wallet[] {
       return []
     }
     
-    return parsed
+    // Validate each wallet has required fields
+    const validWallets = parsed.filter((w: any) => {
+      if (!w || !w.id || !w.address || !w.encryptedPrivateKey) {
+        console.warn("[Wallet] Invalid wallet found in storage, skipping:", w)
+        return false
+      }
+      return true
+    })
+    
+    if (validWallets.length !== parsed.length) {
+      console.warn(`[Wallet] Filtered out ${parsed.length - validWallets.length} invalid wallets`)
+      // Save the cleaned wallets back
+      if (validWallets.length > 0) {
+        saveWallets(validWallets)
+      } else {
+        localStorage.removeItem(WALLETS_KEY)
+      }
+    }
+    
+    console.log(`[Wallet] Loaded ${validWallets.length} wallet(s) from localStorage`)
+    return validWallets
   } catch (error) {
     console.error("[Wallet] Error parsing wallets from localStorage:", error)
-    // Don't clear on parse error - might be recoverable
+    // Try to restore from backup
+    try {
+      const backupKeys: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith(`${WALLETS_KEY}_backup_`)) {
+          backupKeys.push(key)
+        }
+      }
+      if (backupKeys.length > 0) {
+        backupKeys.sort().reverse() // Newest first
+        const latestBackup = localStorage.getItem(backupKeys[0])
+        if (latestBackup) {
+          console.warn("[Wallet] Attempting to restore from backup...")
+          const parsed = JSON.parse(latestBackup)
+          if (Array.isArray(parsed)) {
+            localStorage.setItem(WALLETS_KEY, latestBackup)
+            return parsed
+          }
+        }
+      }
+    } catch (restoreError) {
+      console.error("[Wallet] Failed to restore from backup:", restoreError)
+    }
     // Return empty array but keep the corrupted data for debugging
     return []
   }
 }
 
 export function saveWallets(wallets: Wallet[]) {
-  if (typeof window === "undefined") return
+  if (typeof window === "undefined") {
+    console.warn("[Wallet] Cannot save wallets - window is undefined (server-side)")
+    return
+  }
   
   try {
     // Validate wallets is an array
     if (!Array.isArray(wallets)) {
       console.error("[Wallet] Attempted to save non-array wallets data")
       return
+    }
+    
+    // Validate each wallet has required fields
+    for (const wallet of wallets) {
+      if (!wallet || !wallet.id || !wallet.address || !wallet.encryptedPrivateKey) {
+        console.error("[Wallet] Invalid wallet in array:", wallet)
+        throw new Error("Invalid wallet data - missing required fields")
+      }
     }
     
     // Create a backup before saving (keep last 3 backups)
@@ -225,18 +292,55 @@ export function saveWallets(wallets: Wallet[]) {
       }
     } catch (backupError) {
       console.warn("[Wallet] Failed to create backup:", backupError)
+      // Don't fail the save if backup fails
     }
     
     const serialized = JSON.stringify(wallets)
+    
+    // Save to localStorage
     localStorage.setItem(WALLETS_KEY, serialized)
     
-    // Verify the save was successful
+    // Verify the save was successful by reading it back
     const verify = localStorage.getItem(WALLETS_KEY)
     if (verify !== serialized) {
+      console.error("[Wallet] Save verification failed - data mismatch")
       throw new Error("Failed to verify wallet save - data mismatch")
     }
+    
+    // Additional verification: parse and check structure
+    try {
+      const parsed = JSON.parse(verify)
+      if (!Array.isArray(parsed) || parsed.length !== wallets.length) {
+        throw new Error("Wallet count mismatch after save")
+      }
+    } catch (parseError) {
+      console.error("[Wallet] Save verification failed - parse error:", parseError)
+      throw new Error("Failed to verify saved wallet data structure")
+    }
+    
+    console.log(`[Wallet] Successfully saved ${wallets.length} wallet(s) to localStorage`)
   } catch (error) {
     console.error("[Wallet] Error saving wallets to localStorage:", error)
+    // Try to restore from backup if save failed
+    try {
+      const backupKeys: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith(`${WALLETS_KEY}_backup_`)) {
+          backupKeys.push(key)
+        }
+      }
+      if (backupKeys.length > 0) {
+        backupKeys.sort().reverse() // Newest first
+        const latestBackup = localStorage.getItem(backupKeys[0])
+        if (latestBackup) {
+          console.warn("[Wallet] Attempting to restore from backup...")
+          localStorage.setItem(WALLETS_KEY, latestBackup)
+        }
+      }
+    } catch (restoreError) {
+      console.error("[Wallet] Failed to restore from backup:", restoreError)
+    }
     throw new Error(`Failed to save wallets: ${error instanceof Error ? error.message : "Unknown error"}`)
   }
 }
