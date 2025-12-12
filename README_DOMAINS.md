@@ -4,6 +4,8 @@
 
 Unchained Domains is a decentralized domain name service built on the PEPU Chain (Pepe Unchained V2). It allows users to register human-readable `.pepu` domain names that map to wallet addresses, making it easier to send and receive cryptocurrency without remembering long hexadecimal addresses.
 
+This documentation is designed to help you build a **standalone domain registration website** that interacts with the Unchained Domains smart contract on PEPU Chain.
+
 ## Contract Information
 
 - **Contract Address**: `0x59b040636186afC0851e5891A7b94C3Ca7680128`
@@ -465,21 +467,449 @@ The dashboard shows:
 - **RPC Endpoint**: `https://rpc-pepu-v2-mainnet-0.t.conduit.xyz`
 - **Block Explorer**: Pepuscan (`https://pepuscan.com`)
 
-## Contract ABI Reference
+## Contract ABI
 
-```solidity
-// View Functions
-function resolveName(string calldata name, string calldata tld) external view returns (address walletAddress)
-function getDomainByWallet(address wallet) external view returns (string memory name, string memory tld)
-function isDomainAvailable(string calldata name, string calldata tld) external view returns (bool)
-function getDomainInfo(string calldata name, string calldata tld) external view returns (address walletAddress, address owner, uint256 registrationTimestamp, uint256 expiryTimestamp, string memory tldInfo)
-function getDomainStatus(string calldata name, string calldata tld) external view returns (bool exists, bool expired, uint256 remainingDays, uint256 fee)
-function getRegistrationFee(string calldata name, uint256 duration) external view returns (uint256)
-function validateDomainName(string calldata name) external pure returns (bool)
+### UnchainedDomains Contract ABI
 
-// State-Changing Functions
-function registerDomain(string calldata name, string calldata tld, uint256 duration) external
+Complete JSON ABI for the UnchainedDomains contract:
+
+```json
+[
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "tld", "type": "string" }
+    ],
+    "name": "resolveName",
+    "outputs": [
+      { "internalType": "address", "name": "walletAddress", "type": "address" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "wallet", "type": "address" }
+    ],
+    "name": "getDomainByWallet",
+    "outputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "tld", "type": "string" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "tld", "type": "string" }
+    ],
+    "name": "isDomainAvailable",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "tld", "type": "string" },
+      { "internalType": "uint256", "name": "duration", "type": "uint256" }
+    ],
+    "name": "registerDomain",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "uint256", "name": "duration", "type": "uint256" }
+    ],
+    "name": "getRegistrationFee",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "tld", "type": "string" }
+    ],
+    "name": "getDomainInfo",
+    "outputs": [
+      { "internalType": "address", "name": "walletAddress", "type": "address" },
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "uint256", "name": "registrationTimestamp", "type": "uint256" },
+      { "internalType": "uint256", "name": "expiryTimestamp", "type": "uint256" },
+      { "internalType": "string", "name": "tldInfo", "type": "string" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "tld", "type": "string" }
+    ],
+    "name": "getDomainStatus",
+    "outputs": [
+      { "internalType": "bool", "name": "exists", "type": "bool" },
+      { "internalType": "bool", "name": "expired", "type": "bool" },
+      { "internalType": "uint256", "name": "remainingDays", "type": "uint256" },
+      { "internalType": "uint256", "name": "fee", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name", "type": "string" }
+    ],
+    "name": "validateDomainName",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]
 ```
+
+### USDC Token ABI
+
+Complete JSON ABI for USDC token (required for payments):
+
+```json
+[
+  {
+    "inputs": [
+      { "internalType": "address", "name": "spender", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "approve",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" },
+      { "internalType": "address", "name": "spender", "type": "address" }
+    ],
+    "name": "allowance",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "account", "type": "address" }
+    ],
+    "name": "balanceOf",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [
+      { "internalType": "uint8", "name": "", "type": "uint8" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [
+      { "internalType": "string", "name": "", "type": "string" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "name",
+    "outputs": [
+      { "internalType": "string", "name": "", "type": "string" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
+```
+
+## Building a Standalone Domain Registration Site
+
+### Quick Start Guide
+
+#### 1. Setup Project
+
+```bash
+# Create a new Next.js/React project
+npx create-next-app@latest domain-registration-site --typescript --tailwind
+
+# Install required dependencies
+npm install ethers viem wagmi @tanstack/react-query
+# or
+npm install web3
+```
+
+#### 2. Configure Network
+
+Add PEPU Chain to your wallet connection:
+
+```typescript
+// chains.ts or config.ts
+export const PEPU_CHAIN = {
+  id: 97741,
+  name: 'Pepe Unchained V2',
+  network: 'pepu',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'PEPU',
+    symbol: 'PEPU',
+  },
+  rpcUrls: {
+    default: {
+      http: ['https://rpc-pepu-v2-mainnet-0.t.conduit.xyz'],
+    },
+    public: {
+      http: ['https://rpc-pepu-v2-mainnet-0.t.conduit.xyz'],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Pepuscan',
+      url: 'https://pepuscan.com',
+    },
+  },
+}
+```
+
+#### 3. Contract Configuration
+
+```typescript
+// constants.ts
+export const CONTRACT_ADDRESS = "0x59b040636186afC0851e5891A7b94C3Ca7680128"
+export const USDC_ADDRESS = "0x20fB684Bfc1aBAaD3AceC5712f2Aa30bd494dF74"
+export const PEPU_CHAIN_ID = 97741
+export const TLD = ".pepu"
+export const USDC_DECIMALS = 6
+export const RPC_URL = "https://rpc-pepu-v2-mainnet-0.t.conduit.xyz"
+```
+
+#### 4. Wallet Connection
+
+**Using ethers.js:**
+
+```typescript
+import { ethers } from 'ethers'
+
+// Connect to wallet (MetaMask, WalletConnect, etc.)
+const provider = new ethers.BrowserProvider(window.ethereum)
+const signer = await provider.getSigner()
+const address = await signer.getAddress()
+
+// Get network
+const network = await provider.getNetwork()
+if (network.chainId !== BigInt(97741)) {
+  // Switch to PEPU chain
+  await window.ethereum.request({
+    method: 'wallet_switchEthereumChain',
+    params: [{ chainId: '0x17DCD' }], // 97741 in hex
+  })
+}
+```
+
+**Using wagmi (Recommended):**
+
+```typescript
+import { configureChains, createConfig } from 'wagmi'
+import { publicProvider } from 'wagmi/providers/public'
+import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
+import { WalletConnectConnector } from 'wagmi/connectors/walletConnect'
+
+const { chains, publicClient } = configureChains(
+  [PEPU_CHAIN],
+  [publicProvider()]
+)
+
+const wagmiConfig = createConfig({
+  autoConnect: true,
+  connectors: [
+    new MetaMaskConnector({ chains }),
+    new WalletConnectConnector({
+      chains,
+      options: {
+        projectId: 'YOUR_WALLETCONNECT_PROJECT_ID',
+      },
+    }),
+  ],
+  publicClient,
+})
+```
+
+#### 5. Contract Interaction Example
+
+```typescript
+import { ethers } from 'ethers'
+import { CONTRACT_ADDRESS, USDC_ADDRESS, USDC_DECIMALS } from './constants'
+import DOMAIN_ABI from './abis/DomainABI.json'
+import USDC_ABI from './abis/USDCABI.json'
+
+// Initialize contracts
+const domainContract = new ethers.Contract(
+  CONTRACT_ADDRESS,
+  DOMAIN_ABI,
+  signer
+)
+
+const usdcContract = new ethers.Contract(
+  USDC_ADDRESS,
+  USDC_ABI,
+  signer
+)
+
+// Check domain availability
+async function checkAvailability(domainName: string) {
+  const normalized = domainName.toLowerCase().trim()
+  return await domainContract.isDomainAvailable(normalized, ".pepu")
+}
+
+// Get registration fee
+async function getFee(domainName: string, years: number) {
+  const normalized = domainName.toLowerCase().trim()
+  const feeWei = await domainContract.getRegistrationFee(normalized, years)
+  return ethers.formatUnits(feeWei, USDC_DECIMALS)
+}
+
+// Register domain
+async function registerDomain(domainName: string, years: number) {
+  const normalized = domainName.toLowerCase().trim()
+  
+  // 1. Get fee
+  const feeWei = await domainContract.getRegistrationFee(normalized, years)
+  
+  // 2. Check USDC balance
+  const balance = await usdcContract.balanceOf(address)
+  if (balance < feeWei) {
+    throw new Error('Insufficient USDC balance')
+  }
+  
+  // 3. Check and approve USDC
+  const allowance = await usdcContract.allowance(address, CONTRACT_ADDRESS)
+  if (allowance < feeWei) {
+    const approveTx = await usdcContract.approve(
+      CONTRACT_ADDRESS,
+      feeWei * BigInt(2) // Approve extra to avoid multiple approvals
+    )
+    await approveTx.wait()
+  }
+  
+  // 4. Register domain
+  const tx = await domainContract.registerDomain(normalized, ".pepu", years)
+  const receipt = await tx.wait()
+  
+  return receipt.hash
+}
+```
+
+#### 6. Essential UI Components
+
+**Domain Search Component:**
+- Input field with real-time validation
+- Availability check button
+- Visual indicators (available/taken/expired)
+- Domain status display
+
+**Registration Form:**
+- Duration selector (years/days)
+- Fee calculator
+- USDC balance display
+- Connect wallet button
+- Register button with transaction status
+
+**Domain Info Display:**
+- Domain name
+- Resolved wallet address
+- Owner address
+- Registration date
+- Expiration date
+- Days remaining
+
+#### 7. Required Pages
+
+1. **Homepage** (`/`)
+   - Hero section
+   - Domain search
+   - How it works
+   - Features
+
+2. **Search/Register** (`/register`)
+   - Domain search
+   - Availability check
+   - Registration form
+   - Fee calculator
+
+3. **Domain Lookup** (`/lookup`)
+   - Search by domain name
+   - Search by wallet address
+   - Domain information display
+
+4. **My Domains** (`/my-domains`)
+   - List user's registered domains
+   - Domain management
+   - Renewal interface
+
+#### 8. Error Handling
+
+```typescript
+try {
+  await registerDomain(domainName, years)
+} catch (error: any) {
+  if (error.code === 'INSUFFICIENT_FUNDS') {
+    // Handle insufficient USDC
+  } else if (error.message.includes('domain not available')) {
+    // Handle domain taken
+  } else if (error.code === 'ACTION_REJECTED') {
+    // User rejected transaction
+  } else {
+    // Generic error
+  }
+}
+```
+
+### Recommended Tech Stack
+
+- **Framework**: Next.js, React, or Vue.js
+- **Web3 Library**: ethers.js, viem, or web3.js
+- **Wallet Connection**: wagmi, Web3Modal, or ConnectKit
+- **Styling**: Tailwind CSS, Chakra UI, or Material-UI
+- **State Management**: React Query, Zustand, or Redux
+- **Type Safety**: TypeScript
+
+### Security Best Practices
+
+1. **Always validate domain names** before sending to contract
+2. **Show resolved address** before finalizing transactions
+3. **Handle transaction rejections** gracefully
+4. **Verify chain ID** before allowing transactions
+5. **Check USDC balance** before showing registration button
+6. **Use proper error messages** for user feedback
+7. **Implement transaction status tracking**
+8. **Add loading states** for all async operations
 
 ## Support & Resources
 
@@ -487,6 +917,8 @@ function registerDomain(string calldata name, string calldata tld, uint256 durat
 - **Block Explorer**: [Pepuscan](https://pepuscan.com/address/0x59b040636186afC0851e5891A7b94C3Ca7680128)
 - **USDC Token**: `0x20fB684Bfc1aBAaD3AceC5712f2Aa30bd494dF74`
 - **Chain**: PEPU Chain (97741)
+- **RPC Endpoint**: `https://rpc-pepu-v2-mainnet-0.t.conduit.xyz`
+- **Explorer**: [Pepuscan](https://pepuscan.com)
 
 ## Future Enhancements
 
