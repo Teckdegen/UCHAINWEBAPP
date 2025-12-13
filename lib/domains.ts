@@ -29,9 +29,9 @@ const USDC_ABI = [
 ]
 
 /**
- * Resolve a domain name to a wallet address (tries .pepu first, then .uchain)
+ * Resolve a domain name to a wallet address (tries .pepu first 2 times, then .uchain only if .pepu is not available)
  * @param domainName - Domain name without TLD (e.g., "teck" for "teck.pepu")
- * @param tld - TLD (optional, if not provided will try both .pepu and .uchain)
+ * @param tld - TLD (optional, if not provided will try .pepu first, then .uchain)
  * @returns Wallet address or null if domain doesn't exist or expired
  */
 export async function resolvePepuDomain(
@@ -56,19 +56,43 @@ export async function resolvePepuDomain(
       return null
     }
 
-    // If no TLD specified, try .pepu first, then .uchain
-    const tlds = [".pepu", ".uchain"]
+    // If no TLD specified, try .pepu first (2 attempts)
+    // First attempt
+    let address = await contract.resolveName(normalizedName, ".pepu")
+    if (address && address !== ethers.ZeroAddress) {
+      return address
+    }
+
+    // If first attempt failed, check if .pepu domain is available (doesn't exist)
+    const isPepuAvailable = await contract.isDomainAvailable(normalizedName, ".pepu")
     
-    for (const tryTld of tlds) {
+    // If .pepu domain is available (doesn't exist), try .uchain immediately
+    if (isPepuAvailable) {
       try {
-        const address = await contract.resolveName(normalizedName, tryTld)
+        address = await contract.resolveName(normalizedName, ".uchain")
         if (address && address !== ethers.ZeroAddress) {
           return address
         }
       } catch (error) {
-        // Continue to next TLD if this one fails
-        continue
+        // Continue
       }
+      return null
+    }
+
+    // If .pepu domain is not available (exists but might be expired), try .pepu again (2nd attempt)
+    address = await contract.resolveName(normalizedName, ".pepu")
+    if (address && address !== ethers.ZeroAddress) {
+      return address
+    }
+
+    // If still not found after 2 attempts, try .uchain
+    try {
+      address = await contract.resolveName(normalizedName, ".uchain")
+      if (address && address !== ethers.ZeroAddress) {
+        return address
+      }
+    } catch (error) {
+      // Continue
     }
 
     return null
