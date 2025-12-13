@@ -336,17 +336,16 @@ export default function SendPage() {
       return
     }
 
-    // Resolve domain if it's a .pepu or .uchain domain
+    // Resolve domain if it's a .pepu or .uchain domain (only if TLD is explicitly provided)
     let finalRecipient = recipient.trim()
     if (chainId === 97741 && isPepuDomain(recipient)) {
       if (resolvedAddress) {
         finalRecipient = resolvedAddress
       } else {
-        // Try to resolve again (will try .pepu first, then .uchain if not found)
+        // Try to resolve again (only resolves the exact TLD user provided)
         const parsed = parseDomainInput(recipient)
-        if (parsed) {
-          // Pass undefined if tld is null (will try both .pepu and .uchain)
-          const address = await resolvePepuDomain(parsed.name, parsed.tld || undefined)
+        if (parsed && parsed.tld) {
+          const address = await resolvePepuDomain(parsed.name, parsed.tld)
           if (address) {
             finalRecipient = address
           } else {
@@ -354,7 +353,7 @@ export default function SendPage() {
             return
           }
         } else {
-          setError("Invalid domain format")
+          setError("Invalid domain format - must include .pepu or .uchain")
           return
         }
       }
@@ -531,24 +530,23 @@ export default function SendPage() {
                 setResolvedAddress("")
                 setDomainInput("")
                 
-                // Only resolve domains on PEPU chain
+                // Only resolve domains on PEPU chain (only if TLD is explicitly provided)
                 if (chainId === 97741 && isPepuDomain(value)) {
                   setResolvingDomain(true)
                   const parsed = parseDomainInput(value)
-                  if (parsed) {
-                    // If tld is null, show the name without TLD (will try both .pepu and .uchain)
-                    if (parsed.tld) {
-                      setDomainInput(`${parsed.name}${parsed.tld}`)
-                    } else {
-                      setDomainInput(parsed.name) // Will try both TLDs
-                    }
-                    // Pass undefined if tld is null (will try both .pepu and .uchain)
-                    const address = await resolvePepuDomain(parsed.name, parsed.tld || undefined)
+                  if (parsed && parsed.tld) {
+                    setDomainInput(`${parsed.name}${parsed.tld}`)
+                    // Only resolve the exact TLD user provided
+                    const address = await resolvePepuDomain(parsed.name, parsed.tld)
                     if (address) {
                       setResolvedAddress(address)
                     } else {
                       setResolvedAddress("")
                     }
+                  } else {
+                    // No TLD provided, don't resolve
+                    setResolvedAddress("")
+                    setDomainInput("")
                   }
                   setResolvingDomain(false)
                 }

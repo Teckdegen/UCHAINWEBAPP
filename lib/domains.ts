@@ -29,14 +29,14 @@ const USDC_ABI = [
 ]
 
 /**
- * Resolve a domain name to a wallet address (tries .pepu first 2 times, then .uchain only if .pepu is not available)
+ * Resolve a domain name to a wallet address (only resolves the exact TLD user provides)
  * @param domainName - Domain name without TLD (e.g., "teck" for "teck.pepu")
- * @param tld - TLD (optional, if not provided will try .pepu first, then .uchain)
+ * @param tld - TLD (required - user must specify .pepu or .uchain)
  * @returns Wallet address or null if domain doesn't exist or expired
  */
 export async function resolvePepuDomain(
   domainName: string,
-  tld?: string
+  tld: string
 ): Promise<string | null> {
   try {
     // Only resolve on PEPU chain
@@ -47,52 +47,10 @@ export async function resolvePepuDomain(
     // Normalize domain name (lowercase)
     const normalizedName = domainName.toLowerCase().trim()
 
-    // If TLD is specified, use it
-    if (tld) {
-      const address = await contract.resolveName(normalizedName, tld)
-      if (address && address !== ethers.ZeroAddress) {
-        return address
-      }
-      return null
-    }
-
-    // If no TLD specified, try .pepu first (2 attempts)
-    // First attempt
-    let address = await contract.resolveName(normalizedName, ".pepu")
+    // Only resolve the exact TLD the user provided (no auto-fallback)
+    const address = await contract.resolveName(normalizedName, tld)
     if (address && address !== ethers.ZeroAddress) {
       return address
-    }
-
-    // If first attempt failed, check if .pepu domain is available (doesn't exist)
-    const isPepuAvailable = await contract.isDomainAvailable(normalizedName, ".pepu")
-    
-    // If .pepu domain is available (doesn't exist), try .uchain immediately
-    if (isPepuAvailable) {
-      try {
-        address = await contract.resolveName(normalizedName, ".uchain")
-        if (address && address !== ethers.ZeroAddress) {
-          return address
-        }
-      } catch (error) {
-        // Continue
-      }
-      return null
-    }
-
-    // If .pepu domain is not available (exists but might be expired), try .pepu again (2nd attempt)
-    address = await contract.resolveName(normalizedName, ".pepu")
-    if (address && address !== ethers.ZeroAddress) {
-      return address
-    }
-
-    // If still not found after 2 attempts, try .uchain
-    try {
-      address = await contract.resolveName(normalizedName, ".uchain")
-      if (address && address !== ethers.ZeroAddress) {
-        return address
-      }
-    } catch (error) {
-      // Continue
     }
 
     return null
@@ -130,34 +88,28 @@ export async function getDomainByWallet(walletAddress: string): Promise<string |
 /**
  * Check if a string is a domain name (.pepu or .uchain)
  * @param input - String to check
- * @returns true if it looks like a domain name
+ * @returns true if it looks like a domain name with TLD
  */
 export function isPepuDomain(input: string): boolean {
   if (!input || typeof input !== "string") return false
   
   const trimmed = input.trim().toLowerCase()
   
-  // Check if it ends with .pepu or .uchain
+  // Only return true if it explicitly ends with .pepu or .uchain
   if (trimmed.endsWith(".pepu") || trimmed.endsWith(".uchain")) {
     return true
   }
   
-  // Check if it's just a name (without TLD) - we'll try both .pepu and .uchain
-  // Domain names are typically alphanumeric with hyphens, 1-63 chars
-  const domainPattern = /^[a-z0-9-]{1,63}$/i
-  if (domainPattern.test(trimmed) && !trimmed.startsWith("0x")) {
-    return true
-  }
-  
+  // No auto-detection for names without TLD
   return false
 }
 
 /**
- * Extract domain name from input (handles "name.pepu", "name.uchain", and "name" formats)
+ * Extract domain name from input (only handles "name.pepu" or "name.uchain" formats)
  * @param input - Domain input string
- * @returns Object with name and tld (tld will be null if not specified, allowing fallback)
+ * @returns Object with name and tld, or null if no TLD is present
  */
-export function parseDomainInput(input: string): { name: string; tld: string | null } | null {
+export function parseDomainInput(input: string): { name: string; tld: string } | null {
   if (!input || typeof input !== "string") return null
   
   const trimmed = input.trim().toLowerCase()
@@ -172,12 +124,7 @@ export function parseDomainInput(input: string): { name: string; tld: string | n
     return { name, tld: ".uchain" }
   }
   
-  // If it's just a name without TLD, return null for tld (will try both .pepu and .uchain)
-  const domainPattern = /^[a-z0-9-]{1,63}$/i
-  if (domainPattern.test(trimmed) && !trimmed.startsWith("0x")) {
-    return { name: trimmed, tld: null } // null means try both TLDs
-  }
-  
+  // If no TLD is present, return null (don't auto-resolve)
   return null
 }
 
