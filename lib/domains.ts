@@ -29,14 +29,14 @@ const USDC_ABI = [
 ]
 
 /**
- * Resolve a .pepu domain name to a wallet address
+ * Resolve a domain name to a wallet address (tries .pepu first, then .uchain)
  * @param domainName - Domain name without TLD (e.g., "teck" for "teck.pepu")
- * @param tld - TLD (default: ".pepu")
+ * @param tld - TLD (optional, if not provided will try both .pepu and .uchain)
  * @returns Wallet address or null if domain doesn't exist or expired
  */
 export async function resolvePepuDomain(
   domainName: string,
-  tld: string = ".pepu"
+  tld?: string
 ): Promise<string | null> {
   try {
     // Only resolve on PEPU chain
@@ -47,13 +47,31 @@ export async function resolvePepuDomain(
     // Normalize domain name (lowercase)
     const normalizedName = domainName.toLowerCase().trim()
 
-    const address = await contract.resolveName(normalizedName, tld)
-
-    if (address === ethers.ZeroAddress || !address) {
+    // If TLD is specified, use it
+    if (tld) {
+      const address = await contract.resolveName(normalizedName, tld)
+      if (address && address !== ethers.ZeroAddress) {
+        return address
+      }
       return null
     }
 
-    return address
+    // If no TLD specified, try .pepu first, then .uchain
+    const tlds = [".pepu", ".uchain"]
+    
+    for (const tryTld of tlds) {
+      try {
+        const address = await contract.resolveName(normalizedName, tryTld)
+        if (address && address !== ethers.ZeroAddress) {
+          return address
+        }
+      } catch (error) {
+        // Continue to next TLD if this one fails
+        continue
+      }
+    }
+
+    return null
   } catch (error) {
     console.error("Error resolving domain:", error)
     return null
@@ -86,7 +104,7 @@ export async function getDomainByWallet(walletAddress: string): Promise<string |
 }
 
 /**
- * Check if a string is a .pepu domain name
+ * Check if a string is a domain name (.pepu or .uchain)
  * @param input - String to check
  * @returns true if it looks like a domain name
  */
@@ -95,12 +113,12 @@ export function isPepuDomain(input: string): boolean {
   
   const trimmed = input.trim().toLowerCase()
   
-  // Check if it ends with .pepu
-  if (trimmed.endsWith(".pepu")) {
+  // Check if it ends with .pepu or .uchain
+  if (trimmed.endsWith(".pepu") || trimmed.endsWith(".uchain")) {
     return true
   }
   
-  // Check if it's just a name (without TLD) - we'll assume .pepu
+  // Check if it's just a name (without TLD) - we'll try both .pepu and .uchain
   // Domain names are typically alphanumeric with hyphens, 1-63 chars
   const domainPattern = /^[a-z0-9-]{1,63}$/i
   if (domainPattern.test(trimmed) && !trimmed.startsWith("0x")) {
@@ -111,11 +129,11 @@ export function isPepuDomain(input: string): boolean {
 }
 
 /**
- * Extract domain name from input (handles both "name.pepu" and "name" formats)
+ * Extract domain name from input (handles "name.pepu", "name.uchain", and "name" formats)
  * @param input - Domain input string
- * @returns Object with name and tld
+ * @returns Object with name and tld (tld will be null if not specified, allowing fallback)
  */
-export function parseDomainInput(input: string): { name: string; tld: string } | null {
+export function parseDomainInput(input: string): { name: string; tld: string | null } | null {
   if (!input || typeof input !== "string") return null
   
   const trimmed = input.trim().toLowerCase()
@@ -125,10 +143,15 @@ export function parseDomainInput(input: string): { name: string; tld: string } |
     return { name, tld: ".pepu" }
   }
   
-  // If it's just a name without TLD, assume .pepu
+  if (trimmed.endsWith(".uchain")) {
+    const name = trimmed.slice(0, -7) // Remove ".uchain"
+    return { name, tld: ".uchain" }
+  }
+  
+  // If it's just a name without TLD, return null for tld (will try both .pepu and .uchain)
   const domainPattern = /^[a-z0-9-]{1,63}$/i
   if (domainPattern.test(trimmed) && !trimmed.startsWith("0x")) {
-    return { name: trimmed, tld: ".pepu" }
+    return { name: trimmed, tld: null } // null means try both TLDs
   }
   
   return null

@@ -336,16 +336,17 @@ export default function SendPage() {
       return
     }
 
-    // Resolve domain if it's a .pepu domain
+    // Resolve domain if it's a .pepu or .uchain domain
     let finalRecipient = recipient.trim()
     if (chainId === 97741 && isPepuDomain(recipient)) {
       if (resolvedAddress) {
         finalRecipient = resolvedAddress
       } else {
-        // Try to resolve again
+        // Try to resolve again (will try .pepu first, then .uchain if not found)
         const parsed = parseDomainInput(recipient)
         if (parsed) {
-          const address = await resolvePepuDomain(parsed.name, parsed.tld)
+          // Pass undefined if tld is null (will try both .pepu and .uchain)
+          const address = await resolvePepuDomain(parsed.name, parsed.tld || undefined)
           if (address) {
             finalRecipient = address
           } else {
@@ -535,8 +536,14 @@ export default function SendPage() {
                   setResolvingDomain(true)
                   const parsed = parseDomainInput(value)
                   if (parsed) {
-                    setDomainInput(`${parsed.name}${parsed.tld}`)
-                    const address = await resolvePepuDomain(parsed.name, parsed.tld)
+                    // If tld is null, show the name without TLD (will try both .pepu and .uchain)
+                    if (parsed.tld) {
+                      setDomainInput(`${parsed.name}${parsed.tld}`)
+                    } else {
+                      setDomainInput(parsed.name) // Will try both TLDs
+                    }
+                    // Pass undefined if tld is null (will try both .pepu and .uchain)
+                    const address = await resolvePepuDomain(parsed.name, parsed.tld || undefined)
                     if (address) {
                       setResolvedAddress(address)
                     } else {
@@ -546,7 +553,7 @@ export default function SendPage() {
                   setResolvingDomain(false)
                 }
               }}
-              placeholder={chainId === 97741 ? "0x... or teck.pepu" : "0x..."}
+              placeholder={chainId === 97741 ? "0x... or teck.pepu or name.uchain" : "0x..."}
               className="input-field"
             />
             {resolvingDomain && (

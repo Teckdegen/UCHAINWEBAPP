@@ -650,6 +650,539 @@ Complete JSON ABI for USDC token (required for payments):
 ]
 ```
 
+## UI/UX Design System
+
+### Design Philosophy
+
+The domain registration site should have a **dark, modern aesthetic** with a focus on clarity and user experience. The design emphasizes the green accent color against a black background to create a premium, tech-forward feel.
+
+### Color Palette
+
+```css
+/* Primary Colors */
+--bg-primary: #000000;        /* Pure black background */
+--bg-secondary: #0a0a0a;      /* Slightly lighter black for cards */
+--bg-tertiary: #111111;       /* Card borders/hover states */
+
+/* Accent Colors */
+--green-primary: #00ff00;     /* Main green (#00FF00) */
+--green-secondary: #00cc00;  /* Darker green for hover */
+--green-light: #33ff33;       /* Lighter green for highlights */
+--green-glow: rgba(0, 255, 0, 0.3); /* Green glow effects */
+
+/* Text Colors */
+--text-primary: #ffffff;      /* White for main text */
+--text-secondary: #cccccc;    /* Light gray for secondary text */
+--text-tertiary: #888888;     /* Gray for muted text */
+--text-green: #00ff00;        /* Green for accent text */
+
+/* Status Colors */
+--success: #00ff00;           /* Success states */
+--error: #ff3333;             /* Error states */
+--warning: #ffaa00;           /* Warning states */
+--info: #00aaff;              /* Info states */
+
+/* Border Colors */
+--border-primary: rgba(255, 255, 255, 0.1);  /* Subtle white borders */
+--border-green: rgba(0, 255, 0, 0.3);        /* Green borders */
+```
+
+### Typography
+
+```css
+/* Font Families */
+--font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+--font-mono: 'JetBrains Mono', 'Fira Code', monospace; /* For addresses */
+
+/* Font Sizes */
+--text-xs: 0.75rem;      /* 12px */
+--text-sm: 0.875rem;     /* 14px */
+--text-base: 1rem;       /* 16px */
+--text-lg: 1.125rem;     /* 18px */
+--text-xl: 1.25rem;      /* 20px */
+--text-2xl: 1.5rem;      /* 24px */
+--text-3xl: 1.875rem;    /* 30px */
+--text-4xl: 2.25rem;     /* 36px */
+--text-5xl: 3rem;        /* 48px */
+--text-6xl: 3.75rem;     /* 60px */
+
+/* Font Weights */
+--font-light: 300;
+--font-normal: 400;
+--font-medium: 500;
+--font-semibold: 600;
+--font-bold: 700;
+```
+
+### Component Styles
+
+#### Buttons
+
+```css
+/* Primary Button (Green) */
+.btn-primary {
+  background: #00ff00;
+  color: #000000;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #00cc00;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
+}
+
+.btn-primary:disabled {
+  background: #333333;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+/* Secondary Button (Outline) */
+.btn-secondary {
+  background: transparent;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+```
+
+#### Input Fields
+
+```css
+.input-field {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+}
+
+.input-field::placeholder {
+  color: #666666;
+}
+```
+
+#### Cards
+
+```css
+.card {
+  background: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 24px;
+  transition: all 0.2s;
+}
+
+.card:hover {
+  border-color: rgba(0, 255, 0, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+}
+
+.card-green {
+  background: rgba(0, 255, 0, 0.05);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+}
+```
+
+### User Flow & Page Structure
+
+#### Landing Page (`/`)
+
+**Design:**
+- Full-screen black background
+- Centered search bar (large, prominent)
+- Minimal design with green accents
+- Connect wallet button in top right
+
+**Layout:**
+```
+┌─────────────────────────────────────┐
+│  [Connect Wallet]          [Menu]   │
+│                                     │
+│                                     │
+│         ┌─────────────────┐         │
+│         │                 │         │
+│         │   Search Bar    │         │
+│         │   (Large)       │         │
+│         │                 │         │
+│         └─────────────────┘         │
+│                                     │
+│         [Search / Check]            │
+│                                     │
+│    "Get your .pepu domain name"    │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Functionality:**
+1. User enters domain name in search bar
+2. On Enter or click "Search", check availability
+3. Show availability status (green checkmark if available, red X if taken)
+4. **If available** → Navigate to `/register/[domain]` for payment
+5. **If wallet is connected** → Check if connected wallet has a registered domain
+   - **If user has domain** → Automatically redirect to `/domain/[user-domain]` showing their domain info
+   - **If user has no domain** → Show search results normally
+6. **If domain is taken** → Show "Already registered" with option to view domain info
+
+**Wallet Connection Flow:**
+```typescript
+// On wallet connect, check for user's domain
+async function handleWalletConnect(address: string) {
+  const userDomain = await getDomainByWallet(address)
+  
+  if (userDomain) {
+    // User has a domain - redirect to their domain page
+    router.push(`/domain/${userDomain.replace('.pepu', '')}`)
+  } else {
+    // User has no domain - stay on landing page for search
+    // Show "Connect Wallet" button changes to "Connected"
+  }
+}
+```
+
+### Complete User Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    LANDING PAGE (/)                      │
+│  ┌───────────────────────────────────────────────────┐   │
+│  │         [Large Search Bar]                       │   │
+│  └───────────────────────────────────────────────────┘   │
+│                                                          │
+│  User Actions:                                          │
+│  1. Enter domain name → Search                          │
+│  2. Click "Connect Wallet"                              │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          ├─→ [Search Domain]
+                          │   │
+                          │   ├─→ Available? 
+                          │   │   │
+                          │   │   ├─→ YES → /register/[domain]
+                          │   │   │
+                          │   │   └─→ NO → Show "Taken" message
+                          │   │
+                          └─→ [Connect Wallet]
+                              │
+                              ├─→ Check: Does wallet have domain?
+                              │   │
+                              ├─→ YES → /domain/[user-domain]
+                              │   │   (Show all domain info)
+                              │   │
+                              └─→ NO → Stay on landing page
+                                  (Ready to search/register)
+
+┌─────────────────────────────────────────────────────────┐
+│              REGISTRATION PAGE (/register/[domain])      │
+│                                                          │
+│  • Domain name display                                  │
+│  • Duration selector (years/days)                      │
+│  • Fee calculator                                       │
+│  • USDC balance check                                   │
+│  • [Register] button                                    │
+│                                                          │
+│  Flow:                                                  │
+│  1. User selects duration                              │
+│  2. Fee calculated automatically                       │
+│  3. Check USDC balance                                 │
+│  4. If insufficient → Show error                        │
+│  5. If sufficient → [Register] enabled                  │
+│  6. On click → Approve USDC (if needed)                 │
+│  7. Register domain transaction                         │
+│  8. On success → Redirect to /domain/[domain]          │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│              DOMAIN INFO PAGE (/domain/[domain])        │
+│                                                          │
+│  • Domain name (large, green)                           │
+│  • Status (Active/Expired)                              │
+│  • Wallet address (resolved)                            │
+│  • Owner address                                         │
+│  • Registration date                                     │
+│  • Expiration date                                       │
+│  • Days remaining                                        │
+│  • [Renew Domain] button (if expiring soon)            │
+│  • [View on Explorer] link                              │
+│                                                          │
+│  Features:                                              │
+│  • Copy addresses to clipboard                          │
+│  • Share domain link                                     │
+│  • Renew domain (if owner)                              │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Key User Experience Rules
+
+1. **Landing Page Priority:**
+   - Search bar is the hero element (large, centered)
+   - Minimal distractions
+   - Connect wallet is secondary (top right corner)
+
+2. **Wallet Connection Behavior:**
+   - When wallet connects, immediately check for existing domain
+   - If domain exists → Auto-redirect to domain info page
+   - If no domain → Stay on landing page, show "Connected" status
+   - User can still search for other domains
+
+3. **Search Flow:**
+   - Real-time validation as user types
+   - Show availability immediately after search
+   - Clear visual feedback (green = available, red = taken)
+   - One-click navigation to registration if available
+
+4. **Registration Flow:**
+   - Show all costs upfront
+   - Clear USDC balance display
+   - Prevent registration if insufficient funds
+   - Show transaction progress
+   - Auto-redirect to domain page on success
+
+5. **Domain Info Page:**
+   - All information visible at a glance
+   - Clear expiration countdown
+   - Easy renewal option
+   - Explorer links for verification
+
+**Code Example:**
+```tsx
+// Landing page component structure
+<div className="min-h-screen bg-black flex items-center justify-center">
+  <div className="w-full max-w-2xl px-4">
+    {/* Search Bar */}
+    <div className="relative">
+      <input
+        type="text"
+        placeholder="Search for a domain name..."
+        className="input-field text-2xl py-6 pl-6 pr-32"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            handleSearch()
+          }
+        }}
+      />
+      <button className="btn-primary absolute right-2 top-2 bottom-2 px-8">
+        Search
+      </button>
+    </div>
+    
+    {/* Availability Status */}
+    {availabilityStatus && (
+      <div className={`mt-4 p-4 rounded-lg ${
+        availabilityStatus.available 
+          ? 'bg-green-500/10 border border-green-500/30' 
+          : 'bg-red-500/10 border border-red-500/30'
+      }`}>
+        {availabilityStatus.available ? (
+          <div className="flex items-center gap-2 text-green-400">
+            <CheckCircle /> {domainName}.pepu is available!
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-red-400">
+            <XCircle /> {domainName}.pepu is already taken
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</div>
+```
+
+#### Registration Page (`/register/[domain]`)
+
+**Design:**
+- Black background
+- Green accent for available domain
+- Clear fee breakdown
+- Duration selector (years/days)
+- USDC balance display
+- Connect wallet prompt if not connected
+
+**Layout:**
+```
+┌─────────────────────────────────────┐
+│  ← Back to Search                  │
+│                                     │
+│  Domain: example.pepu              │
+│  Status: ✅ Available              │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │ Registration Duration        │   │
+│  │ [Days] [Years]              │   │
+│  │ [Input: 365]                │   │
+│  │ Quick: [30d] [90d] [1y] [5y]│   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │ Fee Breakdown                │   │
+│  │ Base Fee: 10.00 USDC/year    │   │
+│  │ Duration: 1 year             │   │
+│  │ Total: 10.00 USDC            │   │
+│  │                              │   │
+│  │ Your Balance: 50.00 USDC    │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  [Connect Wallet] or [Register]    │
+└─────────────────────────────────────┘
+```
+
+#### Domain Info Page (`/domain/[domain]`)
+
+**Design:**
+- Black background with green highlights
+- Domain name prominently displayed
+- All domain information in cards
+- Renewal option if expiring soon
+- Transaction history link
+
+**Layout:**
+```
+┌─────────────────────────────────────┐
+│  ← Back                             │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │  example.pepu                │   │
+│  │  ✅ Active                   │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  ┌─────────────────────────────┐   │
+│  │ Domain Information           │   │
+│  │                              │   │
+│  │ Wallet Address:              │   │
+│  │ 0x742d35Cc...f0bEb          │   │
+│  │                              │   │
+│  │ Owner:                        │   │
+│  │ 0x742d35Cc...f0bEb          │   │
+│  │                              │   │
+│  │ Registered: Jan 1, 2025      │   │
+│  │ Expires: Jan 1, 2026        │   │
+│  │ Days Remaining: 365          │   │
+│  └─────────────────────────────┘   │
+│                                     │
+│  [Renew Domain] [View on Explorer] │
+└─────────────────────────────────────┘
+```
+
+### Responsive Design
+
+- **Mobile**: Single column, stacked layout
+- **Tablet**: 2-column layout where appropriate
+- **Desktop**: Full-width with max-width container (1200px)
+
+### Animations & Transitions
+
+```css
+/* Smooth transitions */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Green glow animation */
+@keyframes greenGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.6); }
+}
+
+.glow-green {
+  animation: greenGlow 2s ease-in-out infinite;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  border: 2px solid rgba(0, 255, 0, 0.3);
+  border-top-color: #00ff00;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+```
+
+### Accessibility
+
+- High contrast (black/white/green)
+- Keyboard navigation support
+- Screen reader friendly
+- Focus indicators with green outline
+- Minimum touch target size: 44x44px
+
+### Design System Prompts for AI/Developers
+
+**When building components, follow these guidelines:**
+
+1. **Background**: Always use pure black (`#000000`) or near-black (`#0a0a0a`) for backgrounds
+2. **Text**: White (`#ffffff`) for primary text, light gray (`#cccccc`) for secondary
+3. **Accents**: Use green (`#00ff00`) for:
+   - Primary buttons
+   - Success states
+   - Active/selected states
+   - Links and interactive elements
+   - Borders on focus/hover
+4. **Cards**: Dark background (`#0a0a0a`) with subtle white borders (`rgba(255,255,255,0.1)`)
+5. **Hover States**: Add green glow/border on interactive elements
+6. **Spacing**: Generous padding (24px+ for cards, 12px+ for buttons)
+7. **Border Radius**: 8px for inputs/buttons, 12px for cards
+8. **Typography**: Use Inter or similar sans-serif, monospace for addresses
+
+**Component Examples:**
+
+```tsx
+// Search Bar Component
+<div className="relative">
+  <input
+    className="w-full bg-[#0a0a0a] border border-white/10 text-white px-6 py-4 rounded-lg text-xl focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+    placeholder="Search domain..."
+  />
+  <button className="absolute right-2 top-2 bottom-2 bg-green-500 text-black px-8 rounded-lg font-semibold hover:bg-green-400 hover:shadow-lg hover:shadow-green-500/50">
+    Search
+  </button>
+</div>
+
+// Status Card
+<div className="bg-[#0a0a0a] border border-green-500/30 rounded-xl p-6">
+  <div className="flex items-center gap-3 text-green-400">
+    <CheckCircle className="w-6 h-6" />
+    <span className="text-xl font-semibold">Domain Available</span>
+  </div>
+</div>
+
+// Info Card
+<div className="bg-[#0a0a0a] border border-white/10 rounded-xl p-6 space-y-4">
+  <h3 className="text-white text-lg font-semibold">Domain Information</h3>
+  <div className="space-y-2 text-gray-300">
+    <div>
+      <span className="text-gray-500">Wallet:</span>
+      <span className="ml-2 font-mono text-green-400">0x742d...</span>
+    </div>
+  </div>
+</div>
+```
+
 ## Building a Standalone Domain Registration Site
 
 ### Quick Start Guide
