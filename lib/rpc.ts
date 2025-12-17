@@ -2,6 +2,7 @@ import { ethers } from "ethers"
 import { createPublicClient, http } from "viem"
 import { mainnet } from "viem/chains"
 import { getEtherscanEthBalance } from "./etherscan"
+import { reportRpcError, reportRpcSuccess } from "./rpcHealth"
 
 // Single ETH RPC endpoint (as per user requirement)
 const ETHEREUM_RPC = "https://eth.llamarpc.com"
@@ -84,6 +85,7 @@ export async function getNativeBalance(address: string, chainId: number): Promis
         transport: http(ETHEREUM_RPC),
       })
       const balance = await client.getBalance({ address: address as `0x${string}` })
+      reportRpcSuccess(chainId)
       return ethers.formatEther(balance)
     } catch (error) {
       console.warn("Viem RPC failed, trying ethers fallback:", error)
@@ -95,6 +97,7 @@ export async function getNativeBalance(address: string, chainId: number): Promis
   try {
     const provider = await getProviderWithFallback(chainId)
     const balance = await provider.getBalance(address)
+    reportRpcSuccess(chainId)
     return ethers.formatEther(balance)
   } catch (error) {
     console.warn("getProviderWithFallback failed, trying single provider:", error)
@@ -102,9 +105,12 @@ export async function getNativeBalance(address: string, chainId: number): Promis
     try {
       const provider = getProvider(chainId)
       const balance = await provider.getBalance(address)
+      reportRpcSuccess(chainId)
       return ethers.formatEther(balance)
-    } catch (finalError) {
+    } catch (finalError: any) {
       console.error("All RPC endpoints failed for native balance:", finalError)
+      const errorMsg = finalError?.message || String(finalError) || "RPC connection failed"
+      reportRpcError(chainId, errorMsg)
       throw new Error(`Failed to fetch native balance: ${finalError}`)
     }
   }
@@ -162,8 +168,11 @@ export async function getTokenBalance(tokenAddress: string, userAddress: string,
     const contract = new ethers.Contract(tokenAddress, erc20Abi, provider)
     const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()])
 
+    reportRpcSuccess(chainId)
     return ethers.formatUnits(balance, decimals)
-  } catch (error) {
+  } catch (error: any) {
+    const errorMsg = error?.message || String(error) || "RPC connection failed"
+    reportRpcError(chainId, errorMsg)
   const provider = getProvider(chainId)
   const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
 

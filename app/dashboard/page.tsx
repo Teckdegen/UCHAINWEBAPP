@@ -17,6 +17,7 @@ import {
 } from "@/lib/wallet"
 import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
+import { reportRpcError, reportRpcSuccess, getRpcHealthStatus, subscribeToRpcHealth } from "@/lib/rpcHealth"
 import { isTokenBlacklisted } from "@/lib/blacklist"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
@@ -26,6 +27,7 @@ import { getDomainByWallet } from "@/lib/domains"
 import { Send, Download, Network, ArrowLeftRight, Menu, Globe, ImageIcon, Coins, History, Gift } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
+import RpcConnectionNotification from "@/components/RpcConnectionNotification"
 import { ethers } from "ethers"
 
 const ERC20_ABI = [
@@ -112,8 +114,48 @@ export default function DashboardPage() {
     setLoading(!hasCachedData)
     
     fetchBalances()
-    const interval = setInterval(fetchBalances, 30000)
-    return () => clearInterval(interval)
+    
+    // Set up retry mechanism: retry more frequently when RPC is unhealthy
+    let retryInterval: NodeJS.Timeout | null = null
+    let healthCheckInterval: NodeJS.Timeout | null = null
+    
+    const setupRetryInterval = () => {
+      // Clear existing interval
+      if (retryInterval) {
+        clearInterval(retryInterval)
+      }
+      
+      // Check health status
+      const healthStatus = getRpcHealthStatus(chainId)
+      
+      // If unhealthy, retry every 5 seconds; otherwise every 30 seconds
+      const retryDelay = healthStatus.isHealthy ? 30000 : 5000
+      
+      retryInterval = setInterval(() => {
+        fetchBalances()
+      }, retryDelay)
+    }
+    
+    // Initial setup
+    setupRetryInterval()
+    
+    // Subscribe to health status changes to adjust retry interval
+    const unsubscribe = subscribeToRpcHealth((updatedChainId, status) => {
+      if (updatedChainId === chainId) {
+        setupRetryInterval()
+      }
+    })
+    
+    // Also check health status periodically to catch any missed updates
+    healthCheckInterval = setInterval(() => {
+      setupRetryInterval()
+    }, 10000) // Check every 10 seconds
+    
+    return () => {
+      if (retryInterval) clearInterval(retryInterval)
+      if (healthCheckInterval) clearInterval(healthCheckInterval)
+      unsubscribe()
+    }
   }, [router, chainId])
 
   // Save chainId to localStorage when it changes
@@ -219,8 +261,11 @@ export default function DashboardPage() {
             let currentBlock = 0
             try {
               currentBlock = await provider.getBlockNumber()
-            } catch (error) {
+              reportRpcSuccess(chainId)
+            } catch (error: any) {
               console.error("Error getting block number:", error)
+              const errorMsg = error?.message || String(error) || "RPC connection failed"
+              reportRpcError(chainId, errorMsg)
             }
 
             const lookback = 10000
@@ -318,8 +363,13 @@ export default function DashboardPage() {
             const validTokens = tokenResults.filter((token) => token !== null)
             allBalances.push(...validTokens)
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error scanning for tokens:", error)
+          // Report RPC error if it's RPC-related
+          const errorMessage = error?.message || String(error) || "Unknown error"
+          if (errorMessage.includes("RPC") || errorMessage.includes("connection") || errorMessage.includes("fetch") || errorMessage.includes("network")) {
+            reportRpcError(chainId, errorMessage)
+          }
           // Don't throw - still show native balance even if token scanning fails
         }
       }
@@ -354,8 +404,17 @@ export default function DashboardPage() {
         timestamp: Date.now(),
       }))
       
-    } catch (error) {
+      // Report success if we got here (balance fetch succeeded)
+      reportRpcSuccess(chainId)
+      
+    } catch (error: any) {
       console.error("Error fetching balances:", error)
+      
+      // Report RPC error if it's an RPC-related error
+      const errorMessage = error?.message || String(error) || "Unknown error"
+      if (errorMessage.includes("RPC") || errorMessage.includes("connection") || errorMessage.includes("fetch") || errorMessage.includes("network")) {
+        reportRpcError(chainId, errorMessage)
+      }
       
       // On error, use cached data if available (only if not initial load)
       if (!isInitialLoad && cachedBalances.length > 0) {
@@ -376,6 +435,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pb-24 relative">
+      {/* RPC Connection Notification */}
+      <RpcConnectionNotification chainId={chainId} />
+      
       {/* Header */}
       <div className="glass-card rounded-none p-6 border-b border-white/10 relative z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
