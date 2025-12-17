@@ -437,7 +437,6 @@ export default function SignPage() {
       setApproved(true)
 
       const fromBrowser = searchParams.get("from") === "browser"
-      const fromExtension = searchParams.get("from") === "extension"
       const requestId = searchParams.get("requestId")
       
       if (fromExtension && requestId) {
@@ -503,7 +502,6 @@ export default function SignPage() {
         setError(err.message || "Failed to reject")
       }
     } else {
-      const fromExtension = searchParams.get("from") === "extension"
       const requestId = searchParams.get("requestId")
       
       if (fromExtension && requestId) {
