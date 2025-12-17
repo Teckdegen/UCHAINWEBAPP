@@ -608,41 +608,41 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            // PEPU: Bridge + Swap + Tokens + Transactions - All on one line, half size
-            <div className="flex items-center justify-around gap-2 flex-nowrap overflow-x-auto">
-              <Link href="/bridge" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
-                <div className="flex justify-center mb-1">
-                  <Network className="w-3 h-3 text-green-500" />
+            // PEPU: Bridge + Swap + Tokens + Transactions - All on one line, compact size
+            <div className="flex items-center justify-between gap-1 flex-nowrap">
+              <Link href="/bridge" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                <div className="flex justify-center mb-0.5">
+                  <Network className="w-2.5 h-2.5 text-green-500" />
                 </div>
-                <p className="text-[10px] font-semibold leading-tight">Unchained Bridge</p>
+                <p className="text-[8px] font-semibold leading-tight">Bridge</p>
             </Link>
 
-              <Link href="/swap" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
-                <div className="flex justify-center mb-1">
-                  <ArrowLeftRight className="w-3 h-3 text-green-500" />
+              <Link href="/swap" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                <div className="flex justify-center mb-0.5">
+                  <ArrowLeftRight className="w-2.5 h-2.5 text-green-500" />
                 </div>
-                <p className="text-[10px] font-semibold leading-tight">Unchained Swap</p>
+                <p className="text-[8px] font-semibold leading-tight">Swap</p>
               </Link>
 
-              <Link href="/tokens" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
-                <div className="flex justify-center mb-1">
-                  <Coins className="w-3 h-3 text-green-500" />
+              <Link href="/tokens" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                <div className="flex justify-center mb-0.5">
+                  <Coins className="w-2.5 h-2.5 text-green-500" />
                 </div>
-                <p className="text-[10px] font-semibold leading-tight">Tokens</p>
+                <p className="text-[8px] font-semibold leading-tight">Tokens</p>
               </Link>
 
-              <Link href="/transactions" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
-                <div className="flex justify-center mb-1">
-                  <History className="w-3 h-3 text-green-500" />
+              <Link href="/transactions" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                <div className="flex justify-center mb-0.5">
+                  <History className="w-2.5 h-2.5 text-green-500" />
                 </div>
-                <p className="text-[10px] font-semibold leading-tight">Transactions</p>
+                <p className="text-[8px] font-semibold leading-tight">Txs</p>
               </Link>
 
-              <Link href="/rewards" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
-                <div className="flex justify-center mb-1">
-                  <Gift className="w-3 h-3 text-green-500" />
+              <Link href="/rewards" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                <div className="flex justify-center mb-0.5">
+                  <Gift className="w-2.5 h-2.5 text-green-500" />
                 </div>
-                <p className="text-[10px] font-semibold leading-tight">Rewards</p>
+                <p className="text-[8px] font-semibold leading-tight">Rewards</p>
               </Link>
             </div>
             )}
