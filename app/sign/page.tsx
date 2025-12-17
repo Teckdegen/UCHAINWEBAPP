@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getWallets, getPrivateKey, getCurrentWalletId, setCurrentWalletId, getSessionPassword } from "@/lib/wallet"
+import { getWallets, getPrivateKey, getCurrentWalletId, setCurrentWalletId, getSessionPassword, unlockWallet } from "@/lib/wallet"
 import { getProvider, getChainName } from "@/lib/rpc"
 import { getUnchainedProvider } from "@/lib/provider"
 import {
