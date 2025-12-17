@@ -376,7 +376,23 @@ export default function SignPage() {
 
       const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
       setCurrentWalletId(wallet.id)
-      const sessionPassword = getSessionPassword()
+      
+      // Check if this is an extension request
+      const fromExtension = searchParams.get("from") === "extension"
+      
+      // For extension requests, try to auto-unlock using persisted password
+      let sessionPassword = getSessionPassword()
+      if (!sessionPassword && fromExtension) {
+        // Try to get persisted password and auto-unlock
+        const persistedPassword = localStorage.getItem("unchained_persist_password")
+        if (persistedPassword) {
+          const unlocked = unlockWallet(persistedPassword)
+          if (unlocked) {
+            sessionPassword = persistedPassword
+          }
+        }
+      }
+      
       if (!sessionPassword) {
         throw new Error("Missing signing key. Please re-import your wallet with the latest version.")
       }
