@@ -546,41 +546,41 @@ export default function DashboardPage() {
               </div>
             </div>
           ) : (
-            // PEPU: Bridge + Swap + Tokens + Transactions
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Link href="/bridge" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <Network className="w-6 h-6 text-green-500" />
+            // PEPU: Bridge + Swap + Tokens + Transactions - All on one line, half size
+            <div className="flex items-center justify-around gap-2 flex-nowrap overflow-x-auto">
+              <Link href="/bridge" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
+                <div className="flex justify-center mb-1">
+                  <Network className="w-3 h-3 text-green-500" />
                 </div>
-                <p className="text-sm font-semibold">Unchained Bridge</p>
+                <p className="text-[10px] font-semibold leading-tight">Unchained Bridge</p>
             </Link>
 
-              <Link href="/swap" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <ArrowLeftRight className="w-6 h-6 text-green-500" />
+              <Link href="/swap" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
+                <div className="flex justify-center mb-1">
+                  <ArrowLeftRight className="w-3 h-3 text-green-500" />
                 </div>
-                <p className="text-sm font-semibold">Unchained Swap</p>
+                <p className="text-[10px] font-semibold leading-tight">Unchained Swap</p>
               </Link>
 
-              <Link href="/tokens" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <Coins className="w-6 h-6 text-green-500" />
+              <Link href="/tokens" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
+                <div className="flex justify-center mb-1">
+                  <Coins className="w-3 h-3 text-green-500" />
                 </div>
-                <p className="text-sm font-semibold">Tokens</p>
+                <p className="text-[10px] font-semibold leading-tight">Tokens</p>
               </Link>
 
-              <Link href="/transactions" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <History className="w-6 h-6 text-green-500" />
+              <Link href="/transactions" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
+                <div className="flex justify-center mb-1">
+                  <History className="w-3 h-3 text-green-500" />
                 </div>
-                <p className="text-sm font-semibold">Transactions</p>
+                <p className="text-[10px] font-semibold leading-tight">Transactions</p>
               </Link>
 
-              <Link href="/rewards" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-                <div className="flex justify-center mb-2">
-                  <Gift className="w-6 h-6 text-green-500" />
+              <Link href="/rewards" className="glass-card p-2 text-center hover:bg-white/10 transition-all flex-shrink-0 min-w-[70px]">
+                <div className="flex justify-center mb-1">
+                  <Gift className="w-3 h-3 text-green-500" />
                 </div>
-                <p className="text-sm font-semibold">Rewards</p>
+                <p className="text-[10px] font-semibold leading-tight">Rewards</p>
               </Link>
             </div>
             )}
