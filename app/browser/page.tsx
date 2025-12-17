@@ -135,11 +135,37 @@ export default function BrowserPage() {
                   get chainId() { return '0x1'; },
                   get networkVersion() { return '1'; }
                 };
-                Object.defineProperty(window, 'ethereum', {
-                  value: provider,
-                  writable: false,
-                  configurable: false
-                });
+                // Try to set window.ethereum, but handle cases where it's already defined
+                try {
+                  const descriptor = Object.getOwnPropertyDescriptor(window, 'ethereum');
+                  if (!descriptor) {
+                    // No existing property, safe to define
+                    Object.defineProperty(window, 'ethereum', {
+                      value: provider,
+                      writable: false,
+                      configurable: false
+                    });
+                  } else if (descriptor.configurable) {
+                    // Property exists but is configurable, safe to redefine
+                    Object.defineProperty(window, 'ethereum', {
+                      value: provider,
+                      writable: false,
+                      configurable: false
+                    });
+                  } else {
+                    // Property exists and is non-configurable, can't override
+                    console.warn('[Browser] window.ethereum is already defined and non-configurable. Cannot override.');
+                  }
+                } catch (e) {
+                  // If defineProperty fails, try simple assignment
+                  try {
+                    if (!window.ethereum) {
+                      window.ethereum = provider;
+                    }
+                  } catch (e2) {
+                    console.warn('[Browser] Could not set window.ethereum:', e2);
+                  }
+                }
                 window.dispatchEvent(new Event('ethereum#initialized'));
                 console.log('[Unchained Wallet] Provider injected (inline fallback)');
               })();

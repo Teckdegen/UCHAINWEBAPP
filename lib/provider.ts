@@ -170,11 +170,37 @@ export class UnchainedProvider {
     // inside this window will route through Unchained
     ;(provider as any).providers = [provider]
 
-    Object.defineProperty(window, "ethereum", {
-      value: provider,
-      writable: true,
-      configurable: true,
-    })
+    // Try to set window.ethereum, but handle cases where it's already defined
+    try {
+      const descriptor = Object.getOwnPropertyDescriptor(window, "ethereum");
+      if (!descriptor) {
+        // No existing property, safe to define
+        Object.defineProperty(window, "ethereum", {
+          value: provider,
+          writable: true,
+          configurable: true,
+        });
+      } else if (descriptor.configurable) {
+        // Property exists but is configurable, safe to redefine
+        Object.defineProperty(window, "ethereum", {
+          value: provider,
+          writable: true,
+          configurable: true,
+        });
+      } else {
+        // Property exists and is non-configurable (e.g., MetaMask), can't override
+        console.warn("[Unchained Provider] window.ethereum is already defined and non-configurable. Cannot override.");
+      }
+    } catch (e) {
+      // If defineProperty fails, try simple assignment
+      try {
+        if (!window.ethereum) {
+          window.ethereum = provider as any;
+        }
+      } catch (e2) {
+        console.warn("[Unchained Provider] Could not set window.ethereum:", e2);
+      }
+    }
   }
 
   private async handleRequest(args: { method: string; params?: any[] }) {
