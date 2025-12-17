@@ -36,8 +36,7 @@ extension/
   "description": "Unchained Web Wallet Extension",
   "permissions": [
     "storage",
-    "tabs",
-    "scripting"
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"
