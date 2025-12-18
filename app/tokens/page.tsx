@@ -7,6 +7,7 @@ import { getSavedEthCustomTokens, addEthCustomToken } from "@/lib/customTokens"
 import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { isTokenBlacklisted } from "@/lib/blacklist"
+import { getUnchainedProvider } from "@/lib/provider"
 import { Coins, Loader } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
@@ -24,7 +25,14 @@ export default function TokensPage() {
   const router = useRouter()
   const [tokens, setTokens] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [chainId, setChainId] = useState(1)
+  const [chainId, setChainId] = useState(() => {
+    // Initialize from localStorage or default to PEPU
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("selected_chain")
+      return saved ? Number(saved) : 97741
+    }
+    return 97741
+  })
   const [selectedToken, setSelectedToken] = useState<any>(null)
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [showAddToken, setShowAddToken] = useState(false)
@@ -38,6 +46,16 @@ export default function TokensPage() {
       router.push("/setup")
       return
     }
+
+    // Sync chainId from localStorage (in case it changed on another page)
+    const saved = localStorage.getItem("selected_chain")
+    if (saved && Number(saved) !== chainId) {
+      setChainId(Number(saved))
+    }
+
+    // Update provider chainId
+    const provider = getUnchainedProvider()
+    provider.setChainId(chainId)
 
     // No password required for viewing tokens
     updateActivity()
@@ -56,9 +74,12 @@ export default function TokensPage() {
       const wallet = getCurrentWallet() || wallets[0]
       const allTokens: any[] = []
 
+      // CRITICAL: Ensure correct chain - default to PEPU if not explicitly 1
+      const currentChainId = chainId === 1 ? 1 : 97741
+      
       // Get native balance
-      const nativeBalance = await getNativeBalance(wallet.address, chainId)
-      const nativeSymbol = chainId === 1 ? "ETH" : "PEPU"
+      const nativeBalance = await getNativeBalance(wallet.address, currentChainId)
+      const nativeSymbol = currentChainId === 1 ? "ETH" : "PEPU"
       allTokens.push({
         address: "0x0000000000000000000000000000000000000000",
         name: nativeSymbol,
@@ -70,8 +91,9 @@ export default function TokensPage() {
 
       if (chainId === 1) {
         // For ETH chain, use getAllEthTokenBalances to get all ERC20 tokens
-        try {
-          const ethTokens = await getAllEthTokenBalances(wallet.address)
+        if (currentChainId === 1) {
+          try {
+            const ethTokens = await getAllEthTokenBalances(wallet.address)
           
           // Filter out blacklisted tokens and convert to Token format
           for (const ethToken of ethTokens) {
@@ -89,9 +111,9 @@ export default function TokensPage() {
         } catch (error) {
           console.error("Error loading ETH tokens:", error)
         }
-      } else {
+      } else if (currentChainId === 97741) {
         // For PEPU chain, scan for ERC20 tokens via transfer logs
-        const provider = await getProviderWithFallback(chainId)
+        const provider = await getProviderWithFallback(currentChainId)
 
         const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
         const currentBlock = await provider.getBlockNumber()
@@ -188,7 +210,13 @@ export default function TokensPage() {
             <p className="text-sm text-gray-400 mb-3">Network</p>
             <div className="flex gap-2 mb-2">
               <button
-                onClick={() => setChainId(1)}
+                onClick={() => {
+                  const newChainId = 1
+                  setChainId(newChainId)
+                  localStorage.setItem("selected_chain", newChainId.toString())
+                  const provider = getUnchainedProvider()
+                  provider.setChainId(newChainId)
+                }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                 }`}
@@ -196,7 +224,13 @@ export default function TokensPage() {
                 Ethereum
               </button>
               <button
-                onClick={() => setChainId(97741)}
+                onClick={() => {
+                  const newChainId = 97741
+                  setChainId(newChainId)
+                  localStorage.setItem("selected_chain", newChainId.toString())
+                  const provider = getUnchainedProvider()
+                  provider.setChainId(newChainId)
+                }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                 }`}

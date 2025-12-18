@@ -10,6 +10,7 @@ import { isTokenBlacklisted } from "@/lib/blacklist"
 import { calculateTransactionFeePepu, checkTransactionFeeBalance } from "@/lib/fees"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { resolvePepuDomain, isPepuDomain, parseDomainInput } from "@/lib/domains"
+import { getUnchainedProvider } from "@/lib/provider"
 import { ArrowUp, Loader, ChevronDown, CheckCircle, RotateCcw } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import { ethers } from "ethers"
@@ -35,7 +36,14 @@ export default function SendPage() {
   const [recipient, setRecipient] = useState("")
   const [amount, setAmount] = useState("")
   const [password, setPassword] = useState("")
-  const [chainId, setChainId] = useState(1)
+  const [chainId, setChainId] = useState(() => {
+    // Initialize from localStorage or default to PEPU
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("selected_chain")
+      return saved ? Number(saved) : 97741
+    }
+    return 97741
+  })
   const [balance, setBalance] = useState("0")
   const [selectedToken, setSelectedToken] = useState<Token | null>(null)
   const [tokens, setTokens] = useState<Token[]>([])
@@ -58,6 +66,25 @@ export default function SendPage() {
     if (wallets.length === 0) {
       router.push("/setup")
       return
+    }
+
+    // Sync chainId from localStorage (in case it changed on another page)
+    const saved = localStorage.getItem("selected_chain")
+    const savedChainId = saved ? Number(saved) : 97741 // Default to PEPU
+    if (savedChainId !== chainId) {
+      setChainId(savedChainId)
+    }
+
+    // CRITICAL: Sync provider chainId with UI chainId - prevent ETH showing on PEPU
+    const provider = getUnchainedProvider()
+    const providerChainId = provider.getChainId()
+    const finalChainId = savedChainId || chainId || 97741 // Default to PEPU
+    if (providerChainId !== finalChainId) {
+      console.log(`[Send] Syncing provider chainId from ${providerChainId} to ${finalChainId}`)
+      provider.setChainId(finalChainId)
+    }
+    if (finalChainId !== chainId) {
+      setChainId(finalChainId)
     }
 
     // No password required to enter page - only when sending transactions
@@ -198,9 +225,12 @@ export default function SendPage() {
       const wallet = getCurrentWallet() || wallets[0]
       const allTokens: Token[] = []
 
+      // CRITICAL: Ensure correct chain - default to PEPU if not explicitly 1
+      const currentChainId = chainId === 1 ? 1 : 97741
+      
       // Get native balance
-      const nativeBalance = await getNativeBalance(wallet.address, chainId)
-      const nativeSymbol = chainId === 1 ? "ETH" : "PEPU"
+      const nativeBalance = await getNativeBalance(wallet.address, currentChainId)
+      const nativeSymbol = currentChainId === 1 ? "ETH" : "PEPU"
       const nativeToken: Token = {
         address: "0x0000000000000000000000000000000000000000",
         name: nativeSymbol,
@@ -214,8 +244,9 @@ export default function SendPage() {
       // Get ERC-20 tokens
       if (chainId === 1) {
         // For ETH chain, use getAllEthTokenBalances which includes price fetching
-        try {
-          const ethTokens = await getAllEthTokenBalances(wallet.address)
+        if (currentChainId === 1) {
+          try {
+            const ethTokens = await getAllEthTokenBalances(wallet.address)
           
           // Filter out blacklisted tokens and convert to Token format
           for (const ethToken of ethTokens) {
@@ -233,9 +264,9 @@ export default function SendPage() {
         } catch (error) {
           console.error("Error loading ETH tokens:", error)
         }
-      } else {
+      } else if (currentChainId === 97741) {
         // For PEPU chain, use the existing log scanning method
-        const provider = await getProviderWithFallback(chainId)
+        const provider = await getProviderWithFallback(currentChainId)
 
         const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
         const currentBlock = await provider.getBlockNumber()
@@ -441,9 +472,13 @@ export default function SendPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  setChainId(1)
+                  const newChainId = 1
+                  setChainId(newChainId)
                   setSelectedToken(null)
                   setTokens([])
+                  localStorage.setItem("selected_chain", newChainId.toString())
+                  const provider = getUnchainedProvider()
+                  provider.setChainId(newChainId)
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
@@ -453,9 +488,13 @@ export default function SendPage() {
               </button>
               <button
                 onClick={() => {
-                  setChainId(97741)
+                  const newChainId = 97741
+                  setChainId(newChainId)
                   setSelectedToken(null)
                   setTokens([])
+                  localStorage.setItem("selected_chain", newChainId.toString())
+                  const provider = getUnchainedProvider()
+                  provider.setChainId(newChainId)
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"

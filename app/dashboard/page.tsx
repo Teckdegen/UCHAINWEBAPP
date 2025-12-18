@@ -24,6 +24,7 @@ import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
 import { getDomainByWallet } from "@/lib/domains"
+import { getUnchainedProvider } from "@/lib/provider"
 import { Send, Download, Network, ArrowLeftRight, Menu, Globe, ImageIcon, Coins, History, Gift } from "lucide-react"
 import Link from "next/link"
 import BottomNav from "@/components/BottomNav"
@@ -83,6 +84,14 @@ export default function DashboardPage() {
     if (wallets.length === 0) {
       router.push("/setup")
       return
+    }
+
+    // Sync provider chainId with UI chainId - CRITICAL to prevent ETH showing on PEPU
+    const provider = getUnchainedProvider()
+    const providerChainId = provider.getChainId()
+    if (providerChainId !== chainId) {
+      console.log(`[Dashboard] Syncing provider chainId from ${providerChainId} to ${chainId}`)
+      provider.setChainId(chainId)
     }
 
     // No password required for viewing dashboard
@@ -158,10 +167,19 @@ export default function DashboardPage() {
     }
   }, [router, chainId])
 
-  // Save chainId to localStorage when it changes
+  // Save chainId to localStorage and sync with provider when it changes
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Sync both localStorage keys
       localStorage.setItem("selected_chain", chainId.toString())
+      localStorage.setItem("unchained_chain_id", chainId.toString())
+      
+      // Sync provider chainId - CRITICAL to prevent ETH showing on PEPU
+      const provider = getUnchainedProvider()
+      if (provider.getChainId() !== chainId) {
+        console.log(`[Dashboard] Updating provider chainId to ${chainId}`)
+        provider.setChainId(chainId)
+      }
     }
   }, [chainId])
 
@@ -182,21 +200,31 @@ export default function DashboardPage() {
       const wallet = getCurrentWallet() || wallets[0]
       const allBalances: any[] = []
 
-      // Get native balance
-      const balance = await getNativeBalance(wallet.address, chainId)
-      const nativeSymbol = chainId === 1 ? "ETH" : "PEPU"
+      // CRITICAL: Ensure we're on the correct chain - never show ETH when on PEPU
+      // Default to PEPU (97741) if chainId is not explicitly 1
+      const currentChainId = chainId === 1 ? 1 : 97741
+      if (currentChainId !== chainId) {
+        console.warn(`[Dashboard] ChainId mismatch detected: ${chainId} -> correcting to ${currentChainId}`)
+        setChainId(currentChainId)
+        return // Exit early to prevent showing wrong chain data
+      }
+
+      // Get native balance - use currentChainId to ensure correct chain
+      const balance = await getNativeBalance(wallet.address, currentChainId)
+      const nativeSymbol = currentChainId === 1 ? "ETH" : "PEPU"
 
       let nativePrice = 0
       let nativeUsdValue = "0.00"
 
-      if (chainId === 1) {
+      // CRITICAL: Only fetch ETH price if explicitly on chain 1, otherwise use PEPU
+      if (currentChainId === 1) {
         // Ethereum - fetch from CoinGecko
         const price = await fetchEthPrice()
         setEthPrice(price)
         nativePrice = price
         nativeUsdValue = (Number.parseFloat(balance) * price).toFixed(2)
-      } else if (chainId === 97741) {
-        // PEPU - fetch from CoinGecko
+      } else {
+        // PEPU (default) - fetch from CoinGecko
         const price = await fetchPepuPrice()
         setPepuPrice(price)
         nativePrice = price
@@ -205,7 +233,7 @@ export default function DashboardPage() {
 
       allBalances.push({
           symbol: nativeSymbol,
-          name: chainId === 1 ? "Ethereum" : "Pepe Unchained",
+          name: currentChainId === 1 ? "Ethereum" : "Pepe Unchained",
           balance,
         usdValue: nativeUsdValue,
         isNative: true,
@@ -213,9 +241,10 @@ export default function DashboardPage() {
       })
 
       // Get ERC-20 tokens
-      if (chainId === 97741 || chainId === 1) {
+      // CRITICAL: Only fetch tokens for the current chain
+      if (currentChainId === 97741 || currentChainId === 1) {
         try {
-          if (chainId === 1) {
+          if (currentChainId === 1) {
             // For ETH: Use the new dual-method approach (RPC + Etherscan)
             try {
               console.log("[Dashboard] Fetching ETH tokens for:", wallet.address)
@@ -252,20 +281,20 @@ export default function DashboardPage() {
               console.error("[Dashboard] Error fetching ETH tokens:", ethTokenError)
               // Continue even if ETH token fetching fails
             }
-          } else {
+          } else if (currentChainId === 97741) {
             // For PEPU: Use existing logic with contract calls and GeckoTerminal
-            const provider = await getProviderWithFallback(chainId)
+            const provider = await getProviderWithFallback(currentChainId)
             const network = "pepe-unchained"
 
             const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
             let currentBlock = 0
             try {
               currentBlock = await provider.getBlockNumber()
-              reportRpcSuccess(chainId)
+              reportRpcSuccess(currentChainId)
             } catch (error: any) {
               console.error("Error getting block number:", error)
               const errorMsg = error?.message || String(error) || "RPC connection failed"
-              reportRpcError(chainId, errorMsg)
+              reportRpcError(currentChainId, errorMsg)
             }
 
             const lookback = 10000
@@ -298,7 +327,7 @@ export default function DashboardPage() {
 
             // Filter out blacklisted tokens
             const filteredTokenAddresses = tokenAddresses.filter(
-              (addr) => !isTokenBlacklisted(addr, chainId)
+              (addr) => !isTokenBlacklisted(addr, currentChainId)
             )
 
             // Fetch token details for PEPU
@@ -453,7 +482,12 @@ export default function DashboardPage() {
                 setBalances([])
                 setPortfolioValue("0.00")
                 setLoading(true)
+                // Sync both localStorage keys and provider
                 localStorage.setItem("selected_chain", newChainId.toString())
+                localStorage.setItem("unchained_chain_id", newChainId.toString())
+                const provider = getUnchainedProvider()
+                provider.setChainId(newChainId)
+                console.log(`[Dashboard] Chain switched to ${newChainId === 97741 ? 'PEPU' : 'ETH'}`)
               }}
               className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
                 chainId === 97741 ? 'bg-green-500' : 'bg-gray-600'
