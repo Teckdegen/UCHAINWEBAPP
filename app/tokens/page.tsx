@@ -89,15 +89,14 @@ export default function TokensPage() {
         isNative: true,
       })
 
-      if (chainId === 1) {
+      if (currentChainId === 1) {
         // For ETH chain, use getAllEthTokenBalances to get all ERC20 tokens
-        if (currentChainId === 1) {
-          try {
-            const ethTokens = await getAllEthTokenBalances(wallet.address)
-          
+        try {
+          const ethTokens = await getAllEthTokenBalances(wallet.address)
+        
           // Filter out blacklisted tokens and convert to Token format
           for (const ethToken of ethTokens) {
-            if (!isTokenBlacklisted(ethToken.address, chainId)) {
+            if (!isTokenBlacklisted(ethToken.address, currentChainId)) {
               allTokens.push({
                 address: ethToken.address,
                 name: ethToken.name,
@@ -141,7 +140,7 @@ export default function TokensPage() {
 
           // Filter out blacklisted tokens
           const filteredTokenAddresses = tokenAddresses.filter(
-            (addr) => !isTokenBlacklisted(addr, chainId)
+            (addr) => !isTokenBlacklisted(addr, currentChainId)
           )
 
           for (const tokenAddress of filteredTokenAddresses) {
