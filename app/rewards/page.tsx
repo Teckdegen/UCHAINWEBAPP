@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getCurrentWallet, updateActivity } from "@/lib/wallet"
-import { getRewardsBalance, checkRewardsEligibility, claimRewards } from "@/lib/rewards"
+import { getRewardsBalance, checkRewardsEligibility, claimRewards, checkAdminWalletBalance } from "@/lib/rewards"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
 import { Gift, Loader, CheckCircle, XCircle } from "lucide-react"
@@ -20,6 +20,8 @@ export default function RewardsPage() {
   const [uchainBalance, setUchainBalance] = useState("0")
   const [required, setRequired] = useState(1000000)
   const [uchainPrice, setUchainPrice] = useState<number>(0)
+  const [adminHasBalance, setAdminHasBalance] = useState(true)
+  const [adminBalanceCheck, setAdminBalanceCheck] = useState<{ hasBalance: boolean; message?: string } | null>(null)
 
   useEffect(() => {
     // Check if wallet exists
@@ -86,6 +88,18 @@ export default function RewardsPage() {
         }
       } catch (err) {
         console.error("Error fetching UCHAIN price:", err)
+      }
+      
+      // CRITICAL: Check if admin wallet has Unchained tokens
+      // If admin wallet doesn't have Unchained tokens, no claim is available
+      try {
+        const adminCheck = await checkAdminWalletBalance(balance)
+        setAdminHasBalance(adminCheck.hasBalance)
+        setAdminBalanceCheck(adminCheck)
+        console.log(`[Rewards] Admin wallet balance check: ${adminCheck.hasBalance}, balance: ${adminCheck.adminBalance} UCHAIN`)
+      } catch (err) {
+        console.error("Error checking admin wallet balance:", err)
+        setAdminHasBalance(false)
       }
     } catch (error: any) {
       console.error("Error loading rewards data:", error)
@@ -199,14 +213,23 @@ export default function RewardsPage() {
                 </div>
               </div>
 
+              {/* Admin Wallet Balance Warning */}
+              {!adminHasBalance && adminBalanceCheck && (
+                <div className="glass-card p-4 border border-yellow-500/50 bg-yellow-500/10">
+                  <p className="text-yellow-400 text-sm">
+                    ⚠️ Rewards are temporarily unavailable. {adminBalanceCheck.message || "Admin wallet does not have sufficient Unchained tokens."}
+                  </p>
+                </div>
+              )}
+
               {/* Claim Button */}
               <button
                 onClick={handleClaim}
-                disabled={claiming || Number.parseFloat(rewardsBalance) <= 0}
-                className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={claiming || Number.parseFloat(rewardsBalance) <= 0 || !adminHasBalance}
+                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {claiming && <Loader className="w-4 h-4 animate-spin" />}
-                {claiming ? "Claiming..." : "Claim Rewards"}
+                {claiming ? "Claiming..." : !adminHasBalance ? "Rewards Unavailable" : "Claim Rewards"}
               </button>
 
               {/* Messages */}

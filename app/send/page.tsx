@@ -228,9 +228,18 @@ export default function SendPage() {
       // CRITICAL: Ensure correct chain - default to PEPU if not explicitly 1
       const currentChainId = chainId === 1 ? 1 : 97741
       
-      // Get native balance
-      const nativeBalance = await getNativeBalance(wallet.address, currentChainId)
+      // Always add native token first - even if balance fetch fails, show it with 0 balance
       const nativeSymbol = currentChainId === 1 ? "ETH" : "PEPU"
+      let nativeBalance = "0"
+      
+      try {
+        nativeBalance = await getNativeBalance(wallet.address, currentChainId)
+        console.log(`[Send] Native ${nativeSymbol} balance: ${nativeBalance}`)
+      } catch (error) {
+        console.error(`[Send] Error fetching native ${nativeSymbol} balance:`, error)
+        // Continue with 0 balance - user can still select the token
+      }
+      
       const nativeToken: Token = {
         address: "0x0000000000000000000000000000000000000000",
         name: nativeSymbol,
@@ -240,6 +249,7 @@ export default function SendPage() {
         isNative: true,
       }
       allTokens.push(nativeToken)
+      console.log(`[Send] Added native token: ${nativeSymbol} with balance ${nativeBalance}`)
 
       // Get ERC-20 tokens
       if (currentChainId === 1) {
