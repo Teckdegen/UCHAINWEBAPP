@@ -98,8 +98,8 @@ export default function DashboardPage() {
       return
     }
 
-    // CRITICAL: Force sync provider chainId with UI chainId - especially important for extension iframe
-    // This ensures the extension always shows the correct chain (PEPU by default)
+    // CRITICAL: Sync provider chainId with UI chainId
+    // Only force PEPU on initial load in extension, allow user to switch to ETH if they want
     const provider = getUnchainedProvider()
     const providerChainId = provider.getChainId()
     
@@ -109,25 +109,21 @@ export default function DashboardPage() {
     // Check if we're in an extension iframe (extension context)
     const isExtensionContext = window.self !== window.top || window.location !== window.parent.location
     
-    // Always sync if they don't match, or if provider has invalid chainId
-    // In extension context, be more aggressive about defaulting to PEPU
-    if (providerChainId !== validChainId || (providerChainId !== 1 && providerChainId !== 97741)) {
-      const finalChainId = isExtensionContext && providerChainId === 1 ? 97741 : validChainId
-      console.log(`[Dashboard] Syncing provider chainId from ${providerChainId} to ${finalChainId} (extension: ${isExtensionContext})`)
-      provider.setChainId(finalChainId)
-      // Update state if needed
-      if (finalChainId !== chainId) {
-        setChainId(finalChainId)
-        localStorage.setItem("selected_chain", finalChainId.toString())
-        localStorage.setItem("unchained_chain_id", finalChainId.toString())
-      }
-    } else if (isExtensionContext && providerChainId === 1) {
-      // In extension, if provider is ETH but we want PEPU, force PEPU
-      console.log(`[Dashboard] Extension context detected - forcing PEPU instead of ETH`)
+    // Only force PEPU on initial load (when provider has invalid chainId), not when user explicitly switches
+    // Allow user to switch to ETH even in extension context
+    if (providerChainId !== 1 && providerChainId !== 97741) {
+      // Provider has invalid chainId, default to PEPU
+      console.log(`[Dashboard] Provider has invalid chainId ${providerChainId}, defaulting to PEPU`)
       provider.setChainId(97741)
-      setChainId(97741)
-      localStorage.setItem("selected_chain", "97741")
-      localStorage.setItem("unchained_chain_id", "97741")
+      if (validChainId !== 97741) {
+        setChainId(97741)
+        localStorage.setItem("selected_chain", "97741")
+        localStorage.setItem("unchained_chain_id", "97741")
+      }
+    } else if (providerChainId !== validChainId) {
+      // Provider and UI are out of sync, sync them (respect user's choice)
+      console.log(`[Dashboard] Syncing provider chainId from ${providerChainId} to ${validChainId}`)
+      provider.setChainId(validChainId)
     }
 
     // No password required for viewing dashboard
@@ -206,15 +202,23 @@ export default function DashboardPage() {
   // Save chainId to localStorage and sync with provider when it changes
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Sync both localStorage keys
-      localStorage.setItem("selected_chain", chainId.toString())
-      localStorage.setItem("unchained_chain_id", chainId.toString())
+      // Only sync if chainId is valid (1 or 97741)
+      const validChainId = (chainId === 1 || chainId === 97741) ? chainId : 97741
       
-      // Sync provider chainId - CRITICAL to prevent ETH showing on PEPU
+      // Sync both localStorage keys
+      localStorage.setItem("selected_chain", validChainId.toString())
+      localStorage.setItem("unchained_chain_id", validChainId.toString())
+      
+      // Sync provider chainId - respect user's choice
       const provider = getUnchainedProvider()
-      if (provider.getChainId() !== chainId) {
-        console.log(`[Dashboard] Updating provider chainId to ${chainId}`)
-        provider.setChainId(chainId)
+      if (provider.getChainId() !== validChainId) {
+        console.log(`[Dashboard] Updating provider chainId to ${validChainId}`)
+        provider.setChainId(validChainId)
+      }
+      
+      // Update state if chainId was invalid
+      if (validChainId !== chainId) {
+        setChainId(validChainId)
       }
     }
   }, [chainId])
