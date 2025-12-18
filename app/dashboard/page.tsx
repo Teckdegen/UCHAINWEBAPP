@@ -51,9 +51,21 @@ export default function DashboardPage() {
   const [walletDomains, setWalletDomains] = useState<Record<string, string>>({})
   const [chainId, setChainId] = useState(() => {
     // Initialize from localStorage or default to PEPU
+    // CRITICAL: For extension iframe, ensure we default to PEPU and sync with provider
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("selected_chain")
-      return saved ? Number(saved) : 97741
+      const savedChainId = saved ? Number(saved) : 97741
+      // Ensure it's a valid chainId (1 for ETH, 97741 for PEPU), default to PEPU if invalid
+      const validChainId = (savedChainId === 1 || savedChainId === 97741) ? savedChainId : 97741
+      
+      // Sync with provider immediately on initialization (especially important for extension)
+      if (validChainId !== 97741 || !saved) {
+        // If not PEPU or no saved value, ensure both localStorage keys are set
+        localStorage.setItem("selected_chain", validChainId.toString())
+        localStorage.setItem("unchained_chain_id", validChainId.toString())
+      }
+      
+      return validChainId
     }
     return 97741
   })
@@ -86,12 +98,36 @@ export default function DashboardPage() {
       return
     }
 
-    // Sync provider chainId with UI chainId - CRITICAL to prevent ETH showing on PEPU
+    // CRITICAL: Force sync provider chainId with UI chainId - especially important for extension iframe
+    // This ensures the extension always shows the correct chain (PEPU by default)
     const provider = getUnchainedProvider()
     const providerChainId = provider.getChainId()
-    if (providerChainId !== chainId) {
-      console.log(`[Dashboard] Syncing provider chainId from ${providerChainId} to ${chainId}`)
-      provider.setChainId(chainId)
+    
+    // Ensure chainId is valid (1 or 97741), default to PEPU if invalid
+    const validChainId = (chainId === 1 || chainId === 97741) ? chainId : 97741
+    
+    // Check if we're in an extension iframe (extension context)
+    const isExtensionContext = window.self !== window.top || window.location !== window.parent.location
+    
+    // Always sync if they don't match, or if provider has invalid chainId
+    // In extension context, be more aggressive about defaulting to PEPU
+    if (providerChainId !== validChainId || (providerChainId !== 1 && providerChainId !== 97741)) {
+      const finalChainId = isExtensionContext && providerChainId === 1 ? 97741 : validChainId
+      console.log(`[Dashboard] Syncing provider chainId from ${providerChainId} to ${finalChainId} (extension: ${isExtensionContext})`)
+      provider.setChainId(finalChainId)
+      // Update state if needed
+      if (finalChainId !== chainId) {
+        setChainId(finalChainId)
+        localStorage.setItem("selected_chain", finalChainId.toString())
+        localStorage.setItem("unchained_chain_id", finalChainId.toString())
+      }
+    } else if (isExtensionContext && providerChainId === 1) {
+      // In extension, if provider is ETH but we want PEPU, force PEPU
+      console.log(`[Dashboard] Extension context detected - forcing PEPU instead of ETH`)
+      provider.setChainId(97741)
+      setChainId(97741)
+      localStorage.setItem("selected_chain", "97741")
+      localStorage.setItem("unchained_chain_id", "97741")
     }
 
     // No password required for viewing dashboard

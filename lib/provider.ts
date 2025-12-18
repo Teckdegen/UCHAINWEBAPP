@@ -16,7 +16,7 @@ const PENDING_REQUESTS_KEY = "unchained_pending_requests"
 export class UnchainedProvider {
   private connectedDApps: ConnectedDApp[] = []
   private requests: Map<string, any> = new Map()
-  private currentChainId: number = 1 // Default to Ethereum
+  private currentChainId: number = 97741 // Default to PEPU
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -66,10 +66,26 @@ export class UnchainedProvider {
 
   private loadChainId() {
     if (typeof window === "undefined") return
-    const stored = localStorage.getItem("unchained_chain_id")
-    if (stored) {
-      this.currentChainId = parseInt(stored, 10)
+    // CRITICAL: Check both localStorage keys and prefer selected_chain (used by UI)
+    // This ensures extension iframe syncs correctly with the web version
+    const selectedChain = localStorage.getItem("selected_chain")
+    const storedChainId = localStorage.getItem("unchained_chain_id")
+    
+    // Prefer selected_chain if it exists (used by UI), otherwise use unchained_chain_id
+    const chainIdToUse = selectedChain || storedChainId
+    
+    if (chainIdToUse) {
+      const parsed = parseInt(chainIdToUse, 10)
+      // Ensure it's a valid chainId (1 for ETH, 97741 for PEPU), default to PEPU if invalid
+      this.currentChainId = (parsed === 1 || parsed === 97741) ? parsed : 97741
+    } else {
+      // Default to PEPU if nothing is stored
+      this.currentChainId = 97741
     }
+    
+    // Sync both keys to ensure consistency
+    this.saveChainId()
+    localStorage.setItem("selected_chain", this.currentChainId.toString())
   }
 
   private saveChainId() {
