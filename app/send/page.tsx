@@ -619,16 +619,31 @@ export default function SendPage() {
                 <span>
                   {loadingTokens
                     ? "Loading tokens..."
-                    : selectedToken
-                      ? `${selectedToken.symbol} - ${selectedToken.name}`
-                      : "Select Token"}
+                    : tokenLoadError
+                      ? "Error loading tokens"
+                      : selectedToken
+                        ? `${selectedToken.symbol} - ${selectedToken.name}`
+                        : "Select Token"}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform ${showTokenSelector ? "rotate-180" : ""}`} />
               </button>
               {showTokenSelector && !loadingTokens && (
                 <div className="absolute z-50 w-full mt-2 glass-card max-h-60 overflow-y-auto border border-white/20">
                   <div className="p-2">
-                    {tokens.length === 0 ? (
+                    {tokenLoadError ? (
+                      <div className="p-4">
+                        <div className="text-red-400 text-sm mb-2">{tokenLoadError}</div>
+                        <button
+                          onClick={() => {
+                            setTokenLoadError("")
+                            loadTokens()
+                          }}
+                          className="text-xs text-green-400 hover:text-green-300 underline"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : tokens.length === 0 ? (
                       <div className="p-4 text-center text-gray-400">No tokens found</div>
                     ) : (
                       tokens.map((token) => (
