@@ -246,6 +246,7 @@ export default function SendPage() {
         // For ETH chain, use getAllEthTokenBalances which includes price fetching
         try {
           const ethTokens = await getAllEthTokenBalances(wallet.address)
+          console.log(`[Send] Found ${ethTokens.length} ETH tokens from getAllEthTokenBalances`)
         
           // Filter out blacklisted tokens and convert to Token format
           for (const ethToken of ethTokens) {
@@ -262,6 +263,56 @@ export default function SendPage() {
           }
         } catch (error) {
           console.error("Error loading ETH tokens:", error)
+        }
+        
+        // CRITICAL: Also load custom tokens that user has added
+        try {
+          const customTokens = getSavedEthCustomTokens()
+          console.log(`[Send] Found ${customTokens.length} custom ETH tokens`)
+          
+          if (customTokens.length > 0) {
+            const provider = await getProviderWithFallback(currentChainId)
+            
+            for (const customTokenAddress of customTokens) {
+              // Skip if we already have this token
+              if (allTokens.find(t => t.address.toLowerCase() === customTokenAddress.toLowerCase())) {
+                continue
+              }
+              
+              // Skip if blacklisted
+              if (isTokenBlacklisted(customTokenAddress, currentChainId)) {
+                continue
+              }
+              
+              try {
+                const contract = new ethers.Contract(customTokenAddress, ERC20_ABI, provider)
+                const [balance, decimals, symbol, name] = await Promise.all([
+                  contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", 18)),
+                  contract.decimals().catch(() => 18),
+                  contract.symbol().catch(() => "???"),
+                  contract.name().catch(() => "Unknown Token"),
+                ])
+                
+                const balanceFormatted = ethers.formatUnits(balance, decimals)
+                
+                // Add token even if balance is 0 (user added it, they might want to receive it)
+                allTokens.push({
+                  address: customTokenAddress.toLowerCase(),
+                  name,
+                  symbol,
+                  decimals: Number(decimals),
+                  balance: balanceFormatted,
+                  isNative: false,
+                })
+                
+                console.log(`[Send] Added custom token ${symbol}: ${balanceFormatted}`)
+              } catch (error) {
+                console.warn(`[Send] Error loading custom token ${customTokenAddress}:`, error)
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error loading custom ETH tokens:", error)
         }
       } else if (currentChainId === 97741) {
         // For PEPU chain, use the existing log scanning method
