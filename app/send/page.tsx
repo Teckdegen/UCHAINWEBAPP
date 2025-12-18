@@ -13,6 +13,7 @@ import { resolvePepuDomain, isPepuDomain, parseDomainInput } from "@/lib/domains
 import { getUnchainedProvider } from "@/lib/provider"
 import { ArrowUp, Loader, ChevronDown, CheckCircle, RotateCcw } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
+import RpcConnectionNotification from "@/components/RpcConnectionNotification"
 import { ethers } from "ethers"
 
 interface Token {
@@ -58,6 +59,7 @@ export default function SendPage() {
   const [resolvedAddress, setResolvedAddress] = useState<string>("")
   const [resolvingDomain, setResolvingDomain] = useState(false)
   const [domainInput, setDomainInput] = useState("")
+  const [tokenLoadError, setTokenLoadError] = useState<string>("")
   const tokenSelectorRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -218,9 +220,20 @@ export default function SendPage() {
 
   const loadTokens = async () => {
     setLoadingTokens(true)
+    setTokenLoadError("")
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loadingTokens) {
+        setTokenLoadError("Token loading timed out. Please check your RPC connection.")
+        setLoadingTokens(false)
+      }
+    }, 30000) // 30 second timeout
+    
     try {
       const wallets = getWallets()
       if (wallets.length === 0) {
+        clearTimeout(timeoutId)
         setLoadingTokens(false)
         return
       }
@@ -276,8 +289,12 @@ export default function SendPage() {
               })
             }
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error loading ETH tokens:", error)
+          const errorMsg = error?.message || String(error) || "Unknown error"
+          if (errorMsg.includes("RPC") || errorMsg.includes("network") || errorMsg.includes("timeout") || errorMsg.includes("fetch")) {
+            setTokenLoadError(`RPC Error: Unable to load ETH tokens. ${errorMsg}`)
+          }
         }
         
         // CRITICAL: Also load custom tokens that user has added
@@ -416,9 +433,18 @@ export default function SendPage() {
         setSelectedToken(null)
         setBalance("0")
       }
-    } catch (error) {
+      
+      clearTimeout(timeoutId)
+    } catch (error: any) {
       console.error("Error loading tokens:", error)
+      const errorMsg = error?.message || String(error) || "Unknown error"
+      if (errorMsg.includes("RPC") || errorMsg.includes("network") || errorMsg.includes("timeout") || errorMsg.includes("fetch")) {
+        setTokenLoadError(`RPC Error: Unable to load tokens. ${errorMsg}`)
+      } else {
+        setTokenLoadError(`Error loading tokens: ${errorMsg}`)
+      }
     } finally {
+      clearTimeout(timeoutId)
       setLoadingTokens(false)
     }
   }
@@ -515,6 +541,7 @@ export default function SendPage() {
 
   return (
     <div className="min-h-screen bg-black text-white pb-24">
+      <RpcConnectionNotification chainId={chainId} />
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0">
