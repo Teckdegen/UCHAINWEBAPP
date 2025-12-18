@@ -220,13 +220,18 @@ export default function SendPage() {
     setLoadingTokens(true)
     try {
       const wallets = getWallets()
-      if (wallets.length === 0) return
+      if (wallets.length === 0) {
+        setLoadingTokens(false)
+        return
+      }
 
       const wallet = getCurrentWallet() || wallets[0]
       const allTokens: Token[] = []
 
-      // CRITICAL: Ensure correct chain - default to PEPU if not explicitly 1
+      // CRITICAL: Use the actual chainId from state, not derived
+      // This ensures we load the correct tokens when user switches chains
       const currentChainId = chainId === 1 ? 1 : 97741
+      console.log(`[Send] Loading tokens for chainId: ${chainId}, currentChainId: ${currentChainId}`)
       
       // Always add native token first - even if balance fetch fails, show it with 0 balance
       const nativeSymbol = currentChainId === 1 ? "ETH" : "PEPU"
@@ -531,14 +536,19 @@ export default function SendPage() {
             <label className="block text-sm text-gray-400 mb-3">Network</label>
             <div className="flex gap-2">
               <button
-                onClick={() => {
+                onClick={async () => {
                   const newChainId = 1
+                  console.log(`[Send] Switching to ETH chain (${newChainId})`)
                   setChainId(newChainId)
                   setSelectedToken(null)
                   setTokens([])
+                  setBalance("0")
                   localStorage.setItem("selected_chain", newChainId.toString())
+                  localStorage.setItem("unchained_chain_id", newChainId.toString())
                   const provider = getUnchainedProvider()
                   provider.setChainId(newChainId)
+                  // Explicitly reload tokens for ETH
+                  await loadTokens()
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
@@ -547,14 +557,19 @@ export default function SendPage() {
                 Ethereum
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const newChainId = 97741
+                  console.log(`[Send] Switching to PEPU chain (${newChainId})`)
                   setChainId(newChainId)
                   setSelectedToken(null)
                   setTokens([])
+                  setBalance("0")
                   localStorage.setItem("selected_chain", newChainId.toString())
+                  localStorage.setItem("unchained_chain_id", newChainId.toString())
                   const provider = getUnchainedProvider()
                   provider.setChainId(newChainId)
+                  // Explicitly reload tokens for PEPU
+                  await loadTokens()
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
                   chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
