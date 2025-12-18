@@ -99,18 +99,18 @@ export default function DashboardPage() {
     }
 
     // CRITICAL: Sync provider chainId with UI chainId
-    // Only force PEPU on initial load in extension, allow user to switch to ETH if they want
+    // Only sync on mount, don't override user's explicit chain switches
     const provider = getUnchainedProvider()
     const providerChainId = provider.getChainId()
     
     // Ensure chainId is valid (1 or 97741), default to PEPU if invalid
     const validChainId = (chainId === 1 || chainId === 97741) ? chainId : 97741
     
-    // Check if we're in an extension iframe (extension context)
-    const isExtensionContext = window.self !== window.top || window.location !== window.parent.location
+    // Only sync if provider has invalid chainId OR if this is the first mount (not a chain switch)
+    // Use a ref to track if this is the initial mount
+    const isInitialMount = !(window as any).__unchained_dashboard_mounted
+    ;(window as any).__unchained_dashboard_mounted = true
     
-    // Only force PEPU on initial load (when provider has invalid chainId), not when user explicitly switches
-    // Allow user to switch to ETH even in extension context
     if (providerChainId !== 1 && providerChainId !== 97741) {
       // Provider has invalid chainId, default to PEPU
       console.log(`[Dashboard] Provider has invalid chainId ${providerChainId}, defaulting to PEPU`)
@@ -120,11 +120,13 @@ export default function DashboardPage() {
         localStorage.setItem("selected_chain", "97741")
         localStorage.setItem("unchained_chain_id", "97741")
       }
-    } else if (providerChainId !== validChainId) {
-      // Provider and UI are out of sync, sync them (respect user's choice)
-      console.log(`[Dashboard] Syncing provider chainId from ${providerChainId} to ${validChainId}`)
+    } else if (isInitialMount && providerChainId !== validChainId) {
+      // Only sync on initial mount if they're out of sync
+      // This prevents overriding user's explicit chain switches
+      console.log(`[Dashboard] Initial mount - syncing provider chainId from ${providerChainId} to ${validChainId}`)
       provider.setChainId(validChainId)
     }
+    // Don't sync on subsequent renders - respect user's choice
 
     // No password required for viewing dashboard
     updateActivity()
@@ -466,9 +468,21 @@ export default function DashboardPage() {
       setCachedPortfolioValue(portfolioValueStr)
       
       // Save to localStorage
+      // CRITICAL: Convert BigInt values to strings before serialization
+      const sanitizedBalances = allBalances.map(balance => {
+        const sanitized: any = { ...balance }
+        // Convert any BigInt values to strings
+        Object.keys(sanitized).forEach(key => {
+          if (typeof sanitized[key] === 'bigint') {
+            sanitized[key] = sanitized[key].toString()
+          }
+        })
+        return sanitized
+      })
+      
       const cacheKey = `balance_cache_${wallet.address}_${chainId}`
       localStorage.setItem(cacheKey, JSON.stringify({
-        balances: allBalances,
+        balances: sanitizedBalances,
         portfolioValue: portfolioValueStr,
         timestamp: Date.now(),
       }))
