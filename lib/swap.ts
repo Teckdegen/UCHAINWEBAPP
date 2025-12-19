@@ -616,18 +616,27 @@ export async function executeSwap(
     return receipt.hash
   } catch (error: any) {
     // Provide more specific error messages
-    if (error.message?.includes("revert") || error.message?.includes("reverted")) {
-      throw error // Already has good message
-    } else if (error.message?.includes("insufficient funds") || error.message?.includes("balance")) {
+    const errorMsg = error.message || String(error) || "Unknown error"
+    
+    if (errorMsg.includes("revert") || errorMsg.includes("reverted") || errorMsg.includes("CALL_EXCEPTION")) {
+      // Transaction reverted - provide helpful message
+      if (errorMsg.includes("insufficient") || errorMsg.includes("balance")) {
+        throw new Error("Insufficient balance for swap. Make sure you have enough tokens after the fee was sent.")
+      } else if (errorMsg.includes("slippage") || errorMsg.includes("STF")) {
+        throw new Error("Slippage tolerance exceeded. The price moved too much. Try again or increase slippage tolerance.")
+      } else if (errorMsg.includes("liquidity") || errorMsg.includes("LS")) {
+        throw new Error("Insufficient liquidity in the pool. Try a smaller amount or a different token pair.")
+      } else if (errorMsg.includes("allowance") || errorMsg.includes("allow")) {
+        throw new Error("Insufficient token allowance. Please approve the token first.")
+      } else {
+        throw new Error("Swap transaction reverted. Possible reasons: insufficient liquidity, slippage exceeded, or insufficient balance. Please try again with a smaller amount.")
+      }
+    } else if (errorMsg.includes("insufficient funds") || errorMsg.includes("balance")) {
       throw new Error("Insufficient balance. Make sure you have enough tokens to cover the swap amount and fees.")
-    } else if (error.message?.includes("allowance")) {
+    } else if (errorMsg.includes("allowance")) {
       throw new Error("Insufficient token allowance. Please approve the token first.")
-    } else if (error.message?.includes("slippage")) {
-      throw new Error("Slippage tolerance exceeded. The price moved too much. Try again with a higher slippage tolerance.")
-    } else if (error.message?.includes("liquidity")) {
-      throw new Error("Insufficient liquidity in the pool. Try a smaller amount or a different token pair.")
     } else {
-      throw new Error(error.message || "Swap failed. Please try again.")
+      throw new Error(errorMsg || "Swap failed. Please try again.")
     }
   }
 }
