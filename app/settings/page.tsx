@@ -146,30 +146,86 @@ export default function SettingsPage() {
     }
   }
 
-  const getPrivateKeyDisplay = () => {
-    if (!password || wallets.length === 0) return null
-    const active = getCurrentWallet() || wallets[0]
+  const [privateKey, setPrivateKey] = useState<string | null>(null)
+  const [mnemonic, setMnemonic] = useState<string | null>(null)
+  const [loadingPrivateKey, setLoadingPrivateKey] = useState(false)
+  const [loadingMnemonic, setLoadingMnemonic] = useState(false)
+
+  const loadPrivateKey = () => {
+    if (!password || wallets.length === 0) {
+      setPrivateKey(null)
+      return
+    }
+    
+    setLoadingPrivateKey(true)
+    setError("")
+    
     try {
-      return getPrivateKey(active, password)
-    } catch {
-      setError("Invalid password")
-      return null
+      const active = getCurrentWallet() || wallets[0]
+      if (!active) {
+        setPrivateKey(null)
+        setLoadingPrivateKey(false)
+        return
+      }
+      
+      const decryptedKey = getPrivateKey(active, password)
+      setPrivateKey(decryptedKey)
+    } catch (err: any) {
+      console.error("Error loading private key:", err)
+      setError(err.message || "Invalid password. Please try again.")
+      setPrivateKey(null)
+    } finally {
+      setLoadingPrivateKey(false)
     }
   }
 
-  const getMnemonicDisplay = () => {
-    if (!password || wallets.length === 0) return null
-    const active = getCurrentWallet() || wallets[0]
+  const loadMnemonic = () => {
+    if (!password || wallets.length === 0) {
+      setMnemonic(null)
+      return
+    }
+    
+    setLoadingMnemonic(true)
+    setError("")
+    
     try {
-      return getMnemonic(active, password) || "No mnemonic available"
-    } catch {
-      setError("Invalid password")
-      return null
+      const active = getCurrentWallet() || wallets[0]
+      if (!active) {
+        setMnemonic(null)
+        setLoadingMnemonic(false)
+        return
+      }
+      
+      const decryptedMnemonic = getMnemonic(active, password)
+      setMnemonic(decryptedMnemonic || "No mnemonic available")
+    } catch (err: any) {
+      console.error("Error loading mnemonic:", err)
+      setError(err.message || "Invalid password. Please try again.")
+      setMnemonic(null)
+    } finally {
+      setLoadingMnemonic(false)
     }
   }
 
-  const privateKey = showPrivateKey ? getPrivateKeyDisplay() : null
-  const mnemonic = showMnemonic ? getMnemonicDisplay() : null
+  // Load private key when showPrivateKey becomes true and password is set
+  useEffect(() => {
+    if (showPrivateKey && password && wallets.length > 0) {
+      loadPrivateKey()
+    } else if (!showPrivateKey) {
+      setPrivateKey(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPrivateKey, password])
+
+  // Load mnemonic when showMnemonic becomes true and password is set
+  useEffect(() => {
+    if (showMnemonic && password && wallets.length > 0) {
+      loadMnemonic()
+    } else if (!showMnemonic) {
+      setMnemonic(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMnemonic, password])
 
   const handleDeleteActiveWallet = () => {
     if (wallets.length <= 1) {
@@ -429,56 +485,92 @@ export default function SettingsPage() {
             {/* Private Key */}
             <div className="mb-4">
               <button
-                onClick={() => setShowPrivateKey(!showPrivateKey)}
+                onClick={() => {
+                  setShowPrivateKey(!showPrivateKey)
+                  if (!showPrivateKey && !password) {
+                    setError("Please enter your password first")
+                  }
+                }}
                 className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-2"
               >
                 {showPrivateKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 {showPrivateKey ? "Hide" : "Show"} Private Key
               </button>
-              {showPrivateKey && privateKey && (
-                <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono text-yellow-400 break-all bg-black/50 p-2 rounded flex-1">
-                    {privateKey}
-                  </code>
-                  <button
-                    onClick={() => handleCopy(privateKey, "key")}
-                    className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
-                  >
-                    {copied === "key" ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
+              {showPrivateKey && (
+                <>
+                  {loadingPrivateKey ? (
+                    <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                      Loading private key...
+                    </div>
+                  ) : privateKey ? (
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs font-mono text-yellow-400 break-all bg-black/50 p-2 rounded flex-1">
+                        {privateKey}
+                      </code>
+                      <button
+                        onClick={() => handleCopy(privateKey, "key")}
+                        className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+                      >
+                        {copied === "key" ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                  ) : password ? (
+                    <p className="text-xs text-red-400">Failed to load private key. Please check your password.</p>
+                  ) : (
+                    <p className="text-xs text-gray-400">Please enter your password above to view your private key.</p>
+                  )}
+                </>
               )}
             </div>
 
             {/* Mnemonic */}
             <div>
               <button
-                onClick={() => setShowMnemonic(!showMnemonic)}
+                onClick={() => {
+                  setShowMnemonic(!showMnemonic)
+                  if (!showMnemonic && !password) {
+                    setError("Please enter your password first")
+                  }
+                }}
                 className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-2"
               >
                 {showMnemonic ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 {showMnemonic ? "Hide" : "Show"} Seed Phrase
               </button>
-              {showMnemonic && mnemonic && (
-                <div className="flex items-center gap-2">
-                  <code className="text-xs font-mono text-yellow-400 break-all bg-black/50 p-2 rounded flex-1">
-                    {mnemonic}
-                  </code>
-                  <button
-                    onClick={() => handleCopy(mnemonic, "seed")}
-                    className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
-                  >
-                    {copied === "seed" ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
+              {showMnemonic && (
+                <>
+                  {loadingMnemonic ? (
+                    <div className="flex items-center gap-2 text-gray-400 text-sm py-2">
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                      Loading seed phrase...
+                    </div>
+                  ) : mnemonic ? (
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs font-mono text-yellow-400 break-all bg-black/50 p-2 rounded flex-1">
+                        {mnemonic}
+                      </code>
+                      <button
+                        onClick={() => handleCopy(mnemonic, "seed")}
+                        className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
+                      >
+                        {copied === "seed" ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                  ) : password ? (
+                    <p className="text-xs text-red-400">Failed to load seed phrase. Please check your password.</p>
+                  ) : (
+                    <p className="text-xs text-gray-400">Please enter your password above to view your seed phrase.</p>
+                  )}
+                </>
               )}
             </div>
           </div>
