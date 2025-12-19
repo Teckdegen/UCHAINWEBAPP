@@ -150,28 +150,47 @@ export default function SendPage() {
           setTransactionFee(feeAmount)
           setFeeWarning("")
 
-          const feeCheck = await checkTransactionFeeBalance(
-            active.address,
-            amount,
-            selectedToken.address,
-            selectedToken.decimals,
-            chainId,
-          )
-
-          if (!feeCheck.hasEnough) {
-            setFeeWarning(
-              `Insufficient balance. Required: ${Number.parseFloat(feeCheck.requiredTotal).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}, Available: ${Number.parseFloat(feeCheck.currentBalance).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}`,
+          try {
+            const feeCheck = await checkTransactionFeeBalance(
+              active.address,
+              amount,
+              selectedToken.address,
+              selectedToken.decimals,
+              chainId,
             )
+
+            if (!feeCheck.hasEnough) {
+              setFeeWarning(
+                `Insufficient balance. Required: ${Number.parseFloat(feeCheck.requiredTotal).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}, Available: ${Number.parseFloat(feeCheck.currentBalance).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}`,
+              )
+              setFeeCalculated(false)
+            } else {
+              setFeeWarning("")
+              setFeeCalculated(true)
+            }
+          } catch (feeError: any) {
+            console.error("Error checking fee balance:", feeError)
+            // Show specific error message to user
+            const errorMsg = feeError.message || "Failed to check fee balance"
+            if (errorMsg.includes("RPC") || errorMsg.includes("network")) {
+              setFeeWarning("⚠️ Network error: Unable to verify balance. Please check your connection and try again.")
+            } else {
+              setFeeWarning(`⚠️ ${errorMsg}`)
+            }
             setFeeCalculated(false)
-          } else {
-            setFeeWarning("")
-            setFeeCalculated(true)
+            // Still allow transaction to proceed if fee calculation succeeded
+            // The transaction will fail at send time if balance is insufficient
           }
         }
       } catch (error: any) {
         console.error("Error calculating fee:", error)
         if (isMounted) {
-          setFeeWarning("")
+          const errorMsg = error.message || "Failed to calculate fee"
+          if (errorMsg.includes("RPC") || errorMsg.includes("network") || errorMsg.includes("fetch")) {
+            setFeeWarning("⚠️ Network error: Unable to calculate fee. Please check your connection.")
+          } else {
+            setFeeWarning(`⚠️ ${errorMsg}`)
+          }
           setFeeCalculated(false)
           setTransactionFee("0")
           retryTimeout = setTimeout(() => {

@@ -111,8 +111,25 @@ export async function checkTransactionFeeBalance(
   try {
     if (isNativePepu(chainId, tokenAddress)) {
       // Native PEPU: Calculate fee based on amount value
-      const feeInPepu = await calculateTransactionFeePepu(amount)
-      const pepuBalance = await getNativeBalance(walletAddress, PEPU_CHAIN_ID)
+      let feeInPepu: string
+      try {
+        feeInPepu = await calculateTransactionFeePepu(amount)
+      } catch (error: any) {
+        console.error("Error calculating PEPU fee:", error)
+        // If fee calculation fails, use a fallback fee estimate
+        // This allows the transaction to proceed even if CoinGecko is down
+        const fallbackFee = "0.001" // Conservative fallback
+        console.warn(`[Fees] Using fallback fee: ${fallbackFee} PEPU`)
+        feeInPepu = fallbackFee
+      }
+      
+      let pepuBalance: string
+      try {
+        pepuBalance = await getNativeBalance(walletAddress, PEPU_CHAIN_ID)
+      } catch (error: any) {
+        console.error("Error fetching PEPU balance:", error)
+        throw new Error(`Failed to fetch PEPU balance: ${error.message || "RPC connection error"}`)
+      }
       
       // Calculate total needed (amount + fee)
       const totalNeeded = Number.parseFloat(amount) + Number.parseFloat(feeInPepu)
@@ -128,7 +145,14 @@ export async function checkTransactionFeeBalance(
     } else {
       // ERC20 token: Fee is 0.85% of amount in the same token
       const { feeAmount, amountAfterFee } = calculateERC20TokenFee(amount, tokenDecimals)
-      const tokenBalance = await getTokenBalance(tokenAddress, walletAddress, chainId)
+      
+      let tokenBalance: string
+      try {
+        tokenBalance = await getTokenBalance(tokenAddress, walletAddress, chainId)
+      } catch (error: any) {
+        console.error("Error fetching token balance:", error)
+        throw new Error(`Failed to fetch token balance: ${error.message || "RPC connection error"}`)
+      }
       
       // Need full amount (fee is deducted from it)
       const hasEnough = Number.parseFloat(tokenBalance) >= Number.parseFloat(amount)
@@ -141,9 +165,14 @@ export async function checkTransactionFeeBalance(
         feeInToken: true, // Fee is in the same token
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error checking transaction fee balance:", error)
-    throw new Error("Failed to check fee balance")
+    // Provide more specific error message
+    const errorMessage = error.message || "Unknown error"
+    if (errorMessage.includes("Failed to fetch") || errorMessage.includes("RPC")) {
+      throw new Error(`RPC connection error: Unable to check balance. Please check your network connection.`)
+    }
+    throw new Error(`Failed to check fee balance: ${errorMessage}`)
   }
 }
 
