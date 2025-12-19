@@ -446,9 +446,32 @@ export async function executeSwap(
 
     // Note: Fee is sent before executeSwap is called (in handleSwap)
     // The amountIn parameter is already the amount AFTER fee deduction
-    // Balance check is done before sending fee, so we skip it here to avoid issues
-    // after the fee transaction has reduced the balance
+    // Verify we still have enough balance after fee was sent
     const provider = getProvider(chainId)
+    
+    // Double-check balance right before swap (after fee was sent)
+    let currentBalance: string
+    if (tokenIn.address === NATIVE_TOKEN && chainId === 97741) {
+      const balance = await provider.getBalance(wallet.address)
+      currentBalance = ethers.formatEther(balance)
+    } else {
+      const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
+      const tokenContract = new ethers.Contract(tokenIn.address, erc20Abi, provider)
+      const [balance, decimals] = await Promise.all([
+        tokenContract.balanceOf(wallet.address),
+        tokenContract.decimals(),
+      ])
+      currentBalance = ethers.formatUnits(balance, decimals)
+    }
+    
+    const balanceNum = Number.parseFloat(currentBalance)
+    const amountInNum = Number.parseFloat(amountIn)
+    
+    // Add small buffer (0.1%) to account for any rounding issues
+    const buffer = amountInNum * 0.001
+    if (balanceNum < (amountInNum - buffer)) {
+      throw new Error(`Insufficient balance for swap. After fee, you have ${currentBalance} but need ${amountIn} tokens.`)
+    }
 
     const privateKey = getPrivateKey(wallet, sessionPassword)
     
@@ -631,8 +654,9 @@ export async function executeSwap(
       } else {
         throw new Error("Swap transaction reverted. Possible reasons: insufficient liquidity, slippage exceeded, or insufficient balance. Please try again with a smaller amount.")
       }
-    } else if (errorMsg.includes("insufficient funds") || errorMsg.includes("balance")) {
-      throw new Error("Insufficient balance. Make sure you have enough tokens to cover the swap amount and fees.")
+    } else if (errorMsg.includes("insufficient funds") || (errorMsg.includes("balance") && !errorMsg.includes("after fee"))) {
+      // Only throw generic balance error if it's not already a specific balance error
+      throw new Error(`Insufficient balance: ${errorMsg}`)
     } else if (errorMsg.includes("allowance")) {
       throw new Error("Insufficient token allowance. Please approve the token first.")
     } else {
