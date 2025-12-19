@@ -73,6 +73,8 @@ export default function SwapPage() {
   const [swapFee, setSwapFee] = useState<string>("0")
   const [amountAfterFee, setAmountAfterFee] = useState<string>("")
   const [feeWarning, setFeeWarning] = useState("")
+  const [showNotification, setShowNotification] = useState(false)
+  const [notificationData, setNotificationData] = useState<{ message: string; txHash?: string; explorerUrl?: string } | null>(null)
   const fromSelectorRef = useRef<HTMLDivElement>(null)
   const toSelectorRef = useRef<HTMLDivElement>(null)
 
