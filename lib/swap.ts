@@ -618,8 +618,39 @@ export async function executeSwap(
     const receipt = await tx.wait()
 
     if (!receipt) throw new Error("Swap failed")
+    
+    // Check transaction status
+    if (receipt.status === 0) {
+      // Transaction reverted - try to decode revert reason
+      let revertReason = "Swap transaction reverted"
+      try {
+        // Common revert reasons for swaps
+        if (receipt.logs.length === 0) {
+          revertReason = "Swap reverted: Insufficient liquidity or slippage too high. Try increasing slippage tolerance or reducing swap amount."
+        } else {
+          revertReason = "Swap reverted: Possible reasons - insufficient liquidity, slippage exceeded, or insufficient balance for fees."
+        }
+      } catch (decodeError: any) {
+        revertReason = `Swap reverted: ${decodeError.message || "Unknown error"}`
+      }
+      throw new Error(revertReason)
+    }
+    
     return receipt.hash
   } catch (error: any) {
-    throw new Error(error.message || "Swap failed")
+    // Provide more specific error messages
+    if (error.message?.includes("revert") || error.message?.includes("reverted")) {
+      throw error // Already has good message
+    } else if (error.message?.includes("insufficient funds") || error.message?.includes("balance")) {
+      throw new Error("Insufficient balance. Make sure you have enough tokens to cover the swap amount and fees.")
+    } else if (error.message?.includes("allowance")) {
+      throw new Error("Insufficient token allowance. Please approve the token first.")
+    } else if (error.message?.includes("slippage")) {
+      throw new Error("Slippage tolerance exceeded. The price moved too much. Try again with a higher slippage tolerance.")
+    } else if (error.message?.includes("liquidity")) {
+      throw new Error("Insufficient liquidity in the pool. Try a smaller amount or a different token pair.")
+    } else {
+      throw new Error(error.message || "Swap failed. Please try again.")
+    }
   }
 }

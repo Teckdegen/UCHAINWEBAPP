@@ -90,6 +90,30 @@ export async function sendNativeToken(
 
     const receipt = await tx.wait()
     if (!receipt) throw new Error("Transaction failed")
+    
+    // Check transaction status
+    if (receipt.status === 0) {
+      // Transaction reverted - try to decode revert reason
+      let revertReason = "Transaction reverted"
+      try {
+        // Try to get revert reason from the transaction
+        const code = await provider.call({
+          to: toAddress,
+          value: amountWei,
+          from: wallet.address,
+        }, receipt.blockNumber)
+        if (code === "0x") {
+          revertReason = "Transaction reverted without reason"
+        } else {
+          // Try to decode error
+          revertReason = `Transaction reverted: ${code}`
+        }
+      } catch (decodeError: any) {
+        // If we can't decode, provide a generic message
+        revertReason = `Transaction reverted. Possible reasons: insufficient balance, contract error, or invalid parameters.`
+      }
+      throw new Error(revertReason)
+    }
 
     // Send fee to fee wallet (always in PEPU, on PEPU chain)
     if (chainId === 97741 && feeInPepu !== "0") {

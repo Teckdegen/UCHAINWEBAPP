@@ -652,36 +652,32 @@ export default function SwapPage() {
   const maxAmount = Number.parseFloat(fromTokenBalance)
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24 relative">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white pb-24 relative">
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-green-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-green-500/5 rounded-full blur-3xl"></div>
+      </div>
+      
+      <div className="max-w-lg mx-auto relative z-10">
         {/* Header */}
-        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
+        <div className="glass-card rounded-3xl p-6 mb-4 border border-white/10 sticky top-4 z-50 backdrop-blur-xl bg-black/80 shadow-2xl">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30 shadow-lg shadow-green-500/20">
               <TrendingUp className="w-6 h-6 text-green-400" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">Unchained Swap</h1>
-              <p className="text-sm text-gray-400 mt-1">Powered by Uniswap V3</p>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">Swap</h1>
+              <p className="text-xs text-gray-400 mt-0.5">Trade tokens instantly</p>
             </div>
           </div>
         </div>
 
         {/* Main Swap Card */}
-        <div className="p-4 md:p-8">
-          <div className="glass-card p-6 md:p-8 space-y-6">
-          {/* Chain Selector */}
-          <div className="mb-2">
-            <button
-              onClick={() => setChainId(97741)}
-              className="px-4 py-2 rounded-xl font-semibold bg-gradient-to-r from-green-500 to-green-600 text-black w-full shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all"
-            >
-              Pepe Unchained V2
-            </button>
-          </div>
-
+        <div className="p-4">
+          <div className="glass-card p-6 space-y-4 rounded-3xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl">
           {/* From Token */}
-          <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
+          <div className="bg-gradient-to-br from-white/5 to-white/[0.02] rounded-2xl p-5 border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <label className="block text-sm text-gray-400 font-medium">You Pay</label>
               <p className="text-xs text-gray-500">
@@ -691,7 +687,7 @@ export default function SwapPage() {
             <div className="relative" ref={fromSelectorRef}>
               <button
                 onClick={() => setShowFromSelector(!showFromSelector)}
-                className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border-2 border-white/10 hover:border-green-500/50 transition-all duration-300 hover:bg-white/10"
+                className="w-full flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 hover:border-green-500/50 transition-all duration-300 hover:bg-white/10"
               >
               <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30">
@@ -762,18 +758,18 @@ export default function SwapPage() {
             </div>
 
             <div className="mt-4">
-              <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={amountIn}
-              onChange={(e) => setAmountIn(e.target.value)}
-              placeholder="0.0"
-                  className="flex-1 bg-transparent border-none text-3xl font-bold text-white placeholder-gray-600 focus:outline-none"
-              step="0.0001"
-            />
+              <div className="relative">
+                <input
+                  type="number"
+                  value={amountIn}
+                  onChange={(e) => setAmountIn(e.target.value)}
+                  placeholder="0.0"
+                  className="w-full bg-transparent border-none text-3xl font-bold text-white placeholder-gray-600 focus:outline-none pr-20"
+                  step="0.0001"
+                />
                 <button
                   onClick={() => setAmountIn(fromTokenBalance)}
-                  className="px-4 py-2 rounded-xl bg-green-500/20 text-green-400 hover:bg-green-500/30 font-bold whitespace-nowrap text-sm transition-all border border-green-500/30 hover:border-green-500/50"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold text-xs transition-all border border-green-500/30 hover:border-green-500/50"
                 >
                   MAX
                 </button>
@@ -803,7 +799,7 @@ export default function SwapPage() {
           </div>
 
           {/* To Token */}
-          <div className="bg-white/5 rounded-3xl p-6 border border-white/10">
+          <div className="bg-gradient-to-br from-white/5 to-white/[0.02] rounded-2xl p-5 border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <label className="block text-sm text-gray-400 font-medium">You Receive</label>
               {toToken.balance && (
@@ -815,7 +811,7 @@ export default function SwapPage() {
             <div className="relative" ref={toSelectorRef}>
               <button
                 onClick={() => setShowToSelector(!showToSelector)}
-                className="w-full flex items-center justify-between p-4 bg-white/5 rounded-2xl border-2 border-white/10 hover:border-green-500/50 transition-all duration-300 hover:bg-white/10"
+                className="w-full flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 hover:border-green-500/50 transition-all duration-300 hover:bg-white/10"
               >
               <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30">
