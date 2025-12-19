@@ -203,17 +203,57 @@ export async function checkAdminWalletBalance(requiredAmount: string): Promise<{
   message?: string
 }> {
   try {
-    if (!REWARDS_PAYOUT_KEY) {
+    if (!REWARDS_PAYOUT_KEY || REWARDS_PAYOUT_KEY.trim() === "") {
       return {
         hasBalance: false,
         adminBalance: "0",
         required: requiredAmount,
-        message: "Rewards payout key not configured",
+        message: "Rewards payout key not configured. Please set NEXT_PUBLIC_REWARDS_PAYOUT_KEY in your environment variables.",
+      }
+    }
+
+    // Validate private key format
+    const cleanedKey = REWARDS_PAYOUT_KEY.trim()
+    if (!cleanedKey.startsWith("0x")) {
+      return {
+        hasBalance: false,
+        adminBalance: "0",
+        required: requiredAmount,
+        message: "Invalid rewards payout key format. Private key must start with 0x.",
+      }
+    }
+
+    if (cleanedKey.length !== 66) {
+      return {
+        hasBalance: false,
+        adminBalance: "0",
+        required: requiredAmount,
+        message: `Invalid rewards payout key length. Expected 66 characters (with 0x), got ${cleanedKey.length}.`,
+      }
+    }
+
+    // Validate hex format
+    if (!/^0x[0-9a-fA-F]{64}$/.test(cleanedKey)) {
+      return {
+        hasBalance: false,
+        adminBalance: "0",
+        required: requiredAmount,
+        message: "Invalid rewards payout key format. Must be a valid hexadecimal private key.",
       }
     }
 
     const provider = getProvider(PEPU_CHAIN_ID)
-    const payoutWallet = new ethers.Wallet(REWARDS_PAYOUT_KEY, provider)
+    let payoutWallet: ethers.Wallet
+    try {
+      payoutWallet = new ethers.Wallet(cleanedKey, provider)
+    } catch (error: any) {
+      return {
+        hasBalance: false,
+        adminBalance: "0",
+        required: requiredAmount,
+        message: `Invalid rewards payout key: ${error.message || "Invalid private key format"}`,
+      }
+    }
 
     // ERC20 ABI for balance check
     const erc20Abi = [
@@ -258,12 +298,23 @@ export async function claimRewards(userAddress: string): Promise<string> {
     }
 
     // Get payout private key from config
-    if (!REWARDS_PAYOUT_KEY) {
+    if (!REWARDS_PAYOUT_KEY || REWARDS_PAYOUT_KEY.trim() === "") {
       throw new Error("Rewards payout key not configured. Please set NEXT_PUBLIC_REWARDS_PAYOUT_KEY environment variable.")
     }
 
+    // Validate private key format
+    const cleanedKey = REWARDS_PAYOUT_KEY.trim()
+    if (!cleanedKey.startsWith("0x") || cleanedKey.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(cleanedKey)) {
+      throw new Error("Invalid rewards payout key format. Private key must be 66 characters starting with 0x followed by 64 hexadecimal characters.")
+    }
+
     const provider = getProvider(PEPU_CHAIN_ID)
-    const payoutWallet = new ethers.Wallet(REWARDS_PAYOUT_KEY, provider)
+    let payoutWallet: ethers.Wallet
+    try {
+      payoutWallet = new ethers.Wallet(cleanedKey, provider)
+    } catch (error: any) {
+      throw new Error(`Invalid rewards payout key: ${error.message || "Invalid private key format"}`)
+    }
 
     // ERC20 ABI for transfer
     const erc20Abi = [
