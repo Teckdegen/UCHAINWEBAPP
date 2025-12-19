@@ -38,14 +38,23 @@ export const PEPU_CHAIN_ID = 97741
 export const ETH_CHAIN_ID = 1
 
 // ============================================
-// FEE WALLET (Hardcoded)
+// FEE WALLET (From Environment Variable)
 // ============================================
-export const FEE_WALLET = "0x0000000000000000000000000000000000000000" // TODO: Replace with actual fee wallet address
+// Set NEXT_PUBLIC_FEE_WALLET in your .env.local or hosting platform
+// In Next.js, NEXT_PUBLIC_* variables are available at build time
+export const FEE_WALLET = 
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_FEE_WALLET) ||
+  "0x0000000000000000000000000000000000000000" // Fallback to zero address if not set
 
 // ============================================
-// REWARDS PAYOUT KEY (Hardcoded)
+// REWARDS PAYOUT KEY (From Environment Variable)
 // ============================================
-export const REWARDS_PAYOUT_KEY = "" // TODO: Replace with actual rewards payout private key
+// Set NEXT_PUBLIC_REWARDS_PAYOUT_KEY in your .env.local or hosting platform
+// WARNING: This is exposed to the browser. Use a dedicated rewards wallet.
+// In Next.js, NEXT_PUBLIC_* variables are available at build time
+export const REWARDS_PAYOUT_KEY = 
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_REWARDS_PAYOUT_KEY) ||
+  "" // Empty string if not set
 
 // ============================================
 // BRIDGE CONFIGURATION (Hardcoded)
