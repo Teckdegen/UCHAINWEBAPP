@@ -381,10 +381,13 @@ export default function SettingsPage() {
                     // Reload page to update all balances
                     window.location.reload()
                   }}
-                  className="input-field"
+                  className="fancy-select"
                 >
                   {CURRENCIES.map((currency) => (
-                    <option key={currency.code} value={currency.code}>
+                    <option 
+                      key={currency.code} 
+                      value={currency.code}
+                    >
                       {currency.symbol} {currency.name} ({currency.code.toUpperCase()})
                     </option>
                   ))}
