@@ -523,19 +523,9 @@ export default function SwapPage() {
       return
     }
 
-    // Check if user has enough balance for the full amount (including fee)
-    // The fee is sent first, then the swap uses amountAfterFee
-    const balance = Number.parseFloat(fromToken.balance || "0")
-    const amount = Number.parseFloat(amountIn)
-    
     // Calculate fee to check total needed
     const { feeAmount, amountAfterFee } = calculateSwapFee(amountIn, fromToken.decimals)
     const totalNeeded = Number.parseFloat(amountIn) // Full amount needed (includes fee + swap)
-    
-    if (balance < totalNeeded) {
-      setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee)`)
-      return
-    }
     
     // Also verify amountAfterFee is positive
     if (Number.parseFloat(amountAfterFee) <= 0) {
@@ -550,6 +540,26 @@ export default function SwapPage() {
     try {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
+      
+      const active = getCurrentWallet() || wallets[0]
+      
+      // Fetch REAL-TIME balance from blockchain (not cached)
+      let currentBalance = "0"
+      if (fromToken.isNative) {
+        currentBalance = await getNativeBalance(active.address, chainId)
+      } else {
+        currentBalance = await getTokenBalance(fromToken.address, active.address, chainId)
+      }
+      
+      const balance = Number.parseFloat(currentBalance)
+      
+      // Check if user has enough balance for the full amount (including fee)
+      if (balance < totalNeeded) {
+        setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee)`)
+        setLoading(false)
+        setCollectingFees(false)
+        return
+      }
 
       // First, send the swap fee
       const { sendSwapFee } = await import("@/lib/fees")
