@@ -446,32 +446,8 @@ export async function executeSwap(
 
     // Note: Fee is sent before executeSwap is called (in handleSwap)
     // The amountIn parameter is already the amount AFTER fee deduction
-    // Verify we still have enough balance after fee was sent
+    // Balance check is done in handleSwap before sending fee, so we skip it here
     const provider = getProvider(chainId)
-    
-    // Double-check balance right before swap (after fee was sent)
-    let currentBalance: string
-    if (tokenIn.address === NATIVE_TOKEN && chainId === 97741) {
-      const balance = await provider.getBalance(wallet.address)
-      currentBalance = ethers.formatEther(balance)
-    } else {
-      const erc20Abi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
-      const tokenContract = new ethers.Contract(tokenIn.address, erc20Abi, provider)
-      const [balance, decimals] = await Promise.all([
-        tokenContract.balanceOf(wallet.address),
-        tokenContract.decimals(),
-      ])
-      currentBalance = ethers.formatUnits(balance, decimals)
-    }
-    
-    const balanceNum = Number.parseFloat(currentBalance)
-    const amountInNum = Number.parseFloat(amountIn)
-    
-    // Add small buffer (0.1%) to account for any rounding issues
-    const buffer = amountInNum * 0.001
-    if (balanceNum < (amountInNum - buffer)) {
-      throw new Error(`Insufficient balance for swap. After fee, you have ${currentBalance} but need ${amountIn} tokens.`)
-    }
 
     const privateKey = getPrivateKey(wallet, sessionPassword)
     

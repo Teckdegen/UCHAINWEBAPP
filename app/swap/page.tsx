@@ -615,25 +615,45 @@ export default function SwapPage() {
           // Calculate swap value in USD
           const { fetchPepuPrice } = await import("@/lib/coingecko")
           let tokenPrice = 0
+          let isBonded = false
           
           if (fromToken.isNative) {
-            // Native PEPU
+            // Native PEPU - always eligible for rewards
             tokenPrice = await fetchPepuPrice()
+            isBonded = true
           } else {
-            // For ERC20 tokens, try to get price from GeckoTerminal or use PEPU as proxy
+            // For ERC20 tokens, check if token is bonded (found on GeckoTerminal)
             try {
               const { fetchGeckoTerminalTokenDetails } = await import("@/lib/gecko")
-              const tokenDetails = await fetchGeckoTerminalTokenDetails(fromToken.address, chainId)
-              tokenPrice = tokenDetails?.price || 0
-            } catch {
-              // Fallback to PEPU price as proxy
-              tokenPrice = await fetchPepuPrice()
+              const tokenDetails = await fetchGeckoTerminalTokenDetails(fromToken.address, "pepe-unchained")
+              
+              // Token is bonded if it has a price on GeckoTerminal
+              if (tokenDetails && tokenDetails.price_usd !== null && tokenDetails.price_usd !== undefined) {
+                tokenPrice = tokenDetails.price_usd
+                isBonded = true
+              } else {
+                // Token not found or not bonded - no rewards
+                console.log(`[Rewards] Token ${fromToken.symbol} is not bonded (no price on GeckoTerminal), skipping reward`)
+                isBonded = false
+              }
+            } catch (error) {
+              // Token not found on GeckoTerminal - not bonded
+              console.log(`[Rewards] Token ${fromToken.symbol} not found on GeckoTerminal, skipping reward`)
+              isBonded = false
             }
           }
           
-          const swapValueUsd = Number.parseFloat(amountIn) * tokenPrice
-          if (swapValueUsd > 0) {
-            await addSwapReward(wallets[0].address, swapValueUsd)
+          // Only give rewards if:
+          // 1. Token is bonded (native PEPU or found on GeckoTerminal with price)
+          // 2. Swap value is above $20 USD
+          if (isBonded) {
+            const swapValueUsd = Number.parseFloat(amountIn) * tokenPrice
+            if (swapValueUsd >= 20) {
+              await addSwapReward(wallets[0].address, swapValueUsd)
+              console.log(`[Rewards] Added swap reward for ${swapValueUsd.toFixed(2)} USD swap`)
+            } else {
+              console.log(`[Rewards] Swap value ${swapValueUsd.toFixed(2)} USD is below $20 minimum, skipping reward`)
+            }
           }
         } catch (rewardError: any) {
           console.error("Failed to record swap reward:", rewardError)

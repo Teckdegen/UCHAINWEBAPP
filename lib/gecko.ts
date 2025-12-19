@@ -45,10 +45,10 @@ export async function fetchGeckoTerminalData(
   }
 }
 
-// Fetch full token details from GeckoTerminal (for ETH tokens)
+// Fetch full token details from GeckoTerminal (for ETH tokens or PEPU chain tokens)
 export async function fetchGeckoTerminalTokenDetails(
   tokenAddress: string,
-  network: "ethereum" = "ethereum",
+  network: "ethereum" | "pepe-unchained" = "ethereum",
 ): Promise<GeckoTokenFullData | null> {
   try {
     const response = await fetch(`${GECKO_TERMINAL_API_BASE}/${network}/tokens/${tokenAddress}`)
