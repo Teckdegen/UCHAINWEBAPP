@@ -225,6 +225,15 @@ export default function SendPage() {
     }
   }, [showTokenSelector])
 
+  // Debug: Log selectedToken changes
+  useEffect(() => {
+    if (selectedToken) {
+      console.log(`[Send] Selected token changed: ${selectedToken.symbol} (${selectedToken.name}) - isNative: ${selectedToken.isNative} - address: ${selectedToken.address}`)
+    } else {
+      console.log(`[Send] Selected token cleared`)
+    }
+  }, [selectedToken])
+
   const loadTokens = async () => {
     setLoadingTokens(true)
     setTokenLoadError("")
