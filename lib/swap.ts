@@ -446,8 +446,29 @@ export async function executeSwap(
 
     // Note: Fee is sent before executeSwap is called (in handleSwap)
     // The amountIn parameter is already the amount AFTER fee deduction
-    // Balance check is done in handleSwap before sending fee, so we skip it here
+    // For native token swaps, we need to check balance including gas fees
     const provider = getProvider(chainId)
+    
+    // For native token swaps, check if we have enough for swap amount + gas
+    if (tokenIn.address === NATIVE_TOKEN && chainId === 97741) {
+      const balance = await provider.getBalance(wallet.address)
+      const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals)
+      
+      // Estimate gas cost (use a conservative estimate)
+      const gasPrice = await provider.getFeeData()
+      const estimatedGas = BigInt(500000) // Conservative gas estimate for swap
+      const gasCost = estimatedGas * (gasPrice.gasPrice || BigInt(0))
+      
+      // Need: swap amount + gas cost
+      const totalNeeded = amountInWei + gasCost
+      
+      if (balance < totalNeeded) {
+        const balanceFormatted = ethers.formatEther(balance)
+        const amountFormatted = ethers.formatEther(amountInWei)
+        const gasCostFormatted = ethers.formatEther(gasCost)
+        throw new Error(`Insufficient balance for swap. You have ${balanceFormatted} PEPU, but need ${amountFormatted} for swap + ~${gasCostFormatted} for gas fees.`)
+      }
+    }
 
     const privateKey = getPrivateKey(wallet, sessionPassword)
     

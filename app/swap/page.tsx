@@ -557,18 +557,47 @@ export default function SwapPage() {
       const balance = Number.parseFloat(currentBalance)
       const amountEntered = Number.parseFloat(amountIn)
       
-      // Check if user has enough balance for the FULL amount they entered (before fee deduction)
-      // This ensures they have enough for both the fee AND the swap
-      if (balance < amountEntered) {
-        setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but entered ${amountEntered.toFixed(6)}. You need at least ${amountEntered.toFixed(6)} to cover the swap amount and fee.`)
+      // For native token swaps, estimate gas fees and add to total needed
+      let gasEstimate = 0
+      if (fromToken.isNative && chainId === 97741) {
+        // Estimate gas cost (conservative: ~0.01 PEPU for gas)
+        try {
+          const { getProviderWithFallback } = await import("@/lib/rpc")
+          const provider = await getProviderWithFallback(chainId)
+          const feeData = await provider.getFeeData()
+          const gasPrice = feeData.gasPrice || BigInt(12500000000000) // Default gas price
+          const estimatedGas = BigInt(500000) // Conservative estimate
+          const gasCostWei = estimatedGas * gasPrice
+          gasEstimate = Number.parseFloat(ethers.formatEther(gasCostWei))
+        } catch (error) {
+          // Fallback to conservative estimate
+          gasEstimate = 0.01 // ~0.01 PEPU for gas
+        }
+      }
+      
+      // Total needed: amount entered + gas (for native tokens)
+      const totalNeededWithGas = amountEntered + gasEstimate
+      
+      // Check if user has enough balance for the FULL amount they entered + gas
+      if (balance < totalNeededWithGas) {
+        if (fromToken.isNative) {
+          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeededWithGas.toFixed(6)} (${amountEntered.toFixed(6)} for swap + ${feeAmount} for fee + ~${gasEstimate.toFixed(6)} for gas)`)
+        } else {
+          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but entered ${amountEntered.toFixed(6)}. You need at least ${amountEntered.toFixed(6)} to cover the swap amount and fee.`)
+        }
         setLoading(false)
         setCollectingFees(false)
         return
       }
       
-      // Also verify that after fee deduction, they'll still have enough for the swap
-      if (balance < totalNeeded) {
-        setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} total (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee)`)
+      // Also verify that after fee deduction, they'll still have enough for the swap + gas
+      const totalAfterFee = Number.parseFloat(amountAfterFee) + gasEstimate
+      if (balance < (Number.parseFloat(amountIn) + gasEstimate)) {
+        if (fromToken.isNative) {
+          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${(Number.parseFloat(amountIn) + gasEstimate).toFixed(6)} total (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee + ~${gasEstimate.toFixed(6)} for gas)`)
+        } else {
+          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} total (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee)`)
+        }
         setLoading(false)
         setCollectingFees(false)
         return
