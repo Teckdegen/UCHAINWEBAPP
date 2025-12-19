@@ -228,6 +228,18 @@ export default function BridgePage() {
 
   return (
     <div className="min-h-screen bg-[#0e0e0f] pb-24">
+      {showNotification && notificationData && (
+        <TransactionNotification
+          message={notificationData.message}
+          txHash={notificationData.txHash}
+          explorerUrl={notificationData.explorerUrl}
+          onClose={() => {
+            setShowNotification(false)
+            setNotificationData(null)
+          }}
+          duration={10000}
+        />
+      )}
       {/* Header */}
       <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
