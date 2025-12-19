@@ -523,11 +523,15 @@ export default function SwapPage() {
       return
     }
 
-    // Check if user has enough balance
+    // Check if user has enough balance for the full amount (including fee)
+    // The fee is sent first, then the swap uses amountAfterFee
     const balance = Number.parseFloat(fromToken.balance || "0")
     const amount = Number.parseFloat(amountIn)
     if (balance < amount) {
-      setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${amount.toFixed(6)}`)
+      // Calculate fee to show in error message
+      const { feeAmount } = calculateSwapFee(amountIn, fromToken.decimals)
+      const totalNeeded = amount // Full amount needed (fee + swap)
+      setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} (${amount.toFixed(6)} for swap + ${feeAmount} for fee)`)
       return
     }
 

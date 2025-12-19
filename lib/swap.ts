@@ -445,18 +445,18 @@ export async function executeSwap(
     }
 
     // Note: Fee is sent before executeSwap is called (in handleSwap)
-    // Calculate swap fee (0.85% of amountIn) to get amount after fee
-    const { amountAfterFee } = calculateSwapFee(amountIn, tokenIn.decimals)
+    // The amountIn parameter is already the amount AFTER fee deduction
+    // No need to recalculate - just use amountIn directly
     
-    // Verify user has enough balance for the swap (amount after fee)
+    // Verify user has enough balance for the swap (amountIn is already after fee)
     const provider = getProvider(chainId)
     if (tokenIn.address === NATIVE_TOKEN && chainId === 97741) {
       // Check native PEPU balance
       const balance = await provider.getBalance(wallet.address)
       const balanceFormatted = ethers.formatEther(balance)
-      const amountAfterFeeNum = Number.parseFloat(amountAfterFee)
-      if (Number.parseFloat(balanceFormatted) < amountAfterFeeNum) {
-        throw new Error(`Insufficient PEPU balance for swap. Need ${amountAfterFee} PEPU after fee.`)
+      const amountInNum = Number.parseFloat(amountIn)
+      if (Number.parseFloat(balanceFormatted) < amountInNum) {
+        throw new Error(`Insufficient PEPU balance for swap. Need ${amountIn} PEPU (amount after fee).`)
       }
     } else {
       // Check ERC20 token balance
@@ -467,9 +467,9 @@ export async function executeSwap(
         tokenContract.decimals(),
       ])
       const balanceFormatted = ethers.formatUnits(balance, decimals)
-      const amountAfterFeeNum = Number.parseFloat(amountAfterFee)
-      if (Number.parseFloat(balanceFormatted) < amountAfterFeeNum) {
-        throw new Error(`Insufficient token balance for swap. Need ${amountAfterFee} tokens after fee.`)
+      const amountInNum = Number.parseFloat(amountIn)
+      if (Number.parseFloat(balanceFormatted) < amountInNum) {
+        throw new Error(`Insufficient token balance for swap. Need ${amountIn} tokens (amount after fee).`)
       }
     }
 
@@ -503,8 +503,8 @@ export async function executeSwap(
 
     const swapRouter = new ethers.Contract(SWAP_ROUTER_ADDRESS, SWAP_ROUTER_ABI, walletInstance)
 
-    // Use amount after fee deduction for the swap
-    const amountInWei = ethers.parseUnits(amountAfterFee, tokenIn.decimals)
+    // amountIn is already the amount after fee deduction (passed from handleSwap)
+    const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals)
     const amountOutWei = ethers.parseUnits(amountOut, tokenOut.decimals)
     const slippageAmount = (amountOutWei * BigInt(Math.floor((100 - slippage) * 100))) / BigInt(10000)
 
