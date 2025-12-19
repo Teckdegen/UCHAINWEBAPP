@@ -212,23 +212,21 @@ export async function checkAdminWalletBalance(requiredAmount: string): Promise<{
       }
     }
 
-    // Validate private key format
-    const cleanedKey = REWARDS_PAYOUT_KEY.trim()
+    // Validate and clean private key format
+    let cleanedKey = REWARDS_PAYOUT_KEY.trim()
+    
+    // Auto-add 0x prefix if missing
     if (!cleanedKey.startsWith("0x")) {
-      return {
-        hasBalance: false,
-        adminBalance: "0",
-        required: requiredAmount,
-        message: "Invalid rewards payout key format. Private key must start with 0x.",
-      }
+      cleanedKey = "0x" + cleanedKey
     }
 
+    // Validate length (should be 66 with 0x, or 64 without)
     if (cleanedKey.length !== 66) {
       return {
         hasBalance: false,
         adminBalance: "0",
         required: requiredAmount,
-        message: `Invalid rewards payout key length. Expected 66 characters (with 0x), got ${cleanedKey.length}.`,
+        message: `Invalid rewards payout key length. Expected 66 characters (with 0x) or 64 characters (without 0x), got ${cleanedKey.length}.`,
       }
     }
 
@@ -238,7 +236,7 @@ export async function checkAdminWalletBalance(requiredAmount: string): Promise<{
         hasBalance: false,
         adminBalance: "0",
         required: requiredAmount,
-        message: "Invalid rewards payout key format. Must be a valid hexadecimal private key.",
+        message: "Invalid rewards payout key format. Must be a valid hexadecimal private key (64 hex characters).",
       }
     }
 
@@ -302,10 +300,22 @@ export async function claimRewards(userAddress: string): Promise<string> {
       throw new Error("Rewards payout key not configured. Please set NEXT_PUBLIC_REWARDS_PAYOUT_KEY environment variable.")
     }
 
-    // Validate private key format
-    const cleanedKey = REWARDS_PAYOUT_KEY.trim()
-    if (!cleanedKey.startsWith("0x") || cleanedKey.length !== 66 || !/^0x[0-9a-fA-F]{64}$/.test(cleanedKey)) {
-      throw new Error("Invalid rewards payout key format. Private key must be 66 characters starting with 0x followed by 64 hexadecimal characters.")
+    // Validate and clean private key format
+    let cleanedKey = REWARDS_PAYOUT_KEY.trim()
+    
+    // Auto-add 0x prefix if missing
+    if (!cleanedKey.startsWith("0x")) {
+      cleanedKey = "0x" + cleanedKey
+    }
+
+    // Validate length (should be 66 with 0x)
+    if (cleanedKey.length !== 66) {
+      throw new Error(`Invalid rewards payout key length. Expected 66 characters (with 0x) or 64 characters (without 0x), got ${cleanedKey.length}.`)
+    }
+
+    // Validate hex format
+    if (!/^0x[0-9a-fA-F]{64}$/.test(cleanedKey)) {
+      throw new Error("Invalid rewards payout key format. Must be a valid hexadecimal private key (64 hex characters).")
     }
 
     const provider = getProvider(PEPU_CHAIN_ID)
