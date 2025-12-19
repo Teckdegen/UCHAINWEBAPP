@@ -272,14 +272,16 @@ export default function DomainsPage() {
     <div className="min-h-screen bg-black text-white pb-24">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0">
+        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 backdrop-blur-xl bg-gradient-to-b from-black/80 to-black/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <Globe className="w-5 h-5 text-green-500" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30 shadow-lg shadow-green-500/20">
+              <Globe className="w-6 h-6 text-green-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Register Domain</h1>
-              <p className="text-sm text-gray-400">Get your .pepu domain name</p>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
+                Register Domain
+              </h1>
+              <p className="text-sm text-gray-400">Get your unique .pepu domain name</p>
             </div>
           </div>
         </div>
@@ -287,15 +289,19 @@ export default function DomainsPage() {
         <div className="p-4 md:p-8 space-y-6">
           {/* User's Existing Domain */}
           {loadingUserDomain ? (
-            <div className="glass-card p-6 text-center">
-              <Loader className="w-5 h-5 animate-spin mx-auto text-green-500" />
-              <p className="text-sm text-gray-400 mt-2">Loading your domain...</p>
+            <div className="glass-card p-8 text-center border border-white/10 backdrop-blur-xl">
+              <Loader className="w-6 h-6 animate-spin mx-auto text-green-500" />
+              <p className="text-sm text-gray-400 mt-3">Loading your domain...</p>
             </div>
           ) : userDomain && userDomainInfo ? (
-            <div className="glass-card p-6 border border-green-500/30 bg-green-500/10">
-              <div className="flex items-center gap-2 mb-4">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <h2 className="text-xl font-bold">Your Domain</h2>
+            <div className="glass-card p-6 border-2 border-green-500/40 bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent backdrop-blur-xl shadow-2xl shadow-green-500/20">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center border border-green-500/50">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
+                  Your Domain
+                </h2>
               </div>
               <div className="space-y-3">
                 <div>
@@ -339,9 +345,9 @@ export default function DomainsPage() {
           ) : null}
 
           {/* Search Bar */}
-          <div>
-            <label className="block text-sm text-gray-400 mb-2">Search Domain</label>
-            <div className="flex gap-2">
+          <div className="glass-card p-6 border border-white/10 backdrop-blur-xl">
+            <label className="block text-sm font-semibold text-gray-300 mb-3">Search Domain</label>
+            <div className="flex gap-3">
               <div className="relative flex-1">
                 <input
                   type="text"
@@ -359,14 +365,14 @@ export default function DomainsPage() {
                     }
                   }}
                   placeholder="Enter domain name (e.g., myname)"
-                  className="input-field pl-10"
+                  className="input-field pl-12 bg-white/5 border-white/20 focus:border-green-500/50 focus:ring-2 focus:ring-green-500/30"
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               </div>
               <button
                 onClick={handleSearch}
                 disabled={isChecking || !searchQuery.trim()}
-                className="btn-primary px-6 disabled:opacity-50 flex items-center gap-2"
+                className="btn-primary px-8 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
               >
                 {isChecking ? (
                   <>
@@ -381,42 +387,52 @@ export default function DomainsPage() {
                 )}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Domain will be registered as: {searchQuery || "..."}.pepu</p>
+            <div className="mt-3 flex items-center gap-2">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              <p className="text-xs text-gray-500 px-2">
+                {searchQuery ? `${searchQuery}.pepu` : "yourname.pepu"}
+              </p>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            </div>
           </div>
 
           {/* Availability Status */}
           {isAvailable !== null && (
             <div
-              className={`glass-card p-4 border ${
+              className={`glass-card p-6 border-2 backdrop-blur-xl shadow-2xl transition-all duration-300 ${
                 isAvailable
-                  ? "border-green-500/50 bg-green-500/10"
-                  : "border-red-500/50 bg-red-500/10"
+                  ? "border-green-500/50 bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent shadow-green-500/20"
+                  : "border-red-500/50 bg-gradient-to-br from-red-500/20 via-red-500/10 to-transparent shadow-red-500/20"
               }`}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 {isAvailable ? (
                   <>
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                    <div>
-                      <p className="font-semibold text-green-400">
-                        {searchQuery.replace(".pepu", "")}.pepu is available!
+                    <div className="w-12 h-12 rounded-full bg-green-500/30 flex items-center justify-center border-2 border-green-500/50">
+                      <CheckCircle className="w-7 h-7 text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-lg text-green-400 mb-1">
+                        {searchQuery.replace(".pepu", "")}.pepu is available! 🎉
                       </p>
                       {domainStatus && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          Base fee: {Number.parseFloat(domainStatus.fee).toFixed(2)} USDC per year
+                        <p className="text-sm text-gray-300">
+                          Base fee: <span className="font-semibold text-green-400">{Number.parseFloat(domainStatus.fee).toFixed(2)} USDC</span> per year
                         </p>
                       )}
                     </div>
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <div>
-                      <p className="font-semibold text-red-400">
+                    <div className="w-12 h-12 rounded-full bg-red-500/30 flex items-center justify-center border-2 border-red-500/50">
+                      <XCircle className="w-7 h-7 text-red-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-lg text-red-400 mb-1">
                         {searchQuery.replace(".pepu", "")}.pepu is not available
                       </p>
                       {domainStatus && domainStatus.exists && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-sm text-gray-300">
                           {domainStatus.expired
                             ? "This domain has expired"
                             : `Registered for ${domainStatus.remainingDays} more days`}
@@ -431,8 +447,15 @@ export default function DomainsPage() {
 
           {/* Registration Form */}
           {showRegisterForm && isAvailable && (
-            <div className="glass-card p-6 space-y-4">
-              <h3 className="text-lg font-bold">Register Domain</h3>
+            <div className="glass-card p-6 space-y-6 border-2 border-green-500/30 bg-gradient-to-br from-green-500/10 via-transparent to-transparent backdrop-blur-xl shadow-2xl shadow-green-500/10">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center border border-green-500/50">
+                  <Globe className="w-5 h-5 text-green-400" />
+                </div>
+                <h3 className="text-xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
+                  Register Domain
+                </h3>
+              </div>
 
               {/* Input Mode Toggle */}
               <div>
@@ -543,30 +566,35 @@ export default function DomainsPage() {
               </div>
 
               {/* Fee Display */}
-              <div className="glass-card p-4 bg-white/5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Registration Fee</span>
+              <div className="glass-card p-5 bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-xl">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-gray-300">Registration Fee</span>
                   {loadingFee ? (
-                    <Loader className="w-4 h-4 animate-spin text-green-400" />
+                    <Loader className="w-5 h-5 animate-spin text-green-400" />
                   ) : (
-                    <span className="text-lg font-bold text-green-400">
+                    <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
                       {Number.parseFloat(registrationFee).toFixed(2)} USDC
                     </span>
                   )}
                 </div>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>USDC Balance</span>
+                <div className="flex items-center justify-between text-sm text-gray-400 mb-3 pb-3 border-b border-white/10">
+                  <span>Your USDC Balance</span>
                   {loadingBalance ? (
-                    <Loader className="w-3 h-3 animate-spin" />
+                    <Loader className="w-4 h-4 animate-spin" />
                   ) : (
-                    <span>{Number.parseFloat(usdcBalance).toFixed(2)} USDC</span>
+                    <span className="font-semibold">{Number.parseFloat(usdcBalance).toFixed(2)} USDC</span>
                   )}
                 </div>
                 {Number.parseFloat(usdcBalance) < Number.parseFloat(registrationFee) && (
-                  <p className="text-xs text-red-400 mt-2">
-                    Insufficient USDC balance. You need{" "}
-                    {(Number.parseFloat(registrationFee) - Number.parseFloat(usdcBalance)).toFixed(2)} more USDC.
-                  </p>
+                  <div className="mt-3 p-3 rounded-lg bg-red-500/20 border border-red-500/50">
+                    <p className="text-sm text-red-400 font-semibold">
+                      ⚠️ Insufficient USDC balance. You need{" "}
+                      <span className="font-bold">
+                        {(Number.parseFloat(registrationFee) - Number.parseFloat(usdcBalance)).toFixed(2)} more USDC
+                      </span>
+                      .
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -603,16 +631,16 @@ export default function DomainsPage() {
                   !password ||
                   Number.parseFloat(usdcBalance) < Number.parseFloat(registrationFee)
                 }
-                className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
+                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 py-4 text-lg font-bold shadow-lg shadow-green-500/30 hover:shadow-green-500/40 transition-all"
               >
                 {registering ? (
                   <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    Registering...
+                    <Loader className="w-5 h-5 animate-spin" />
+                    Registering Domain...
                   </>
                 ) : (
                   <>
-                    <Globe className="w-4 h-4" />
+                    <Globe className="w-5 h-5" />
                     Register {searchQuery.replace(".pepu", "")}.pepu
                   </>
                 )}
