@@ -783,7 +783,7 @@ export default function SwapPage() {
           </div>
 
           {/* Swap Icon */}
-          <div className="flex justify-center -my-2 relative z-10">
+          <div className="flex justify-center -my-3 relative z-10">
             <button
               onClick={() => {
                 const temp = fromToken
@@ -792,9 +792,9 @@ export default function SwapPage() {
                 setAmountIn("")
                 setAmountOut("")
               }}
-              className="glass-card p-4 hover:bg-white/10 transition-all duration-300 rounded-2xl border-2 border-white/10 hover:border-green-500/50 hover:scale-110 shadow-lg"
+              className="glass-card p-3 hover:bg-white/10 transition-all duration-300 rounded-full border-2 border-white/10 hover:border-green-500/50 hover:scale-110 shadow-lg bg-black/60 backdrop-blur-xl"
             >
-              <ArrowRightLeft className="w-6 h-6 text-green-400" />
+              <ArrowRightLeft className="w-5 h-5 text-green-400" />
             </button>
           </div>
 
