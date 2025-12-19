@@ -271,12 +271,16 @@ export default function SendPage() {
       if (currentChainId === 1) {
         try {
           const ethTokens = await getAllEthTokenBalances(wallet.address)
+          console.log(`[Send] Loaded ${ethTokens.length} ETH tokens from getAllEthTokenBalances`)
           for (const ethToken of ethTokens) {
             if (!isTokenBlacklisted(ethToken.address, currentChainId)) {
+              // Ensure symbol is preserved correctly
+              const tokenSymbol = ethToken.symbol && ethToken.symbol.trim() !== "" ? ethToken.symbol.trim() : "TOKEN"
+              console.log(`[Send] Adding ETH token: ${tokenSymbol} (${ethToken.name}) at ${ethToken.address}`)
               allTokens.push({
                 address: ethToken.address,
-                name: ethToken.name,
-                symbol: ethToken.symbol,
+                name: ethToken.name || "Unknown Token",
+                symbol: tokenSymbol,
                 decimals: ethToken.decimals,
                 balance: ethToken.balanceFormatted,
                 isNative: false,
@@ -306,14 +310,25 @@ export default function SendPage() {
                 const [balance, decimals, symbol, name] = await Promise.all([
                   contract.balanceOf(wallet.address).catch(() => ethers.parseUnits("0", 18)),
                   contract.decimals().catch(() => 18),
-                  contract.symbol().catch(() => "???"),
-                  contract.name().catch(() => "Unknown Token"),
+                  contract.symbol().catch(() => {
+                    console.warn(`[Send] Failed to fetch symbol for custom token ${customTokenAddress}, using fallback`)
+                    return "TOKEN"
+                  }),
+                  contract.name().catch(() => {
+                    console.warn(`[Send] Failed to fetch name for custom token ${customTokenAddress}, using fallback`)
+                    return "Unknown Token"
+                  }),
                 ])
+                
+                // Ensure symbol is not empty and not "ETH" unless it's actually ETH
+                const tokenSymbol = symbol && symbol.trim() !== "" ? symbol.trim() : "TOKEN"
+                
                 const balanceFormatted = ethers.formatUnits(balance, decimals)
+                console.log(`[Send] Adding custom ETH token: ${tokenSymbol} (${name}) at ${customTokenAddress}`)
                 allTokens.push({
                   address: customTokenAddress.toLowerCase(),
-                  name,
-                  symbol,
+                  name: name || "Unknown Token",
+                  symbol: tokenSymbol,
                   decimals: Number(decimals),
                   balance: balanceFormatted,
                   isNative: false,
@@ -360,15 +375,26 @@ export default function SendPage() {
               const [balance, decimals, symbol, name] = await Promise.all([
                 contract.balanceOf(wallet.address),
                 contract.decimals(),
-                contract.symbol().catch(() => "???"),
-                contract.name().catch(() => "Unknown Token"),
+                contract.symbol().catch(() => {
+                  console.warn(`[Send] Failed to fetch symbol for token ${tokenAddress}, using fallback`)
+                  return "TOKEN"
+                }),
+                contract.name().catch(() => {
+                  console.warn(`[Send] Failed to fetch name for token ${tokenAddress}, using fallback`)
+                  return "Unknown Token"
+                }),
               ])
+              
+              // Ensure symbol is not empty and not "ETH" unless it's actually ETH
+              const tokenSymbol = symbol && symbol.trim() !== "" ? symbol.trim() : "TOKEN"
+              
               const balanceFormatted = ethers.formatUnits(balance, decimals)
               if (Number.parseFloat(balanceFormatted) > 0) {
+                console.log(`[Send] Adding PEPU token: ${tokenSymbol} (${name}) at ${tokenAddress}`)
                 allTokens.push({
                   address: tokenAddress,
-                  name,
-                  symbol,
+                  name: name || "Unknown Token",
+                  symbol: tokenSymbol,
                   decimals: Number(decimals),
                   balance: balanceFormatted,
                   isNative: false,
@@ -383,17 +409,32 @@ export default function SendPage() {
         }
       }
 
+      console.log(`[Send] Total tokens loaded: ${allTokens.length}`)
+      allTokens.forEach((token, index) => {
+        console.log(`[Send] Token ${index + 1}: ${token.symbol} (${token.name}) - ${token.balance} - isNative: ${token.isNative} - address: ${token.address}`)
+      })
+      
       setTokens(allTokens)
       if (allTokens.length > 0) {
         if (!selectedToken) {
+          console.log(`[Send] No selected token, setting to first: ${allTokens[0].symbol} (${allTokens[0].name})`)
           setSelectedToken(allTokens[0])
           setBalance(allTokens[0].balance)
         } else {
-          const updated = allTokens.find((t) => t.address === selectedToken.address)
+          const updated = allTokens.find((t) => t.address.toLowerCase() === selectedToken.address.toLowerCase())
           if (updated) {
-            setSelectedToken(updated)
-            setBalance(updated.balance)
+            console.log(`[Send] Found updated token: ${updated.symbol} (${updated.name}) - was ${selectedToken.symbol} (${selectedToken.name})`)
+            // Ensure we preserve the correct symbol
+            if (updated.symbol && updated.symbol.trim() !== "") {
+              setSelectedToken(updated)
+              setBalance(updated.balance)
+            } else {
+              console.warn(`[Send] Updated token has empty symbol, using first token instead`)
+              setSelectedToken(allTokens[0])
+              setBalance(allTokens[0].balance)
+            }
           } else {
+            console.log(`[Send] Selected token not found in new list, setting to first: ${allTokens[0].symbol} (${allTokens[0].name})`)
             setSelectedToken(allTokens[0])
             setBalance(allTokens[0].balance)
           }
@@ -693,6 +734,13 @@ export default function SendPage() {
                             <button
                               key={token.address}
                               onClick={() => {
+                                console.log(`[Send] User selected token: ${token.symbol} (${token.name}) at ${token.address}`)
+                                // Ensure token has valid symbol before selecting
+                                if (!token.symbol || token.symbol.trim() === "") {
+                                  console.error(`[Send] Token has empty symbol, cannot select: ${token.address}`)
+                                  setError("Token symbol is missing. Please try again.")
+                                  return
+                                }
                                 setSelectedToken(token)
                                 setBalance(token.balance)
                                 setShowTokenSelector(false)
@@ -701,8 +749,8 @@ export default function SendPage() {
                             >
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="font-semibold">{token.symbol}</p>
-                                  <p className="text-xs text-gray-400">{token.name}</p>
+                                  <p className="font-semibold">{token.symbol || "TOKEN"}</p>
+                                  <p className="text-xs text-gray-400">{token.name || "Unknown Token"}</p>
                                 </div>
                                 <p className="text-sm text-green-400">{Number.parseFloat(token.balance).toFixed(4)}</p>
                               </div>
