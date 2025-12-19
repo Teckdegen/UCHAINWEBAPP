@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { getWallets, getWalletState, updateActivity, getCurrentWallet } from "@/lib/wallet"
+import { getUnchainedProvider } from "@/lib/provider"
 import { Copy, Check } from "lucide-react"
 import { QRCodeCanvas } from "qrcode.react"
 import BottomNav from "@/components/BottomNav"
@@ -10,7 +11,14 @@ import BottomNav from "@/components/BottomNav"
 export default function ReceivePage() {
   const router = useRouter()
   const [address, setAddress] = useState("")
-  const [chainId, setChainId] = useState(1)
+  const [chainId, setChainId] = useState(() => {
+    // Initialize from localStorage or default to PEPU
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("selected_chain")
+      return saved ? Number(saved) : 97741
+    }
+    return 97741
+  })
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -21,13 +29,23 @@ export default function ReceivePage() {
       return
     }
 
+    // Sync chainId from localStorage (in case it changed on another page)
+    const saved = localStorage.getItem("selected_chain")
+    if (saved && Number(saved) !== chainId) {
+      setChainId(Number(saved))
+    }
+
+    // Update provider chainId
+    const provider = getUnchainedProvider()
+    provider.setChainId(chainId)
+
     // No password required for receive page
     updateActivity()
     const wallet = getCurrentWallet() || wallets[0]
     if (wallet) {
       setAddress(wallet.address)
     }
-  }, [router])
+  }, [router, chainId])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(address)
@@ -49,7 +67,13 @@ export default function ReceivePage() {
           <label className="block text-sm text-gray-400 mb-3">Network</label>
           <div className="flex gap-2">
             <button
-              onClick={() => setChainId(1)}
+              onClick={() => {
+                const newChainId = 1
+                setChainId(newChainId)
+                localStorage.setItem("selected_chain", newChainId.toString())
+                const provider = getUnchainedProvider()
+                provider.setChainId(newChainId)
+              }}
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all flex-1 ${
                 chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
               }`}
@@ -57,7 +81,13 @@ export default function ReceivePage() {
               Ethereum
             </button>
             <button
-              onClick={() => setChainId(97741)}
+              onClick={() => {
+                const newChainId = 97741
+                setChainId(newChainId)
+                localStorage.setItem("selected_chain", newChainId.toString())
+                const provider = getUnchainedProvider()
+                provider.setChainId(newChainId)
+              }}
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all flex-1 ${
                 chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
               }`}

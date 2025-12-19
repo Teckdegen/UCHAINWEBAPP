@@ -20,6 +20,7 @@ import { getNativeBalance, getProviderWithFallback } from "@/lib/rpc"
 import { reportRpcError, reportRpcSuccess, getRpcHealthStatus, subscribeToRpcHealth } from "@/lib/rpcHealth"
 import { isTokenBlacklisted } from "@/lib/blacklist"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
+import { getSavedCurrency, getDefaultCurrency, type Currency } from "@/lib/currencies"
 import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
@@ -43,6 +44,7 @@ export default function DashboardPage() {
   const [portfolioValue, setPortfolioValue] = useState("0.00")
   const [pepuPrice, setPepuPrice] = useState<number>(0)
   const [ethPrice, setEthPrice] = useState<number>(0)
+  const [displayCurrency, setDisplayCurrency] = useState<Currency>(getSavedCurrency())
   const [balances, setBalances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
@@ -133,6 +135,11 @@ export default function DashboardPage() {
     setWallets(wallets)
     setCurrentWalletIdState(getCurrentWalletId())
     
+    // Load display currency
+    if (typeof window !== "undefined") {
+      setDisplayCurrency(getSavedCurrency())
+    }
+    
     const wallet = getCurrentWallet() || wallets[0]
     
     // Try to load from cache first if available
@@ -158,6 +165,15 @@ export default function DashboardPage() {
     
     fetchBalances()
     
+    // Listen for currency changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "display_currency") {
+        setDisplayCurrency(getSavedCurrency())
+        fetchBalances()
+      }
+    }
+    window.addEventListener("storage", handleStorageChange)
+    
     // Set up retry mechanism: retry more frequently when RPC is unhealthy
     let retryInterval: NodeJS.Timeout | null = null
     let healthCheckInterval: NodeJS.Timeout | null = null
@@ -175,7 +191,7 @@ export default function DashboardPage() {
       const retryDelay = healthStatus.isHealthy ? 30000 : 5000
       
       retryInterval = setInterval(() => {
-        fetchBalances()
+    fetchBalances()
       }, retryDelay)
     }
     
@@ -198,8 +214,9 @@ export default function DashboardPage() {
       if (retryInterval) clearInterval(retryInterval)
       if (healthCheckInterval) clearInterval(healthCheckInterval)
       unsubscribe()
+      window.removeEventListener("storage", handleStorageChange)
     }
-  }, [router, chainId])
+  }, [router, chainId, displayCurrency])
 
   // Save chainId to localStorage and sync with provider when it changes
   useEffect(() => {
@@ -259,15 +276,17 @@ export default function DashboardPage() {
       let nativeUsdValue = "0.00"
 
       // CRITICAL: Only fetch ETH price if explicitly on chain 1, otherwise use PEPU
+      // Use selected currency for price fetching
+      const currencyCode = displayCurrency.code
       if (currentChainId === 1) {
-        // Ethereum - fetch from CoinGecko
-        const price = await fetchEthPrice()
+        // Ethereum - fetch from CoinGecko in selected currency
+        const price = await fetchEthPrice(currencyCode)
         setEthPrice(price)
         nativePrice = price
         nativeUsdValue = (Number.parseFloat(balance) * price).toFixed(2)
       } else {
-        // PEPU (default) - fetch from CoinGecko
-        const price = await fetchPepuPrice()
+        // PEPU (default) - fetch from CoinGecko in selected currency
+        const price = await fetchPepuPrice(currencyCode)
         setPepuPrice(price)
         nativePrice = price
         nativeUsdValue = (Number.parseFloat(balance) * price).toFixed(2)
@@ -424,7 +443,7 @@ export default function DashboardPage() {
                   isBonded,
                   priceUsd: isBonded ? priceUsd : null,
                 }
-              } catch (error) {
+    } catch (error) {
                 console.error(`Error fetching token ${tokenAddress}:`, error)
                 return null
               }
@@ -585,7 +604,7 @@ export default function DashboardPage() {
                         return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My Wallet"
                       })()}
                     </p>
-                  </div>
+          </div>
                 </button>
                 {/* Simple dropdown list, toggled by button */}
                 {showWalletMenu && (
@@ -635,15 +654,17 @@ export default function DashboardPage() {
         <div className="glass-card p-8 mb-8">
           <div className="text-center">
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Portfolio Value</p>
-            <h2 className="text-6xl font-bold gradient-text mb-3 tracking-tight">${portfolioValue}</h2>
+            <h2 className="text-6xl font-bold gradient-text mb-3 tracking-tight">
+              {displayCurrency.symbol}{portfolioValue}
+            </h2>
             {chainId === 97741 && pepuPrice > 0 && (
               <p className="text-xs text-gray-500 mb-2">
-                PEPU Price: ${pepuPrice.toFixed(8)}
+                PEPU Price: {displayCurrency.symbol}{pepuPrice.toFixed(8)}
               </p>
             )}
             {chainId === 1 && ethPrice > 0 && (
               <p className="text-xs text-gray-500 mb-2">
-                ETH Price: ${ethPrice.toFixed(2)}
+                ETH Price: {displayCurrency.symbol}{ethPrice.toFixed(2)}
               </p>
             )}
           </div>
@@ -677,7 +698,7 @@ export default function DashboardPage() {
                 <Download className="w-6 h-6 text-green-500" />
               </div>
               <p className="text-sm font-semibold">Receive</p>
-                </Link>
+            </Link>
               </div>
 
               {/* ETH Add Custom Token "+" button under Send/Receive */}
@@ -693,8 +714,8 @@ export default function DashboardPage() {
                 >
                   +
                 </button>
-              </div>
-            </div>
+                  </div>
+                </div>
           ) : (
             // PEPU: Bridge + Swap + Tokens + Transactions - All on one line, compact size
             <div className="flex items-center justify-between gap-1 flex-nowrap">
@@ -703,12 +724,12 @@ export default function DashboardPage() {
                   <Network className="w-2.5 h-2.5 text-green-500" />
                 </div>
                 <p className="text-[8px] font-semibold leading-tight">Bridge</p>
-            </Link>
+              </Link>
 
               <Link href="/swap" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
                   <ArrowLeftRight className="w-2.5 h-2.5 text-green-500" />
-                </div>
+                  </div>
                 <p className="text-[8px] font-semibold leading-tight">Swap</p>
               </Link>
 
@@ -722,17 +743,17 @@ export default function DashboardPage() {
               <Link href="/transactions" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
                   <History className="w-2.5 h-2.5 text-green-500" />
-                </div>
+                  </div>
                 <p className="text-[8px] font-semibold leading-tight">Txs</p>
               </Link>
 
               <Link href="/rewards" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
                   <Gift className="w-2.5 h-2.5 text-green-500" />
-                </div>
+                  </div>
                 <p className="text-[8px] font-semibold leading-tight">Rewards</p>
               </Link>
-            </div>
+                </div>
             )}
         </div>
 
@@ -760,7 +781,7 @@ export default function DashboardPage() {
                   {!token.isNative && !token.isBonded ? (
                     <p className="text-xs text-gray-500">Not Bonded</p>
                   ) : (
-                  <p className="text-xs text-green-400">${token.usdValue}</p>
+                  <p className="text-xs text-green-400">{displayCurrency.symbol}{token.usdValue}</p>
                   )}
                 </div>
               </div>

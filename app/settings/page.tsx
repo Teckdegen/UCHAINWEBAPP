@@ -18,7 +18,8 @@ import {
   clearAllWallets,
 } from "@/lib/wallet"
 import { deleteAllCookies } from "@/lib/cookies"
-import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key } from "lucide-react"
+import { CURRENCIES, getSavedCurrency, saveCurrency, getDefaultCurrency, type Currency } from "@/lib/currencies"
+import { Settings, Lock, Eye, EyeOff, Copy, Check, Trash2, Key, DollarSign } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 
 export default function SettingsPage() {
@@ -36,6 +37,7 @@ export default function SettingsPage() {
   const [changePasscodeLoading, setChangePasscodeLoading] = useState(false)
   const [changePasscodeSuccess, setChangePasscodeSuccess] = useState("")
   const [autoLockSeconds, setAutoLockSecondsState] = useState<number>(60)
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(getDefaultCurrency())
 
   useEffect(() => {
     // Check if wallet exists
@@ -52,6 +54,7 @@ export default function SettingsPage() {
     // Load auto-lock setting
     if (typeof window !== "undefined") {
       setAutoLockSecondsState(getAutoLockSeconds())
+      setSelectedCurrency(getSavedCurrency())
     }
   }, [router])
 
@@ -354,6 +357,42 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+            </div>
+          </div>
+
+          {/* Currency Settings */}
+          <div className="glass-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-green-500" />
+                <h2 className="text-lg font-bold">Display Currency</h2>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Select Currency</label>
+                <select
+                  value={selectedCurrency.code}
+                  onChange={(e) => {
+                    const currency = CURRENCIES.find((c) => c.code === e.target.value) || getDefaultCurrency()
+                    setSelectedCurrency(currency)
+                    saveCurrency(currency)
+                    // Reload page to update all balances
+                    window.location.reload()
+                  }}
+                  className="input-field"
+                >
+                  {CURRENCIES.map((currency) => (
+                    <option key={currency.code} value={currency.code}>
+                      {currency.symbol} {currency.name} ({currency.code.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Your portfolio balance will be displayed in the selected currency.
+                </p>
+              </div>
             </div>
           </div>
 
