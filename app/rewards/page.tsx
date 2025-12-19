@@ -8,6 +8,7 @@ import { fetchGeckoTerminalData } from "@/lib/gecko"
 import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
 import { Gift, Loader, CheckCircle, XCircle } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
+import TransactionNotification from "@/components/TransactionNotification"
 
 export default function RewardsPage() {
   const router = useRouter()
@@ -22,6 +23,8 @@ export default function RewardsPage() {
   const [uchainPrice, setUchainPrice] = useState<number>(0)
   const [adminHasBalance, setAdminHasBalance] = useState(true)
   const [adminBalanceCheck, setAdminBalanceCheck] = useState<{ hasBalance: boolean; message?: string } | null>(null)
+  const [showNotification, setShowNotification] = useState(false)
+  const [notificationData, setNotificationData] = useState<{ message: string; txHash?: string; explorerUrl?: string } | null>(null)
 
   useEffect(() => {
     // Check if wallet exists
@@ -126,7 +129,16 @@ export default function RewardsPage() {
       const active = getCurrentWallet() || wallets[0]
       const txHash = await claimRewards(active.address)
 
-      setSuccess(`Rewards claimed! Transaction: ${txHash}`)
+      const explorerUrl = `https://pepuscan.com/tx/${txHash}`
+      
+      // Show transaction notification
+      setNotificationData({
+        message: "Rewards claimed successfully!",
+        txHash,
+        explorerUrl,
+      })
+      setShowNotification(true)
+      setSuccess("")
       setRewardsBalance("0")
 
       // Reload data after a delay

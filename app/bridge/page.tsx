@@ -8,6 +8,7 @@ import { getFeePercentage, executeBridge, getPoolBalance } from "@/lib/bridge"
 import { MAX_BRIDGE_POOL } from "@/lib/config"
 import { Zap, Loader } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
+import TransactionNotification from "@/components/TransactionNotification"
 
 export default function BridgePage() {
   const router = useRouter()
@@ -25,6 +26,8 @@ export default function BridgePage() {
     received: string
     hash: string
   } | null>(null)
+  const [showNotification, setShowNotification] = useState(false)
+  const [notificationData, setNotificationData] = useState<{ message: string; txHash?: string; explorerUrl?: string } | null>(null)
 
   useEffect(() => {
     // Check if wallet exists
@@ -143,6 +146,14 @@ export default function BridgePage() {
 
       // Store transaction in history with full link
       const explorerUrl = `https://pepuscan.com/tx/${hash}`
+      
+      // Show transaction notification
+      setNotificationData({
+        message: "Bridge successful!",
+        txHash: hash,
+        explorerUrl,
+      })
+      setShowNotification(true)
       const txHistory = JSON.parse(localStorage.getItem("transaction_history") || "[]")
       txHistory.unshift({
         hash,

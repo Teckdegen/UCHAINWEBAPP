@@ -11,6 +11,7 @@ import { calculateSwapFee, checkSwapFeeBalance } from "@/lib/fees"
 import { TrendingUp, Loader, ArrowRightLeft, ChevronDown, ExternalLink, RotateCcw } from "lucide-react"
 import BottomNav from "@/components/BottomNav"
 import TokenDetailsModal from "@/components/TokenDetailsModal"
+import TransactionNotification from "@/components/TransactionNotification"
 
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
@@ -552,10 +553,20 @@ export default function SwapPage() {
       }
       
       const balance = Number.parseFloat(currentBalance)
+      const amountEntered = Number.parseFloat(amountIn)
       
-      // Check if user has enough balance for the full amount (including fee)
+      // Check if user has enough balance for the FULL amount they entered (before fee deduction)
+      // This ensures they have enough for both the fee AND the swap
+      if (balance < amountEntered) {
+        setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but entered ${amountEntered.toFixed(6)}. You need at least ${amountEntered.toFixed(6)} to cover the swap amount and fee.`)
+        setLoading(false)
+        setCollectingFees(false)
+        return
+      }
+      
+      // Also verify that after fee deduction, they'll still have enough for the swap
       if (balance < totalNeeded) {
-        setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee)`)
+        setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} total (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee)`)
         setLoading(false)
         setCollectingFees(false)
         return
@@ -630,11 +641,18 @@ export default function SwapPage() {
         }
       }
 
-      // Show full transaction link
+      // Show transaction notification
       const explorerUrl = chainId === 1 
         ? `https://etherscan.io/tx/${txHash}`
         : `https://pepuscan.com/tx/${txHash}`
-      setSuccess(`Swap successful! View transaction: ${explorerUrl}`)
+      
+      setNotificationData({
+        message: "Swap successful!",
+        txHash,
+        explorerUrl,
+      })
+      setShowNotification(true)
+      setSuccess("")
       
       // Store transaction in history
       const txHistory = JSON.parse(localStorage.getItem("transaction_history") || "[]")
