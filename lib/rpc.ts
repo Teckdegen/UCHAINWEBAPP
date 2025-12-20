@@ -5,7 +5,7 @@ import { getEtherscanEthBalance } from "./etherscan"
 import { reportRpcError, reportRpcSuccess } from "./rpcHealth"
 
 // Single ETH RPC endpoint (as per user requirement)
-const ETHEREUM_RPC = "https://eth.llamarpc.com"
+const ETHEREUM_RPC = "https://ethereum-rpc.publicnode.com"
 
 const RPC_URLS: Record<number, string | string[]> = {
   1: ETHEREUM_RPC,
