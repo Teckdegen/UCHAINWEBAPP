@@ -463,10 +463,26 @@ export async function executeSwap(
       const totalNeeded = amountInWei + gasCost
       
       if (balance < totalNeeded) {
-        const balanceFormatted = ethers.formatEther(balance)
-        const amountFormatted = ethers.formatEther(amountInWei)
-        const gasCostFormatted = ethers.formatEther(gasCost)
-        throw new Error(`Insufficient balance for swap. You have ${balanceFormatted} PEPU, but need ${amountFormatted} for swap + ~${gasCostFormatted} for gas fees.`)
+        // Format with reasonable decimal places for display
+        const balanceFormatted = Number.parseFloat(ethers.formatEther(balance)).toFixed(6)
+        const amountFormatted = Number.parseFloat(ethers.formatEther(amountInWei)).toFixed(6)
+        const gasCostFormatted = Number.parseFloat(ethers.formatEther(gasCost)).toFixed(6)
+        const totalNeededFormatted = Number.parseFloat(ethers.formatEther(totalNeeded)).toFixed(6)
+        
+        // Log for debugging
+        console.error(`[Swap] Balance check failed:`, {
+          balance: balance.toString(),
+          balanceFormatted,
+          amountInWei: amountInWei.toString(),
+          amountFormatted,
+          gasCost: gasCost.toString(),
+          gasCostFormatted,
+          totalNeeded: totalNeeded.toString(),
+          totalNeededFormatted,
+          walletAddress: wallet.address,
+        })
+        
+        throw new Error(`Insufficient balance for swap. You have ${balanceFormatted} PEPU, but need ${totalNeededFormatted} total (${amountFormatted} for swap + ~${gasCostFormatted} for gas fees). Please check your balance on the explorer or try a smaller amount.`)
       }
     }
 
