@@ -1182,6 +1182,20 @@ export default function SwapPage() {
           chainId={chainId}
         />
       )}
+
+      {/* Transaction Notification */}
+      {showNotification && notificationData && (
+        <TransactionNotification
+          message={notificationData.message}
+          txHash={notificationData.txHash}
+          explorerUrl={notificationData.explorerUrl}
+          onClose={() => {
+            setShowNotification(false)
+            setNotificationData(null)
+          }}
+          duration={10000} // 10 seconds
+        />
+      )}
     </div>
   )
 }

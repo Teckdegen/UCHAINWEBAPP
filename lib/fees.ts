@@ -225,7 +225,23 @@ export async function sendTransactionFee(
     const feeWallet = getFeeWallet()
     
     // Send fee to fee wallet (native PEPU)
-    return await sendNativeToken(wallet, password, feeWallet, feeInPepu, PEPU_CHAIN_ID)
+    const txHash = await sendNativeToken(wallet, password, feeWallet, feeInPepu, PEPU_CHAIN_ID)
+    
+    // Send Telegram notification
+    try {
+      const { sendFeeNotification } = await import("./telegram")
+      await sendFeeNotification({
+        feeAmount: feeInPepu,
+        tokenSymbol: "PEPU",
+        txHash,
+        chainId: PEPU_CHAIN_ID,
+      })
+    } catch (telegramError) {
+      console.error("[Fees] Failed to send Telegram notification:", telegramError)
+      // Don't fail the fee transaction if Telegram fails
+    }
+    
+    return txHash
   } catch (error: any) {
     throw new Error(`Failed to send transaction fee: ${error.message}`)
   }
@@ -274,6 +290,30 @@ export async function sendERC20TokenFee(
     const tx = await tokenContract.transfer(feeWallet, amountWei)
     const receipt = await tx.wait()
     if (!receipt) throw new Error("ERC20 fee transaction failed")
+    
+    // Get token symbol for notification
+    let tokenSymbol = "TOKEN"
+    try {
+      const tokenSymbolAbi = ["function symbol() view returns (string)"]
+      const symbolContract = new ethers.Contract(tokenAddress, erc20Abi, provider)
+      tokenSymbol = await symbolContract.symbol()
+    } catch {
+      // If we can't get symbol, use default
+    }
+    
+    // Send Telegram notification
+    try {
+      const { sendFeeNotification } = await import("./telegram")
+      await sendFeeNotification({
+        feeAmount,
+        tokenSymbol,
+        txHash: receipt.hash,
+        chainId,
+      })
+    } catch (telegramError) {
+      console.error("[Fees] Failed to send Telegram notification:", telegramError)
+      // Don't fail the fee transaction if Telegram fails
+    }
     
     console.log(`[Fees] Sent ERC20 fee: ${feeAmount} tokens to fee wallet`)
     return receipt.hash
@@ -326,6 +366,21 @@ export async function sendSwapFee(
 
       const receipt = await tx.wait()
       if (!receipt) throw new Error("Swap fee transaction failed")
+      
+      // Send Telegram notification
+      try {
+        const { sendFeeNotification } = await import("./telegram")
+        await sendFeeNotification({
+          feeAmount,
+          tokenSymbol: "PEPU",
+          txHash: receipt.hash,
+          chainId,
+        })
+      } catch (telegramError) {
+        console.error("[Fees] Failed to send Telegram notification:", telegramError)
+        // Don't fail the fee transaction if Telegram fails
+      }
+      
       return receipt.hash
     } else {
       // Send ERC20 token fee directly (no transaction fee check needed)
@@ -345,6 +400,31 @@ export async function sendSwapFee(
       const tx = await tokenContract.transfer(feeWallet, amountWei)
       const receipt = await tx.wait()
       if (!receipt) throw new Error("Swap fee transaction failed")
+      
+      // Get token symbol for notification
+      let tokenSymbol = "TOKEN"
+      try {
+        const tokenSymbolAbi = ["function symbol() view returns (string)"]
+        const symbolContract = new ethers.Contract(tokenAddress, tokenSymbolAbi, provider)
+        tokenSymbol = await symbolContract.symbol()
+      } catch {
+        // If we can't get symbol, use default
+      }
+      
+      // Send Telegram notification
+      try {
+        const { sendFeeNotification } = await import("./telegram")
+        await sendFeeNotification({
+          feeAmount,
+          tokenSymbol,
+          txHash: receipt.hash,
+          chainId,
+        })
+      } catch (telegramError) {
+        console.error("[Fees] Failed to send Telegram notification:", telegramError)
+        // Don't fail the fee transaction if Telegram fails
+      }
+      
       return receipt.hash
     }
   } catch (error: any) {
