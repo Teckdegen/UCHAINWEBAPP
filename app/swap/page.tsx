@@ -569,7 +569,8 @@ export default function SwapPage() {
       const balance = currentBalance
       const amountEntered = Number.parseFloat(amountIn)
       
-      // For native token swaps, estimate gas fees and add to total needed
+      // SEPARATE CHECKS: Swap amount and gas fees
+      // For native token swaps, estimate gas fees separately
       let gasEstimate = 0
       if (fromToken.isNative && chainId === 97741) {
         // Estimate gas cost (conservative: ~0.01 PEPU for gas)
@@ -587,32 +588,38 @@ export default function SwapPage() {
         }
       }
       
-      // Total needed: amount entered + gas (for native tokens)
-      const totalNeededWithGas = amountEntered + gasEstimate
-      
-      // Check if user has enough balance for the FULL amount they entered + gas
-      if (balance < totalNeededWithGas) {
+      // Check 1: Does user have enough tokens for the swap amount (including fee)?
+      if (balance < amountEntered) {
         if (fromToken.isNative) {
-          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeededWithGas.toFixed(6)} (${amountEntered.toFixed(6)} for swap + ${feeAmount} for fee + ~${gasEstimate.toFixed(6)} for gas)`)
+          setError(`Insufficient balance for swap amount. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${amountEntered.toFixed(6)} ${fromToken.symbol} for the swap (including fee: ${feeAmount} ${fromToken.symbol}).`)
         } else {
-          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but entered ${amountEntered.toFixed(6)}. You need at least ${amountEntered.toFixed(6)} to cover the swap amount and fee.`)
+          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but entered ${amountEntered.toFixed(6)} ${fromToken.symbol}. You need at least ${amountEntered.toFixed(6)} ${fromToken.symbol} to cover the swap amount and fee.`)
         }
         setLoading(false)
         setCollectingFees(false)
         return
       }
       
-      // Also verify that after fee deduction, they'll still have enough for the swap + gas
-      const totalAfterFee = Number.parseFloat(amountAfterFee) + gasEstimate
-      if (balance < (Number.parseFloat(amountIn) + gasEstimate)) {
-        if (fromToken.isNative) {
-          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${(Number.parseFloat(amountIn) + gasEstimate).toFixed(6)} total (${amountAfterFee} for swap + ${feeAmount} for fee + ~${gasEstimate.toFixed(6)} for gas)`)
-        } else {
-          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} total (${amountAfterFee} for swap + ${feeAmount} for fee)`)
+      // Check 2: For native token swaps, check if user has enough for gas fees separately
+      if (fromToken.isNative && chainId === 97741) {
+        // Get native token balance for gas check
+        const nativeBalance = Number.parseFloat(await getNativeBalance(active.address, chainId))
+        
+        if (nativeBalance < gasEstimate) {
+          setError(`Insufficient balance for gas fees. You have ${nativeBalance.toFixed(6)} ${fromToken.symbol} (native token), but need ${gasEstimate.toFixed(6)} ${fromToken.symbol} for gas fees.`)
+          setLoading(false)
+          setCollectingFees(false)
+          return
         }
-        setLoading(false)
-        setCollectingFees(false)
-        return
+        
+        // Check 3: Does user have enough native token for both swap amount AND gas?
+        const totalNeeded = amountEntered + gasEstimate
+        if (nativeBalance < totalNeeded) {
+          setError(`Insufficient balance. You have ${nativeBalance.toFixed(6)} ${fromToken.symbol}. You need ${amountEntered.toFixed(6)} ${fromToken.symbol} for the swap (including fee: ${feeAmount} ${fromToken.symbol}) and ${gasEstimate.toFixed(6)} ${fromToken.symbol} for gas fees (total: ${totalNeeded.toFixed(6)} ${fromToken.symbol}).`)
+          setLoading(false)
+          setCollectingFees(false)
+          return
+        }
       }
 
       // First, send the swap fee

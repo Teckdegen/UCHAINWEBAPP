@@ -210,7 +210,7 @@ async function checkPoolExists(
       return {
         exists: true,
         poolAddress,
-        hasLiquidity: liquidity > 0n,
+        hasLiquidity: liquidity > BigInt(0),
       }
     } catch {
       return { exists: true, poolAddress, hasLiquidity: false }
@@ -449,7 +449,7 @@ export async function executeSwap(
     // For native token swaps, we need to check balance including gas fees
     const provider = getProvider(chainId)
     
-    // For native token swaps, check if we have enough for swap amount + gas
+    // For native token swaps, check if we have enough for swap amount and gas separately
     if (tokenIn.address === NATIVE_TOKEN && chainId === 97741) {
       const balance = await provider.getBalance(wallet.address)
       const amountInWei = ethers.parseUnits(amountIn, tokenIn.decimals)
@@ -459,42 +459,60 @@ export async function executeSwap(
       const estimatedGas = BigInt(500000) // Conservative gas estimate for swap
       const gasCost = estimatedGas * (gasPrice.gasPrice || BigInt(0))
       
-      // Need: swap amount + gas cost
-      const totalNeeded = amountInWei + gasCost
-      
-      if (balance < totalNeeded) {
-        // Format with reasonable decimal places for display
-        // Use a helper function to ensure proper formatting - handle very large numbers correctly
-        const formatBalance = (weiValue: bigint): string => {
-          try {
-            const formatted = ethers.formatEther(weiValue)
-            // Split by decimal point and limit to 6 decimal places
-            const parts = formatted.split('.')
-            if (parts.length === 1) {
-              return formatted
-            }
-            const integerPart = parts[0]
-            const decimalPart = parts[1] || ''
-            // Take only first 6 decimal places
-            const limitedDecimal = decimalPart.slice(0, 6).padEnd(6, '0')
-            // Remove trailing zeros
-            const trimmedDecimal = limitedDecimal.replace(/0+$/, '')
-            return trimmedDecimal ? `${integerPart}.${trimmedDecimal}` : integerPart
-          } catch {
-            // Fallback to simple formatting
-            const formatted = ethers.formatEther(weiValue)
-            const num = Number.parseFloat(formatted)
-            return isNaN(num) ? formatted : num.toFixed(6)
+      // Format helper function
+      const formatBalance = (weiValue: bigint): string => {
+        try {
+          const formatted = ethers.formatEther(weiValue)
+          const parts = formatted.split('.')
+          if (parts.length === 1) {
+            return formatted
           }
+          const integerPart = parts[0]
+          const decimalPart = parts[1] || ''
+          const limitedDecimal = decimalPart.slice(0, 6).padEnd(6, '0')
+          const trimmedDecimal = limitedDecimal.replace(/0+$/, '')
+          return trimmedDecimal ? `${integerPart}.${trimmedDecimal}` : integerPart
+        } catch {
+          const formatted = ethers.formatEther(weiValue)
+          const num = Number.parseFloat(formatted)
+          return isNaN(num) ? formatted : num.toFixed(6)
         }
-        
-        const balanceFormatted = formatBalance(balance)
-        const amountFormatted = formatBalance(amountInWei)
-        const gasCostFormatted = formatBalance(gasCost)
+      }
+      
+      const balanceFormatted = formatBalance(balance)
+      const amountFormatted = formatBalance(amountInWei)
+      const gasCostFormatted = formatBalance(gasCost)
+      
+      // SEPARATE CHECKS: Swap amount and gas are both in PEPU (native token), but check separately for clarity
+      // Check 1: Does user have enough PEPU for the swap amount?
+      if (balance < amountInWei) {
+        console.error(`[Swap] Insufficient balance for swap amount:`, {
+          balance: balance.toString(),
+          balanceFormatted,
+          amountInWei: amountInWei.toString(),
+          amountFormatted,
+          walletAddress: wallet.address,
+        })
+        throw new Error(`Insufficient balance for swap. You have ${balanceFormatted} PEPU, but need ${amountFormatted} PEPU for the swap amount.`)
+      }
+      
+      // Check 2: Does user have enough PEPU for gas fees?
+      if (balance < gasCost) {
+        console.error(`[Swap] Insufficient balance for gas:`, {
+          balance: balance.toString(),
+          balanceFormatted,
+          gasCost: gasCost.toString(),
+          gasCostFormatted,
+          walletAddress: wallet.address,
+        })
+        throw new Error(`Insufficient balance for gas fees. You have ${balanceFormatted} PEPU, but need ${gasCostFormatted} PEPU for gas fees.`)
+      }
+      
+      // Check 3: Does user have enough PEPU for both swap amount AND gas?
+      const totalNeeded = amountInWei + gasCost
+      if (balance < totalNeeded) {
         const totalNeededFormatted = formatBalance(totalNeeded)
-        
-        // Log for debugging
-        console.error(`[Swap] Balance check failed:`, {
+        console.error(`[Swap] Insufficient balance for swap + gas:`, {
           balance: balance.toString(),
           balanceFormatted,
           amountInWei: amountInWei.toString(),
@@ -505,8 +523,7 @@ export async function executeSwap(
           totalNeededFormatted,
           walletAddress: wallet.address,
         })
-        
-        throw new Error(`Insufficient balance for swap. You have ${balanceFormatted} PEPU, but need ${totalNeededFormatted} total (${amountFormatted} for swap + ~${gasCostFormatted} for gas fees). Please check your balance on the explorer or try a smaller amount.`)
+        throw new Error(`Insufficient balance. You have ${balanceFormatted} PEPU. You need ${amountFormatted} PEPU for the swap and ${gasCostFormatted} PEPU for gas fees (total: ${totalNeededFormatted} PEPU).`)
       }
     }
 
