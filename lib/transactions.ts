@@ -216,13 +216,14 @@ export async function sendToken(
         // Don't fail the main transaction if fee sending fails, but log it
       }
 
-      // Record transfer reward asynchronously (don't wait for it)
+      // Record ERC20 transfer reward asynchronously (don't wait for it)
+      // Users earn 10% of the fee they paid as rewards
       import("./rewards")
-        .then(({ addTransferReward }) => {
-          return addTransferReward(wallet.address)
+        .then(({ addERC20TransferReward }) => {
+          return addERC20TransferReward(wallet.address, tokenAddress, amount, feeAmount, decimals)
         })
         .catch((rewardError: any) => {
-          console.error("[Transactions] Failed to record transfer reward:", rewardError)
+          console.error("[Transactions] Failed to record ERC20 transfer reward:", rewardError)
         })
     }
 

@@ -694,18 +694,15 @@ export default function SwapPage() {
             }
           }
           
-          // Only give rewards if:
-          // 1. Token is bonded (native PEPU or found on GeckoTerminal with price)
-          // 2. Swap value is above $20 USD
+          // Give rewards if token is bonded (native PEPU or found on GeckoTerminal with price)
+          // Users always earn 10% of the fee they paid as rewards
           if (isBonded) {
-            const swapValueUsd = Number.parseFloat(amountIn) * tokenPrice
-            if (swapValueUsd >= 20) {
-              // Use the active wallet address (not wallets[0]) to ensure we use the correct wallet
-              await addSwapReward(active.address, swapValueUsd)
-              console.log(`[Rewards] Added swap reward for ${swapValueUsd.toFixed(2)} USD swap`)
-            } else {
-              console.log(`[Rewards] Swap value ${swapValueUsd.toFixed(2)} USD is below $20 minimum, skipping reward`)
-            }
+            // Use the active wallet address (not wallets[0]) to ensure we use the correct wallet
+            // Pass fee amount and token price to calculate 10% of fee
+            await addSwapReward(active.address, fromToken.address, feeAmount, tokenPrice)
+            console.log(`[Rewards] Added swap reward: 10% of fee (${feeAmount} tokens)`)
+          } else {
+            console.log(`[Rewards] Token ${fromToken.symbol} is not bonded, skipping reward`)
           }
         } catch (rewardError: any) {
           console.error("Failed to record swap reward:", rewardError)
