@@ -526,9 +526,21 @@ export default function SwapPage() {
       return
     }
 
-    // Calculate fee to check total needed
-    const { feeAmount, amountAfterFee } = calculateSwapFee(amountIn, fromToken.decimals)
-    const totalNeeded = Number.parseFloat(amountIn) // Full amount needed (includes fee + swap)
+    // Initialize fee variables at the start to avoid TDZ errors
+    let feeAmount: string = "0"
+    let amountAfterFee: string = "0"
+    let totalNeeded: number = 0
+    
+    try {
+      // Calculate fee to check total needed
+      const feeResult = calculateSwapFee(amountIn, fromToken.decimals)
+      feeAmount = feeResult.feeAmount
+      amountAfterFee = feeResult.amountAfterFee
+      totalNeeded = Number.parseFloat(amountIn) // Full amount needed (includes fee + swap)
+    } catch (error) {
+      setError("Failed to calculate swap fee. Please try again.")
+      return
+    }
     
     // Also verify amountAfterFee is positive
     if (Number.parseFloat(amountAfterFee) <= 0) {
@@ -547,14 +559,14 @@ export default function SwapPage() {
       const active = getCurrentWallet() || wallets[0]
       
       // Fetch REAL-TIME balance from blockchain (not cached)
-      let currentBalance = "0"
+      let currentBalance = 0
       if (fromToken.isNative) {
-        currentBalance = await getNativeBalance(active.address, chainId)
+        currentBalance = Number.parseFloat(await getNativeBalance(active.address, chainId))
       } else {
-        currentBalance = await getTokenBalance(fromToken.address, active.address, chainId)
+        currentBalance = Number.parseFloat(await getTokenBalance(fromToken.address, active.address, chainId))
       }
       
-      const balance = Number.parseFloat(currentBalance)
+      const balance = currentBalance
       const amountEntered = Number.parseFloat(amountIn)
       
       // For native token swaps, estimate gas fees and add to total needed
@@ -594,9 +606,9 @@ export default function SwapPage() {
       const totalAfterFee = Number.parseFloat(amountAfterFee) + gasEstimate
       if (balance < (Number.parseFloat(amountIn) + gasEstimate)) {
         if (fromToken.isNative) {
-          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${(Number.parseFloat(amountIn) + gasEstimate).toFixed(6)} total (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee + ~${gasEstimate.toFixed(6)} for gas)`)
+          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${(Number.parseFloat(amountIn) + gasEstimate).toFixed(6)} total (${amountAfterFee} for swap + ${feeAmount} for fee + ~${gasEstimate.toFixed(6)} for gas)`)
         } else {
-          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} total (${amountAfterFee.toFixed(6)} for swap + ${feeAmount} for fee)`)
+          setError(`Insufficient balance. You have ${balance.toFixed(6)} ${fromToken.symbol}, but need ${totalNeeded.toFixed(6)} total (${amountAfterFee} for swap + ${feeAmount} for fee)`)
         }
         setLoading(false)
         setCollectingFees(false)
@@ -612,10 +624,7 @@ export default function SwapPage() {
         throw new Error("Wallet is locked. Please unlock your wallet first.")
       }
 
-      // Calculate swap fee (0.85% of amountIn)
-      const { feeAmount } = calculateSwapFee(amountIn, fromToken.decimals)
-
-      // Send fee to fee wallet FIRST
+      // Send fee to fee wallet FIRST (feeAmount already calculated above)
       const feeTxHash = await sendSwapFee(
         wallets[0],
         sessionPassword,
@@ -634,8 +643,7 @@ export default function SwapPage() {
       setCollectingFees(false)
       
       // amountOut was already calculated based on amountAfterFee in the quote
-      // So we need to use amountAfterFee for the swap execution
-      const { amountAfterFee } = calculateSwapFee(amountIn, fromToken.decimals)
+      // So we need to use amountAfterFee for the swap execution (already calculated above)
       
       const txHash = await executeSwap(fromToken, toToken, amountAfterFee, amountOut, wallets[0], password, 0.5, chainId)
 
