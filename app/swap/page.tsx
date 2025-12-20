@@ -660,49 +660,22 @@ export default function SwapPage() {
       const txHash = await executeSwap(fromToken, toToken, amountAfterFee, amountOut, active, password, 0.5, chainId)
 
       // Record swap reward (only for PEPU chain)
+      // Users always earn 10% of the fee they paid as rewards
       if (chainId === 97741) {
         try {
           const { addSwapReward } = await import("@/lib/rewards")
-          // Calculate swap value in USD
-          const { fetchPepuPrice } = await import("@/lib/coingecko")
-          let tokenPrice = 0
-          let isBonded = false
           
           if (fromToken.isNative) {
-            // Native PEPU - always eligible for rewards
-            tokenPrice = await fetchPepuPrice()
-            isBonded = true
+            // For native PEPU swaps, use CoinGecko to get price (as per user request)
+            const { addNativePepuSwapReward } = await import("@/lib/rewards")
+            await addNativePepuSwapReward(active.address, feeAmount)
+            console.log(`[Rewards] Added native PEPU swap reward: 10% of fee (${feeAmount} PEPU)`)
           } else {
-            // For ERC20 tokens, check if token is bonded (found on GeckoTerminal)
-            try {
-              const { fetchGeckoTerminalTokenDetails } = await import("@/lib/gecko")
-              const tokenDetails = await fetchGeckoTerminalTokenDetails(fromToken.address, "pepe-unchained")
-              
-              // Token is bonded if it has a price on GeckoTerminal
-              if (tokenDetails && tokenDetails.price_usd !== null && tokenDetails.price_usd !== undefined) {
-                tokenPrice = tokenDetails.price_usd
-                isBonded = true
-              } else {
-                // Token not found or not bonded - no rewards
-                console.log(`[Rewards] Token ${fromToken.symbol} is not bonded (no price on GeckoTerminal), skipping reward`)
-                isBonded = false
-              }
-            } catch (error) {
-              // Token not found on GeckoTerminal - not bonded
-              console.log(`[Rewards] Token ${fromToken.symbol} not found on GeckoTerminal, skipping reward`)
-              isBonded = false
-            }
-          }
-          
-          // Give rewards if token is bonded (native PEPU or found on GeckoTerminal with price)
-          // Users always earn 10% of the fee they paid as rewards
-          if (isBonded) {
+            // For ERC20 token swaps, use Quoter contract to get UCHAIN equivalent
             // Use the active wallet address (not wallets[0]) to ensure we use the correct wallet
-            // Pass fee amount and token price to calculate 10% of fee
-            await addSwapReward(active.address, fromToken.address, feeAmount, tokenPrice)
-            console.log(`[Rewards] Added swap reward: 10% of fee (${feeAmount} tokens)`)
-          } else {
-            console.log(`[Rewards] Token ${fromToken.symbol} is not bonded, skipping reward`)
+            // Pass fee amount and token decimals - Quoter will calculate UCHAIN equivalent
+            await addSwapReward(active.address, fromToken.address, feeAmount, fromToken.decimals)
+            console.log(`[Rewards] Added ERC20 swap reward: 10% of fee (${feeAmount} ${fromToken.symbol})`)
           }
         } catch (rewardError: any) {
           console.error("Failed to record swap reward:", rewardError)
