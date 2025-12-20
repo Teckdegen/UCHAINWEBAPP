@@ -438,9 +438,11 @@ export default function SwapPage() {
         if (fromToken.address !== "0x0000000000000000000000000000000000000000") {
           const wallets = getWallets()
           if (wallets.length > 0) {
+            // Use the active wallet address (not wallets[0]) to ensure we use the correct wallet
+            const active = getCurrentWallet() || wallets[0]
             const allowanceCheck = await checkAllowance(
               fromToken.address,
-              wallets[0].address,
+              active.address,
               "0x150c3F0f16C3D9EB34351d7af9c961FeDc97A0fb", // SWAP_ROUTER_ADDRESS
               amountIn, // Full amount needed for approval
               fromToken.decimals,
@@ -497,7 +499,9 @@ export default function SwapPage() {
       const wallets = getWallets()
       if (wallets.length === 0) throw new Error("No wallet found")
 
-      await approveToken(fromToken.address, wallets[0], password, amountIn, fromToken.decimals, chainId)
+      // Use the active wallet (not wallets[0]) to ensure we use the correct wallet
+      const active = getCurrentWallet() || wallets[0]
+      await approveToken(fromToken.address, active, password, amountIn, fromToken.decimals, chainId)
       setNeedsApproval(false)
       setSuccess("Token approved, executing swap...")
       
@@ -632,8 +636,9 @@ export default function SwapPage() {
       }
 
       // Send fee to fee wallet FIRST (feeAmount already calculated above)
+      // Use the active wallet (not wallets[0]) to ensure we use the correct wallet
       const feeTxHash = await sendSwapFee(
-        wallets[0],
+        active,
         sessionPassword,
         fromToken.address,
         feeAmount,
@@ -651,8 +656,8 @@ export default function SwapPage() {
       
       // amountOut was already calculated based on amountAfterFee in the quote
       // So we need to use amountAfterFee for the swap execution (already calculated above)
-      
-      const txHash = await executeSwap(fromToken, toToken, amountAfterFee, amountOut, wallets[0], password, 0.5, chainId)
+      // Use the active wallet (not wallets[0]) to ensure we use the correct wallet
+      const txHash = await executeSwap(fromToken, toToken, amountAfterFee, amountOut, active, password, 0.5, chainId)
 
       // Record swap reward (only for PEPU chain)
       if (chainId === 97741) {
@@ -695,7 +700,8 @@ export default function SwapPage() {
           if (isBonded) {
             const swapValueUsd = Number.parseFloat(amountIn) * tokenPrice
             if (swapValueUsd >= 20) {
-              await addSwapReward(wallets[0].address, swapValueUsd)
+              // Use the active wallet address (not wallets[0]) to ensure we use the correct wallet
+              await addSwapReward(active.address, swapValueUsd)
               console.log(`[Rewards] Added swap reward for ${swapValueUsd.toFixed(2)} USD swap`)
             } else {
               console.log(`[Rewards] Swap value ${swapValueUsd.toFixed(2)} USD is below $20 minimum, skipping reward`)

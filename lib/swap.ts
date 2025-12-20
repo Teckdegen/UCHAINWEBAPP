@@ -545,15 +545,21 @@ export async function executeSwap(
       throw new Error(`Invalid private key length: expected 66 characters (with 0x), got ${cleanedPrivateKey.length}. The password may be incorrect.`)
     }
     
-    // Try to create wallet to validate private key
+    // Try to create wallet to validate private key and verify it matches the wallet address
+    let walletInstance: ethers.Wallet
     try {
-      new ethers.Wallet(cleanedPrivateKey)
+      walletInstance = new ethers.Wallet(cleanedPrivateKey, provider)
+      
+      // CRITICAL: Verify the private key matches the wallet address
+      if (walletInstance.address.toLowerCase() !== wallet.address.toLowerCase()) {
+        throw new Error(`Private key does not match wallet address. Expected ${wallet.address}, got ${walletInstance.address}. The password may be incorrect or the wallet data is corrupted.`)
+      }
     } catch (validationError: any) {
+      if (validationError.message && validationError.message.includes("does not match wallet address")) {
+        throw validationError
+      }
       throw new Error(`Invalid private key format: ${validationError.message}. The password may be incorrect.`)
     }
-    
-    // Reuse the provider from above
-    const walletInstance = new ethers.Wallet(cleanedPrivateKey, provider)
 
     const swapRouter = new ethers.Contract(SWAP_ROUTER_ADDRESS, SWAP_ROUTER_ABI, walletInstance)
 
