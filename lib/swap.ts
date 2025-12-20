@@ -464,10 +464,34 @@ export async function executeSwap(
       
       if (balance < totalNeeded) {
         // Format with reasonable decimal places for display
-        const balanceFormatted = Number.parseFloat(ethers.formatEther(balance)).toFixed(6)
-        const amountFormatted = Number.parseFloat(ethers.formatEther(amountInWei)).toFixed(6)
-        const gasCostFormatted = Number.parseFloat(ethers.formatEther(gasCost)).toFixed(6)
-        const totalNeededFormatted = Number.parseFloat(ethers.formatEther(totalNeeded)).toFixed(6)
+        // Use a helper function to ensure proper formatting - handle very large numbers correctly
+        const formatBalance = (weiValue: bigint): string => {
+          try {
+            const formatted = ethers.formatEther(weiValue)
+            // Split by decimal point and limit to 6 decimal places
+            const parts = formatted.split('.')
+            if (parts.length === 1) {
+              return formatted
+            }
+            const integerPart = parts[0]
+            const decimalPart = parts[1] || ''
+            // Take only first 6 decimal places
+            const limitedDecimal = decimalPart.slice(0, 6).padEnd(6, '0')
+            // Remove trailing zeros
+            const trimmedDecimal = limitedDecimal.replace(/0+$/, '')
+            return trimmedDecimal ? `${integerPart}.${trimmedDecimal}` : integerPart
+          } catch {
+            // Fallback to simple formatting
+            const formatted = ethers.formatEther(weiValue)
+            const num = Number.parseFloat(formatted)
+            return isNaN(num) ? formatted : num.toFixed(6)
+          }
+        }
+        
+        const balanceFormatted = formatBalance(balance)
+        const amountFormatted = formatBalance(amountInWei)
+        const gasCostFormatted = formatBalance(gasCost)
+        const totalNeededFormatted = formatBalance(totalNeeded)
         
         // Log for debugging
         console.error(`[Swap] Balance check failed:`, {
@@ -669,6 +693,10 @@ export async function executeSwap(
       }
     } else if (errorMsg.includes("insufficient funds") || (errorMsg.includes("balance") && !errorMsg.includes("after fee"))) {
       // Only throw generic balance error if it's not already a specific balance error
+      // Don't wrap if the error already has our formatted message
+      if (errorMsg.includes("Insufficient balance for swap")) {
+        throw new Error(errorMsg) // Already formatted, don't wrap
+      }
       throw new Error(`Insufficient balance: ${errorMsg}`)
     } else if (errorMsg.includes("allowance")) {
       throw new Error("Insufficient token allowance. Please approve the token first.")
