@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { getWallets, getPrivateKey, getCurrentWalletId, setCurrentWalletId, getSessionPassword, unlockWallet } from "@/lib/wallet"
 import { getProvider, getChainName } from "@/lib/rpc"
 import { getUnchainedProvider } from "@/lib/provider"
+import { getDomainByWallet } from "@/lib/domains"
 import {
   AlertTriangle,
   CheckCircle,
@@ -70,6 +71,7 @@ export default function SignPage() {
   const [selectedChainId, setSelectedChainId] = useState<number>(1)
   const [wallets, setWallets] = useState<any[]>([])
   const [selectedWalletId, setSelectedWalletId] = useState<string>("")
+  const [walletDomains, setWalletDomains] = useState<Record<string, string>>({})
   const [isWalletConnect, setIsWalletConnect] = useState(false)
   const [wcRequest, setWcRequest] = useState<any>(null)
   const [txAnalysis, setTxAnalysis] = useState<TransactionAnalysis | null>(null)
@@ -151,6 +153,26 @@ export default function SignPage() {
     } else if (allWallets.length > 0) {
       setSelectedWalletId(allWallets[0].id)
     }
+
+    // Load Unchained Domains for all wallets so we can show domain names in the selector
+    const loadDomains = async () => {
+      const domainMap: Record<string, string> = {}
+
+      for (const wallet of allWallets) {
+        try {
+          const domain = await getDomainByWallet(wallet.address)
+          if (domain) {
+            domainMap[wallet.id] = domain
+          }
+        } catch (error) {
+          console.error("[Sign] Error loading domain for wallet", wallet.address, error)
+        }
+      }
+
+      setWalletDomains(domainMap)
+    }
+
+    void loadDomains()
   }, [router, searchParams])
 
   // Analyze transaction when params change
@@ -503,6 +525,7 @@ export default function SignPage() {
       }
     } else {
       const requestId = searchParams.get("requestId")
+      const fromExtension = searchParams.get("from") === "extension"
       
       if (fromExtension && requestId) {
         setRejected(true)
@@ -589,7 +612,7 @@ export default function SignPage() {
               >
                 {wallets.map((wallet) => (
                   <option key={wallet.id} value={wallet.id}>
-                    {(wallet.name || "Wallet") +
+                    {(walletDomains[wallet.id] || wallet.name || "Wallet") +
                       " - " +
                       wallet.address.slice(0, 6) +
                       "..." +

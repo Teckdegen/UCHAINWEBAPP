@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { getWalletState, getWallets, getCurrentWalletId, setCurrentWalletId } from "@/lib/wallet"
 import { getUnchainedProvider } from "@/lib/provider"
 import { AlertCircle, CheckCircle, XCircle, Globe } from "lucide-react"
+import { getDomainByWallet } from "@/lib/domains"
 
 export default function ConnectPage() {
   const router = useRouter()
@@ -17,6 +18,7 @@ export default function ConnectPage() {
   const [error, setError] = useState("")
   const [wallets, setWallets] = useState<any[]>([])
   const [selectedWalletId, setSelectedWalletId] = useState<string>("")
+  const [walletDomains, setWalletDomains] = useState<Record<string, string>>({})
   const [isWalletConnect, setIsWalletConnect] = useState(false)
   const [wcProposal, setWcProposal] = useState<any>(null)
 
@@ -59,6 +61,26 @@ export default function ConnectPage() {
     } else if (allWallets.length > 0) {
       setSelectedWalletId(allWallets[0].id)
     }
+
+    // Load Unchained Domains for all wallets so we can show the domain instead of generic wallet name
+    const loadDomains = async () => {
+      const domainMap: Record<string, string> = {}
+
+      for (const wallet of allWallets) {
+        try {
+          const domain = await getDomainByWallet(wallet.address)
+          if (domain) {
+            domainMap[wallet.id] = domain
+          }
+        } catch (error) {
+          console.error("[Connect] Error loading domain for wallet", wallet.address, error)
+        }
+      }
+
+      setWalletDomains(domainMap)
+    }
+
+    void loadDomains()
   }, [router, searchParams])
 
   const handleApprove = async () => {
@@ -257,7 +279,9 @@ export default function ConnectPage() {
                         onChange={() => setSelectedWalletId(wallet.id)}
                       />
                       <div>
-                        <p className="font-semibold">{wallet.name || "Wallet"}</p>
+                        <p className="font-semibold">
+                          {walletDomains[wallet.id] || wallet.name || "Wallet"}
+                        </p>
                         <p className="font-mono text-[10px] text-gray-400">
                           {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
                         </p>

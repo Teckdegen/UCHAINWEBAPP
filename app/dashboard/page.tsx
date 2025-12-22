@@ -92,6 +92,38 @@ export default function DashboardPage() {
     decimals: number
   } | null>(null)
 
+  // Load Unchained Domains for all wallets so we can show domain names instead of raw wallet labels
+  useEffect(() => {
+    let isMounted = true
+
+    const loadDomains = async () => {
+      if (wallets.length === 0) return
+
+      const domainMap: Record<string, string> = {}
+
+      for (const wallet of wallets) {
+        try {
+          const domain = await getDomainByWallet(wallet.address)
+          if (domain) {
+            domainMap[wallet.id] = domain
+          }
+        } catch (error) {
+          console.error("[Dashboard] Error loading domain for wallet", wallet.address, error)
+        }
+      }
+
+      if (isMounted) {
+        setWalletDomains(domainMap)
+      }
+    }
+
+    void loadDomains()
+
+    return () => {
+      isMounted = false
+    }
+  }, [wallets])
+
   useEffect(() => {
     // Check if wallet exists
     const wallets = getWallets()
