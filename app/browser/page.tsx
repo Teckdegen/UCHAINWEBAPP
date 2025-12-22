@@ -380,12 +380,12 @@ export default function BrowserPage() {
       setHistory((prev) => [newEntry, ...prev.filter((h) => h.url !== newEntry.url)])
     } catch (e) {
       // If URL parsing fails, use original URL
-      const newEntry = {
-        url: targetUrl,
+    const newEntry = {
+      url: targetUrl,
         title: targetUrl,
-        timestamp: Date.now(),
-      }
-      setHistory((prev) => [newEntry, ...prev.filter((h) => h.url !== targetUrl)])
+      timestamp: Date.now(),
+    }
+    setHistory((prev) => [newEntry, ...prev.filter((h) => h.url !== targetUrl)])
     }
 
     setTimeout(() => setLoading(false), 1000)

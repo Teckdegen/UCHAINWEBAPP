@@ -21,7 +21,7 @@ import { reportRpcError, reportRpcSuccess, getRpcHealthStatus, subscribeToRpcHea
 import { isTokenBlacklisted } from "@/lib/blacklist"
 import { fetchPepuPrice, fetchEthPrice } from "@/lib/coingecko"
 import { getSavedCurrency, getDefaultCurrency, type Currency } from "@/lib/currencies"
-import { fetchGeckoTerminalData } from "@/lib/gecko"
+import { fetchGeckoTerminalData, getPepuTokenPriceFromQuoter } from "@/lib/gecko"
 import { getAllEthTokenBalances } from "@/lib/ethTokens"
 import { UCHAIN_TOKEN_ADDRESS } from "@/lib/config"
 import { getDomainByWallet } from "@/lib/domains"
@@ -410,23 +410,26 @@ export default function DashboardPage() {
                 let priceUsd = 0
                 let isBonded = false
 
-                // Fetch price from CoinGecko for PEPU/UCHAIN token (check if it's UCHAIN which is PEPU on PEPU chain)
-                if (tokenAddress.toLowerCase() === UCHAIN_TOKEN_ADDRESS.toLowerCase()) {
-                  try {
-                    priceUsd = await fetchPepuPrice()
-                    isBonded = priceUsd > 0
-                  } catch (error) {
-                    console.error(`Error fetching PEPU price from CoinGecko:`, error)
+                // For PEPU chain ERC20 tokens, use Quoter + CoinGecko for price
+                // Still use GeckoTerminal for token details (name, symbol, etc.) if needed
+                try {
+                  // Get price from Quoter + CoinGecko (not GeckoTerminal)
+                  const quoterPrice = await getPepuTokenPriceFromQuoter(tokenAddress, dec)
+                  
+                  if (quoterPrice !== null && quoterPrice > 0) {
+                    priceUsd = quoterPrice
+                    isBonded = true
+                    console.log(`[Dashboard] Token ${tokenAddress} price from Quoter: $${priceUsd}`)
+                  } else {
+                    // Fallback: if Quoter fails, price will be 0 (not bonded)
+                    priceUsd = 0
+                    isBonded = false
+                    console.warn(`[Dashboard] Could not get price from Quoter for ${tokenAddress}`)
                   }
-                } else {
-                  // For other tokens, try GeckoTerminal
-                  try {
-                    const geckoData = await fetchGeckoTerminalData(tokenAddress, "pepe-unchained")
-                    priceUsd = geckoData?.price_usd ? parseFloat(geckoData.price_usd) : 0
-                    isBonded = geckoData && geckoData.price_usd !== null && geckoData.price_usd !== undefined
-                  } catch (error) {
-                    console.error(`Error fetching price for ${tokenAddress}:`, error)
-                  }
+                } catch (error) {
+                  console.error(`Error fetching price for ${tokenAddress}:`, error)
+                  priceUsd = 0
+                  isBonded = false
                 }
                 const usdValue = isBonded && hasBalance
                   ? (Number.parseFloat(balanceFormatted) * priceUsd).toFixed(2)

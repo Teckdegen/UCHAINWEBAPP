@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { X, Loader, ExternalLink } from "lucide-react"
 import { ethers } from "ethers"
 import { getProvider } from "@/lib/rpc"
-import { fetchGeckoTerminalData } from "@/lib/gecko"
+import { fetchGeckoTerminalData, getPepuTokenPriceFromQuoter } from "@/lib/gecko"
 import { getWallets } from "@/lib/wallet"
 
 interface TokenDetailsModalProps {
@@ -64,18 +64,33 @@ export default function TokenDetailsModal({
       const network = chainId === 1 ? "ethereum" : "pepe-unchained"
 
       // Fetch data in parallel
-      const [supply, balance, blockNum, gecko] = await Promise.all([
+      // For PEPU chain: Get token details from GeckoTerminal, but price from Quoter
+      // For ETH chain: Get everything from GeckoTerminal
+      const [supply, balance, blockNum, gecko, quoterPrice] = await Promise.all([
         tokenContract.totalSupply().catch(() => ethers.parseUnits("0", tokenDecimals)),
         userAddress
           ? tokenContract.balanceOf(userAddress).catch(() => ethers.parseUnits("0", tokenDecimals))
           : Promise.resolve(ethers.parseUnits("0", tokenDecimals)),
         provider.getBlockNumber().catch(() => 0),
-        fetchGeckoTerminalData(tokenAddress, network),
+        fetchGeckoTerminalData(tokenAddress, network), // Still get details from GeckoTerminal
+        // For PEPU chain ERC20 tokens, get price from Quoter
+        chainId === 97741 && tokenAddress !== "0x0000000000000000000000000000000000000000"
+          ? getPepuTokenPriceFromQuoter(tokenAddress, tokenDecimals)
+          : Promise.resolve(null),
       ])
 
       setTotalSupply(ethers.formatUnits(supply, tokenDecimals))
       setUserBalance(ethers.formatUnits(balance, tokenDecimals))
       setBlockNumber(blockNum)
+      
+      // For PEPU chain: Override price from GeckoTerminal with Quoter price
+      // But keep other details (market cap, volume, etc.) from GeckoTerminal
+      if (gecko && chainId === 97741 && quoterPrice !== null && quoterPrice > 0) {
+        // Override price_usd with Quoter price
+        gecko.price_usd = quoterPrice.toString()
+        console.log(`[TokenDetails] Using Quoter price for ${tokenAddress}: $${quoterPrice}`)
+      }
+      
       setGeckoData(gecko)
     } catch (error) {
       console.error("Error loading token details:", error)
