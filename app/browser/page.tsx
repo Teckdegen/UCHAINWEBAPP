@@ -655,7 +655,7 @@ export default function BrowserPage() {
               ref={iframeRef}
               src={currentUrl}
               className="w-full h-full border-0 bg-white"
-              title="Unchained Browser"
+              title="PEPU VAULT Browser"
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-presentation allow-pointer-lock"
             />
           </div>

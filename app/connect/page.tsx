@@ -268,7 +268,7 @@ export default function ConnectPage() {
             {/* Wallet Selector */}
             {wallets.length > 0 && (
               <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <p className="text-xs text-gray-400 mb-2">Select Wallet</p>
+                <p className="text-xs text-gray-400 mb-2">Select VAULT WALLET</p>
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {wallets.map((wallet) => (
                     <label key={wallet.id} className="flex items-center gap-2 text-xs cursor-pointer">

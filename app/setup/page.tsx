@@ -40,7 +40,7 @@ export default function SetupPage() {
 
     setLoading(true)
     try {
-      const wallet = await createWallet(password, walletName || "My Wallet", 1)
+      const wallet = await createWallet(password, walletName || "My VAULT WALLET", 1)
       
       // Save wallet to localStorage immediately
       addWallet(wallet)
@@ -49,7 +49,7 @@ export default function SetupPage() {
       const savedWallets = getWallets()
       const saved = savedWallets.find(w => w.id === wallet.id)
       if (!saved) {
-        throw new Error("Failed to save wallet - wallet not found after save")
+        throw new Error("Failed to save VAULT WALLET - VAULT WALLET not found after save")
       }
       
       // Auto-unlock using the same password so signing doesn't require /unlock
@@ -72,7 +72,7 @@ export default function SetupPage() {
       setMode("menu")
     } catch (err: any) {
       console.error("[Setup] Error creating wallet:", err)
-      setError(err.message || "Failed to create wallet. Please try again.")
+      setError(err.message || "Failed to create VAULT WALLET. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -86,7 +86,7 @@ export default function SetupPage() {
 
     setLoading(true)
     try {
-      const wallet = await importWalletFromMnemonic(seedPhrase.trim(), password, walletName || "Imported Wallet", 1)
+      const wallet = await importWalletFromMnemonic(seedPhrase.trim(), password, walletName || "Imported VAULT WALLET", 1)
       
       // Save wallet to localStorage immediately
       addWallet(wallet)
@@ -95,7 +95,7 @@ export default function SetupPage() {
       const savedWallets = getWallets()
       const saved = savedWallets.find(w => w.id === wallet.id)
       if (!saved) {
-        throw new Error("Failed to save wallet - wallet not found after save")
+        throw new Error("Failed to save VAULT WALLET - VAULT WALLET not found after save")
       }
       
       // Auto-unlock so signing doesn't require /unlock
@@ -120,7 +120,7 @@ export default function SetupPage() {
 
     setLoading(true)
     try {
-      const wallet = await importWalletFromPrivateKey(privateKey.trim(), password, walletName || "Imported Wallet", 1)
+      const wallet = await importWalletFromPrivateKey(privateKey.trim(), password, walletName || "Imported VAULT WALLET", 1)
       
       // Save wallet to localStorage immediately
       addWallet(wallet)
@@ -129,7 +129,7 @@ export default function SetupPage() {
       const savedWallets = getWallets()
       const saved = savedWallets.find(w => w.id === wallet.id)
       if (!saved) {
-        throw new Error("Failed to save wallet - wallet not found after save")
+        throw new Error("Failed to save VAULT WALLET - VAULT WALLET not found after save")
       }
       
       // Auto-unlock so signing doesn't require /unlock
@@ -153,13 +153,13 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo - CHANGE: Using the custom logo instead of icon */}
+        {/* Logo - PEPU VAULT */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Image src="/logo.png" alt="Unchained Logo" width={64} height={64} className="w-16 h-16" />
+            <Image src="/pepu-vault-logo.png" alt="PEPU VAULT Logo" width={64} height={64} className="w-16 h-16" />
           </div>
-          <h1 className="text-3xl font-bold gradient-text">Unchained</h1>
-          <p className="text-gray-400 mt-2">Non-Custodial Web Wallet</p>
+          <h1 className="text-3xl font-bold gradient-text">PEPU VAULT</h1>
+          <p className="text-gray-400 mt-2">Non-Custodial VAULT WALLET</p>
         </div>
 
         {/* Menu Mode */}
@@ -172,7 +172,7 @@ export default function SetupPage() {
               }}
               className="btn-primary w-full"
             >
-              Create New Wallet
+              Create New VAULT WALLET
             </button>
             <button
               onClick={() => {
@@ -199,7 +199,7 @@ export default function SetupPage() {
         {mode === "create" && !mnemonic && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Wallet Name (Optional)</label>
+              <label className="block text-sm text-gray-400 mb-2">VAULT WALLET Name (Optional)</label>
               <input
                 type="text"
                 value={walletName}
@@ -228,7 +228,7 @@ export default function SetupPage() {
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button onClick={handleCreateWallet} disabled={loading} className="btn-primary w-full disabled:opacity-50">
-              {loading ? "Creating..." : "Create Wallet"}
+              {loading ? "Creating..." : "Create VAULT WALLET"}
             </button>
             <button
               onClick={() => {
@@ -246,12 +246,12 @@ export default function SetupPage() {
         {mode === "import-seed" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Wallet Name (Optional)</label>
+              <label className="block text-sm text-gray-400 mb-2">VAULT WALLET Name (Optional)</label>
               <input
                 type="text"
                 value={walletName}
                 onChange={(e) => setWalletName(e.target.value)}
-                placeholder="My Imported Wallet"
+                placeholder="My Imported VAULT WALLET"
                 className="input-field"
               />
             </div>
@@ -295,12 +295,12 @@ export default function SetupPage() {
         {mode === "import-key" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">Wallet Name (Optional)</label>
+              <label className="block text-sm text-gray-400 mb-2">VAULT WALLET Name (Optional)</label>
               <input
                 type="text"
                 value={walletName}
                 onChange={(e) => setWalletName(e.target.value)}
-                placeholder="My Imported Wallet"
+                placeholder="My Imported VAULT WALLET"
                 className="input-field"
               />
             </div>

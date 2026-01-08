@@ -65,10 +65,10 @@ async function getWalletConnectClient(): Promise<any> {
     signClient = await SignClient.init({
       projectId,
       metadata: {
-        name: "Unchained Web Wallet",
-        description: "Unchained Web Wallet for Ethereum and PEPU",
+        name: "PEPU VAULT",
+        description: "PEPU VAULT - Non-custodial VAULT WALLET for ETH and PEPU",
         url: window.location.origin,
-        icons: [`${window.location.origin}/icon.png`],
+        icons: [`${window.location.origin}/pepu-vault-logo.png`],
       },
       storage: storage,
     })

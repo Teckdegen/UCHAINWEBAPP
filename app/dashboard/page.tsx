@@ -632,11 +632,11 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="text-left">
-                    <p className="text-xs text-gray-400">Active Wallet</p>
+                    <p className="text-xs text-gray-400">Active VAULT WALLET</p>
                     <p className="text-sm font-semibold">
                       {(() => {
                         const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
-                        return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My Wallet"
+                        return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My VAULT WALLET"
                       })()}
                     </p>
           </div>
@@ -707,7 +707,7 @@ export default function DashboardPage() {
           {/* Active wallet display inside portfolio */}
           {wallets.length > 0 && (
             <div className="mb-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Active Wallet</p>
+              <p className="text-xs text-gray-500 mb-1">Active VAULT WALLET</p>
               <p className="text-xs font-mono text-gray-400">
                 {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(0, 6)}...
                 {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(-4)}
@@ -761,11 +761,11 @@ export default function DashboardPage() {
                 <p className="text-[8px] font-semibold leading-tight">Bridge</p>
               </Link>
 
-              <Link href="/swap" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+              <Link href="/trade" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
                   <ArrowLeftRight className="w-2.5 h-2.5 text-green-500" />
                   </div>
-                <p className="text-[8px] font-semibold leading-tight">Swap</p>
+                <p className="text-[8px] font-semibold leading-tight">Trade</p>
               </Link>
 
               <Link href="/tokens" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
@@ -958,7 +958,7 @@ export default function DashboardPage() {
                   onClick={() => setAddWalletMode("from-seed")}
                   className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all text-sm"
                 >
-                  Create New Wallet (New Seed)
+                  Create New VAULT WALLET (New Seed)
                 </button>
                 <button
                   onClick={() => setAddWalletMode("import-seed")}
@@ -981,7 +981,7 @@ export default function DashboardPage() {
             {addWalletMode === "from-seed" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Wallet Name (Optional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">VAULT WALLET Name (Optional)</label>
                   <input
                     type="text"
                     value={newWalletName}
@@ -1025,14 +1025,14 @@ export default function DashboardPage() {
                       setNewWalletName("")
                       fetchBalances()
                     } catch (err: any) {
-                      setAddWalletError(err.message || "Failed to create wallet")
+                      setAddWalletError(err.message || "Failed to create VAULT WALLET")
                     } finally {
                       setAddWalletLoading(false)
                     }
                   }}
                   className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
                 >
-                  {addWalletLoading ? "Creating..." : "Create Wallet"}
+                  {addWalletLoading ? "Creating..." : "Create VAULT WALLET"}
                 </button>
               </div>
             )}
@@ -1040,12 +1040,12 @@ export default function DashboardPage() {
             {addWalletMode === "import-seed" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Wallet Name (Optional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">VAULT WALLET Name (Optional)</label>
                   <input
                     type="text"
                     value={newWalletName}
                     onChange={(e) => setNewWalletName(e.target.value)}
-                    placeholder="My Imported Wallet"
+                    placeholder="My Imported VAULT WALLET"
                     className="input-field"
                   />
                 </div>
@@ -1083,7 +1083,7 @@ export default function DashboardPage() {
                       const newWallet = await importWalletFromMnemonic(
                         addSeedPhrase.trim(),
                         addPassword,
-                        newWalletName || "Imported Wallet",
+                        newWalletName || "Imported VAULT WALLET",
                         chainId,
                       )
                       addWallet(newWallet)
@@ -1114,12 +1114,12 @@ export default function DashboardPage() {
             {addWalletMode === "import-key" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Wallet Name (Optional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">VAULT WALLET Name (Optional)</label>
                   <input
                     type="text"
                     value={newWalletName}
                     onChange={(e) => setNewWalletName(e.target.value)}
-                    placeholder="My Imported Wallet"
+                    placeholder="My Imported VAULT WALLET"
                     className="input-field"
                   />
                 </div>
@@ -1157,7 +1157,7 @@ export default function DashboardPage() {
                       const newWallet = await importWalletFromPrivateKey(
                         addPrivateKey.trim(),
                         addPassword,
-                        newWalletName || "Imported Wallet",
+                        newWalletName || "Imported VAULT WALLET",
                         chainId,
                       )
                       addWallet(newWallet)

@@ -154,8 +154,8 @@ export function createUnchainedConfig(options?: {
     if (!isUnchained) {
       connectors.push(
         coinbaseWallet({
-          appName: 'Unchained Wallet',
-          appLogoUrl: typeof window !== 'undefined' ? `${window.location.origin}/icon.png` : undefined,
+          appName: 'PEPU VAULT',
+          appLogoUrl: typeof window !== 'undefined' ? `${window.location.origin}/pepu-vault-logo.png` : undefined,
         })
       )
     }

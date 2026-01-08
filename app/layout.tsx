@@ -7,10 +7,11 @@ import "./globals.css"
 const geist = Geist({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Unchained Web Wallet",
-  description: "Non-custodial crypto wallet for ETH and PEPU",
+  title: "PEPU VAULT",
+  description: "Non-custodial VAULT WALLET for ETH and PEPU",
   icons: {
-    icon: "https://pbs.twimg.com/profile_images/1990713242805506049/IL1CQ-9l_400x400.jpg",
+    icon: "/pepu-vault-logo.png",
+    apple: "/pepu-vault-logo.png",
   },
     generator: 'v0.app'
 }
