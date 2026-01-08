@@ -244,10 +244,11 @@ export default function TradePage() {
       // First, scan wallet for all tokens using RPC
       const walletTokens = await scanWalletForTokens(address, chain)
       
-      // Add scanned tokens to balance map
+      // Add scanned tokens to balance map - ALL tokens found via RPC
       walletTokens.forEach(token => {
         if (token.balance && Number.parseFloat(token.balance) > 0) {
           balanceMap.set(token.address.toLowerCase(), token.balance)
+          console.log(`[Trade] Added RPC token to balance map: ${token.symbol} - ${token.balance}`)
         }
       })
       
@@ -279,10 +280,12 @@ export default function TradePage() {
       }
       
       // Add scanned tokens to allTokens if not already there
+      // This ensures ALL tokens found via RPC are available in the dropdown
       walletTokens.forEach(walletToken => {
         if (!tokens.find(t => t.address.toLowerCase() === walletToken.address.toLowerCase())) {
           setAllTokens(prev => {
             if (!prev.find(t => t.address.toLowerCase() === walletToken.address.toLowerCase())) {
+              console.log(`[Trade] Adding RPC-scanned token to allTokens: ${walletToken.symbol} (${walletToken.address})`)
               return [...prev, walletToken]
             }
             return prev
@@ -290,6 +293,7 @@ export default function TradePage() {
         }
       })
       
+      console.log(`[Trade] Total tokens with balance: ${balanceMap.size}`)
       setTokensWithBalances(balanceMap)
     } catch (error) {
       console.error("[Trade] Error loading all token balances:", error)
