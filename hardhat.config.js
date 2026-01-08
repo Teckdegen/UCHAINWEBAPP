@@ -1,11 +1,12 @@
 require("@nomicfoundation/hardhat-toolbox");
 
 // ============================================
-// HARDCODED CONFIGURATION
+// CONFIGURATION
 // ============================================
-// Private key for deployment (replace with your actual private key)
+// Private key for deployment - MUST be set via environment variable
 // WARNING: Never commit private keys to version control!
-const PRIVATE_KEY = "01f759c843146d57b72cab41f43cee8cc2de9b1f43d297cff8ad8a3b87f36a63"; // Add your private key here: "0x..."
+// Set ADMIN_PRIVATE_KEY environment variable: export ADMIN_PRIVATE_KEY=your_private_key_here
+const PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY || ""; // Get from environment variable
 
 // PEPU Chain RPC URL
 const PEPU_RPC_URL = "https://rpc-pepu-v2-mainnet-0.t.conduit.xyz";
@@ -34,6 +35,8 @@ module.exports = {
       url: PEPU_RPC_URL,
       accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
       chainId: 97741,
+      // Note: If PRIVATE_KEY is not set, accounts array will be empty
+      // Set ADMIN_PRIVATE_KEY environment variable to use this network
     },
   },
   etherscan: {
