@@ -990,7 +990,7 @@ export default function TradePage() {
                   <span className="font-semibold">{toToken.symbol}</span>
                   <ChevronDown className="w-4 h-4" />
                 </button>
-              {showToSelector && (
+                {showToSelector && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-green-900/95 rounded-xl border-2 border-green-500/50 max-h-80 overflow-y-auto z-50 shadow-2xl">
                   <div className="p-3">
                     <input
@@ -1115,7 +1115,8 @@ export default function TradePage() {
                     )}
                   </div>
                 </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
