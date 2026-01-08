@@ -504,13 +504,6 @@ export default function TradePage() {
     if (currentWalletAddress !== walletAddress) {
       setWalletAddress(currentWalletAddress)
     }
-    
-    const sessionPassword = getWalletState()?.sessionPassword
-
-    if (!sessionPassword) {
-      setError("Wallet is locked. Please unlock your wallet first.")
-      return
-    }
 
     setLoading(true)
     setError("")
@@ -521,7 +514,7 @@ export default function TradePage() {
         const feeAmount = (Number.parseFloat(amountIn) * FEE_PERCENTAGE) / 100
         await sendSwapFee(
           active,
-          sessionPassword,
+          null, // Pass null to use session password automatically
           fromToken.address,
           feeAmount.toFixed(6),
           fromToken.decimals,
@@ -536,7 +529,7 @@ export default function TradePage() {
           await approveToken(
             fromToken.address,
             active,
-            sessionPassword,
+            null, // Pass null to use session password automatically
             amountAfterFee || amountIn,
             fromToken.decimals,
             chainId
@@ -552,7 +545,7 @@ export default function TradePage() {
         amountAfterFee || amountIn,
         amountOut,
         active,
-        sessionPassword,
+        null, // Pass null to use session password automatically
         slippage,
         chainId
       )
