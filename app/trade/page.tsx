@@ -1050,6 +1050,48 @@ export default function TradePage() {
     }
   }
 
+  // Auto-search when valid CA is entered in "You pay" dropdown
+  useEffect(() => {
+    if (!fromSearchCA || !showFromSelector || searchingCA) return
+    
+    const ca = fromSearchCA.trim()
+    // Auto-search when address is complete (42 chars) and valid
+    if (ca.length === 42 && ethers.isAddress(ca)) {
+      const timer = setTimeout(async () => {
+        const token = await searchTokenByCA(ca, true)
+        if (token) {
+          setFromToken(token)
+          setShowFromSelector(false)
+          setFromSearchCA("")
+        }
+      }, 500) // Debounce 500ms after user stops typing
+      
+      return () => clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromSearchCA, showFromSelector, searchingCA])
+
+  // Auto-search when valid CA is entered in "You receive" dropdown
+  useEffect(() => {
+    if (!toSearchCA || !showToSelector || searchingCA) return
+    
+    const ca = toSearchCA.trim()
+    // Auto-search when address is complete (42 chars) and valid
+    if (ca.length === 42 && ethers.isAddress(ca)) {
+      const timer = setTimeout(async () => {
+        const token = await searchTokenByCA(ca, false)
+        if (token) {
+          setToToken(token)
+          setShowToSelector(false)
+          setToSearchCA("")
+        }
+      }, 500) // Debounce 500ms after user stops typing
+      
+      return () => clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toSearchCA, showToSelector, searchingCA])
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1186,16 +1228,6 @@ export default function TradePage() {
                           const ca = e.target.value.trim()
                           setFromSearchCA(ca)
                         }}
-                        onKeyDown={async (e) => {
-                          if (e.key === 'Enter' && fromSearchCA) {
-                            const token = await searchTokenByCA(fromSearchCA, true)
-                            if (token) {
-                              setFromToken(token)
-                              setShowFromSelector(false)
-                              setFromSearchCA("")
-                            }
-                          }
-                        }}
                         className="w-full bg-green-800/50 border-2 border-green-500/50 rounded-lg px-3 py-2 mb-2 text-sm text-green-100 placeholder:text-green-400 focus:border-green-400 focus:outline-none"
                       />
                       {fromSearchCA && !ethers.isAddress(fromSearchCA) && fromSearchCA.length > 0 && (
@@ -1313,16 +1345,6 @@ export default function TradePage() {
                       onChange={(e) => {
                         const ca = e.target.value.trim()
                         setToSearchCA(ca)
-                      }}
-                      onKeyDown={async (e) => {
-                        if (e.key === 'Enter' && toSearchCA) {
-                          const token = await searchTokenByCA(toSearchCA, false)
-                          if (token) {
-                            setToToken(token)
-                            setShowToSelector(false)
-                            setToSearchCA("")
-                          }
-                        }
                       }}
                       className="w-full bg-green-800/50 border-2 border-green-500/50 rounded-lg px-3 py-2 mb-2 text-sm text-green-100 placeholder:text-green-400 focus:border-green-400 focus:outline-none"
                     />
