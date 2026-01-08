@@ -213,13 +213,22 @@ export default function TestWalletConnectPage() {
         log(`Connected: ${accounts[0]}`, 'success')
         log(`Chain ID: ${chainId}`, 'success')
       } else {
-        throw new Error('No accounts returned')
+        // In some flows (especially with custom wallets), eth_requestAccounts can trigger
+        // a redirect + approval UI instead of immediately returning accounts.
+        // Treat this as a soft warning instead of a hard failure.
+        throw new Error('Wallet did not return any accounts. If you are using PEPU VAULT WALLET, approve the connection in the popup and try again.')
       }
     } catch (error: any) {
       const errorMsg = error.message || 'Unknown error'
-      if (errorMsg.includes('Redirecting') || errorMsg.includes('redirect')) {
+      if (
+        errorMsg.includes('Redirecting') ||
+        errorMsg.includes('redirect')
+      ) {
         log('✅ Redirecting to approval page...', 'success')
         log('You will be taken to /connect to approve the connection.', 'info')
+      } else if (errorMsg.includes('Wallet did not return any accounts')) {
+        log('Wallet did not immediately return any accounts.', 'warning')
+        log('If PEPU VAULT WALLET opened, approve the connection there, then retry.', 'info')
       } else {
         log(`Connection failed: ${errorMsg}`, 'error')
       }

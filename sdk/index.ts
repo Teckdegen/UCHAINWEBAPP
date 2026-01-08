@@ -292,7 +292,8 @@ export async function connectWallet(): Promise<string> {
       return accounts[0]
     }
 
-    throw new Error('No accounts returned')
+    // Handle case where wallet returns no accounts (user closed popup or denied in a custom way)
+    throw new Error('Wallet did not return any accounts. Please make sure you approved the connection in PEPU VAULT WALLET.')
   } catch (error: any) {
     if (error.code === 4001) {
       throw new Error('User rejected connection request')

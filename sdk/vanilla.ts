@@ -94,7 +94,8 @@ export class UnchainedWalletManager {
         return account
       }
 
-      throw new Error('No accounts returned')
+      // Handle case where wallet returns no accounts (user closed popup or denied in a custom way)
+      throw new Error('Wallet did not return any accounts. Please make sure you approved the connection in PEPU VAULT WALLET.')
     } catch (error: any) {
       this.emit('error', error)
       throw error
