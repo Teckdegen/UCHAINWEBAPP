@@ -70,7 +70,8 @@ export default function TradePage() {
   const [amountAfterFee, setAmountAfterFee] = useState<string>("")
   const [showNotification, setShowNotification] = useState(false)
   const [notificationData, setNotificationData] = useState<{ message: string; txHash?: string; explorerUrl?: string } | null>(null)
-  const [searchCA, setSearchCA] = useState("")
+  const [fromSearchCA, setFromSearchCA] = useState("")
+  const [toSearchCA, setToSearchCA] = useState("")
   const [searchingCA, setSearchingCA] = useState(false)
   const fromSelectorRef = useRef<HTMLDivElement>(null)
   const toSelectorRef = useRef<HTMLDivElement>(null)
@@ -122,27 +123,108 @@ export default function TradePage() {
     loadTokens()
   }, [chainId, router, walletAddress])
 
+  // Scan wallet for all tokens using RPC (Transfer events)
+  const scanWalletForTokens = async (address: string, chain: number): Promise<Token[]> => {
+    const foundTokens: Token[] = []
+    
+    try {
+      const provider = await getProviderWithFallback(chain)
+      
+      // Get native balance
+      try {
+        const nativeBalance = await getNativeBalance(address, chain)
+        if (Number.parseFloat(nativeBalance) > 0) {
+          foundTokens.push({ ...PEPU_NATIVE, balance: nativeBalance })
+        }
+      } catch (error) {
+        console.error("[Trade] Error getting native balance:", error)
+      }
+      
+      // Scan for ERC20 tokens via Transfer events
+      const transferTopic = ethers.id("Transfer(address,address,uint256)")
+      const currentBlock = await provider.getBlockNumber()
+      const lookback = 10000
+      const fromBlock = Math.max(0, currentBlock - lookback)
+      
+      try {
+        const addressTopic = ethers.zeroPadValue(address, 32)
+        const logs = await provider.getLogs({
+          fromBlock,
+          toBlock: "latest",
+          topics: [
+            transferTopic,
+            null, // from address (any)
+            addressTopic, // to address (user's wallet)
+          ],
+        })
+        
+        // Extract unique token addresses
+        const tokenAddresses = [...new Set(logs.map((log) => log.address.toLowerCase()))]
+        
+        console.log(`[Trade] Found ${tokenAddresses.length} potential tokens from Transfer events`)
+        
+        // Get token info and balance for each
+        for (const tokenAddress of tokenAddresses) {
+          try {
+            const tokenInfo = await getTokenInfo(tokenAddress, chain)
+            if (tokenInfo) {
+              const balance = await getTokenBalance(tokenAddress, address, chain)
+              if (Number.parseFloat(balance) > 0) {
+                foundTokens.push({
+                  address: tokenAddress,
+                  decimals: tokenInfo.decimals,
+                  symbol: tokenInfo.symbol,
+                  name: tokenInfo.name,
+                  balance,
+                  isNative: false,
+                })
+              }
+            }
+          } catch (error) {
+            // Skip invalid tokens
+            continue
+          }
+        }
+      } catch (error) {
+        console.error("[Trade] Error scanning Transfer events:", error)
+      }
+      
+      console.log(`[Trade] Scanned wallet: Found ${foundTokens.length} tokens with balance`)
+      return foundTokens
+    } catch (error) {
+      console.error("[Trade] Error scanning wallet for tokens:", error)
+      return []
+    }
+  }
+
   // Load balances for all tokens (for sorting in dropdown)
   const loadAllTokenBalances = async (address: string, tokens: Token[], chain: number) => {
-    if (!address || tokens.length === 0) return
+    if (!address) return
     
     setLoadingBalances(true)
     const balanceMap = new Map<string, string>()
     
     try {
-      try {
-        const nativeBalance = await getNativeBalance(address, chain)
-        balanceMap.set(PEPU_NATIVE.address.toLowerCase(), nativeBalance)
-      } catch (error) {
-        console.error("[Trade] Error loading native balance:", error)
-      }
+      // First, scan wallet for all tokens using RPC
+      const walletTokens = await scanWalletForTokens(address, chain)
       
+      // Add scanned tokens to balance map
+      walletTokens.forEach(token => {
+        if (token.balance && Number.parseFloat(token.balance) > 0) {
+          balanceMap.set(token.address.toLowerCase(), token.balance)
+        }
+      })
+      
+      // Also check balances for API tokens (in case they weren't found in scan)
       const batchSize = 10
       for (let i = 0; i < tokens.length; i += batchSize) {
         const batch = tokens.slice(i, i + batchSize)
         await Promise.allSettled(
           batch.map(async (token) => {
             if (token.isNative) return
+            
+            // Skip if already found in wallet scan
+            if (balanceMap.has(token.address.toLowerCase())) return
             
             try {
               const balance = await getTokenBalance(token.address, address, chain)
@@ -156,9 +238,21 @@ export default function TradePage() {
         )
         
         if (i + batchSize < tokens.length) {
-          await new Promise(resolve => setTimeout(resolve, 100))
+          await new Promise(resolve => setTimeout(resolve, 50))
         }
       }
+      
+      // Add scanned tokens to allTokens if not already there
+      walletTokens.forEach(walletToken => {
+        if (!tokens.find(t => t.address.toLowerCase() === walletToken.address.toLowerCase())) {
+          setAllTokens(prev => {
+            if (!prev.find(t => t.address.toLowerCase() === walletToken.address.toLowerCase())) {
+              return [...prev, walletToken]
+            }
+            return prev
+          })
+        }
+      })
       
       setTokensWithBalances(balanceMap)
     } catch (error) {
@@ -537,14 +631,25 @@ export default function TradePage() {
   }
 
   // Search token by contract address
-  const searchTokenByCA = async (ca: string) => {
+  const searchTokenByCA = async (ca: string, isFromToken: boolean) => {
     if (!ca || !ethers.isAddress(ca)) {
-      setError("Invalid contract address")
+      if (ca && ca.length > 0) {
+        setError("Invalid contract address format")
+      }
       return null
     }
 
     setSearchingCA(true)
+    setError("")
     try {
+      // Check if token already exists in allTokens
+      const existingToken = allTokens.find(t => t.address.toLowerCase() === ca.toLowerCase())
+      if (existingToken) {
+        setSearchingCA(false)
+        return existingToken
+      }
+
+      // Fetch token info from RPC
       const tokenInfo = await getTokenInfo(ca.toLowerCase(), chainId)
       if (tokenInfo) {
         const newToken: Token = {
@@ -556,19 +661,41 @@ export default function TradePage() {
         }
         
         // Add to allTokens if not already there
-        if (!allTokens.find(t => t.address.toLowerCase() === ca.toLowerCase())) {
-          setAllTokens(prev => [...prev, newToken])
+        setAllTokens(prev => {
+          if (!prev.find(t => t.address.toLowerCase() === ca.toLowerCase())) {
+            return [...prev, newToken]
+          }
+          return prev
+        })
+        
+        // Load balance for the new token
+        if (walletAddress) {
+          try {
+            const balance = await getTokenBalance(newToken.address, walletAddress, chainId)
+            newToken.balance = balance
+            if (Number.parseFloat(balance) > 0) {
+              setTokensWithBalances(prev => {
+                const updated = new Map(prev)
+                updated.set(newToken.address.toLowerCase(), balance)
+                return updated
+              })
+            }
+          } catch (error) {
+            console.error("[Trade] Error loading balance for searched token:", error)
+          }
         }
         
+        setSearchingCA(false)
         return newToken
       }
+      setSearchingCA(false)
+      setError("Token not found. Please verify the contract address.")
       return null
     } catch (error) {
       console.error("[Trade] Error searching token by CA:", error)
       setError("Failed to fetch token info. Please check the contract address.")
-      return null
-    } finally {
       setSearchingCA(false)
+      return null
     }
   }
 
@@ -689,36 +816,49 @@ export default function TradePage() {
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 {showFromSelector && (
-                  <div className="absolute top-full left-0 right-0 mt-2 glass-card rounded-xl border border-white/10 max-h-80 overflow-y-auto z-50">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-green-900/95 rounded-xl border-2 border-green-500/50 max-h-80 overflow-y-auto z-50 shadow-2xl">
                     <div className="p-3">
                       <input
                         type="text"
-                        placeholder="Search by contract address (CA)..."
-                        value={searchCA}
-                        onChange={async (e) => {
+                        placeholder="Enter contract address (CA) to search..."
+                        value={fromSearchCA}
+                        onChange={(e) => {
                           const ca = e.target.value.trim()
-                          setSearchCA(ca)
-                          if (ca && ethers.isAddress(ca)) {
-                            const token = await searchTokenByCA(ca)
+                          setFromSearchCA(ca)
+                        }}
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter' && fromSearchCA) {
+                            const token = await searchTokenByCA(fromSearchCA, true)
                             if (token) {
                               setFromToken(token)
                               setShowFromSelector(false)
-                              setSearchCA("")
+                              setFromSearchCA("")
                             }
                           }
                         }}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 mb-2 text-sm"
+                        className="w-full bg-green-800/50 border-2 border-green-500/50 rounded-lg px-3 py-2 mb-2 text-sm text-green-100 placeholder:text-green-400 focus:border-green-400 focus:outline-none"
                       />
+                      {fromSearchCA && !ethers.isAddress(fromSearchCA) && fromSearchCA.length > 0 && (
+                        <div className="text-xs text-red-300 mb-2 px-2">Invalid contract address format</div>
+                      )}
                       {searchingCA && (
                         <div className="text-center py-2">
-                          <Loader className="w-4 h-4 animate-spin mx-auto text-green-400" />
+                          <Loader className="w-4 h-4 animate-spin mx-auto text-green-300" />
                         </div>
                       )}
                       {loadingTokens && (
-                        <div className="text-center py-2 text-xs text-gray-400">Loading tokens...</div>
+                        <div className="text-center py-2 text-xs text-green-300">
+                          <Loader className="w-4 h-4 animate-spin mx-auto mb-1 text-green-400" />
+                          Loading tokens from API...
+                        </div>
                       )}
-                      {filteredTokens.length === 0 ? (
-                        <div className="p-4 text-center text-gray-400 text-sm">No tokens found</div>
+                      {!loadingTokens && filteredTokens.length > 0 && (
+                        <div className="text-xs text-green-300 px-2 py-1 mb-2">
+                          {filteredTokens.length} tokens available
+                        </div>
+                      )}
+                      {filteredTokens.length === 0 && !loadingTokens ? (
+                        <div className="p-4 text-center text-green-400 text-sm">No tokens found</div>
                       ) : (
                         <>
                           {filteredTokens
@@ -728,7 +868,7 @@ export default function TradePage() {
                             })
                             .length > 0 && (
                             <div className="mb-2">
-                              <div className="text-xs text-green-400 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
+                              <div className="text-xs text-green-300 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
                               {filteredTokens
                                 .filter(token => {
                                   const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
@@ -742,18 +882,18 @@ export default function TradePage() {
                                       onClick={() => {
                                         setFromToken({ ...token, balance })
                                         setShowFromSelector(false)
-                                        setSearchCA("")
+                                        setFromSearchCA("")
                                         setAmountIn("")
                                         setAmountOut("")
                                       }}
-                                      className="w-full flex items-center gap-2 p-2 hover:bg-white/10 rounded-lg transition-colors bg-green-500/5 border border-green-500/20 mb-1"
+                                      className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors bg-green-700/30 border border-green-500/50 mb-1"
                                     >
-                                      <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                                        <span className="text-xs font-bold">{token.symbol[0]}</span>
+                                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                                        <span className="text-xs font-bold text-black">{token.symbol[0]}</span>
                                       </div>
                                       <div className="flex-1 text-left">
-                                        <div className="text-sm font-semibold">{token.symbol}</div>
-                                        <div className="text-xs text-gray-400">{token.name}</div>
+                                        <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
+                                        <div className="text-xs text-green-400">{token.name}</div>
                                       </div>
                                     </button>
                                   )
@@ -761,14 +901,14 @@ export default function TradePage() {
                             </div>
                           )}
                           <div>
-                            {filteredTokens
-                              .filter(token => {
-                                const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                return Number.parseFloat(balance) > 0
-                              })
-                              .length > 0 && (
-                              <div className="text-xs text-gray-400 px-2 py-1 mb-1 mt-2">All Tokens</div>
-                            )}
+                              {filteredTokens
+                                .filter(token => {
+                                  const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                  return Number.parseFloat(balance) > 0
+                                })
+                                .length > 0 && (
+                                <div className="text-xs text-green-300 px-2 py-1 mb-1 mt-2">All Tokens</div>
+                              )}
                             {filteredTokens
                               .filter(token => {
                                 const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
@@ -780,18 +920,18 @@ export default function TradePage() {
                                   onClick={() => {
                                     setFromToken(token)
                                     setShowFromSelector(false)
-                                    setSearchCA("")
+                                    setFromSearchCA("")
                                     setAmountIn("")
                                     setAmountOut("")
                                   }}
-                                  className="w-full flex items-center gap-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                  className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors border border-transparent hover:border-green-500/30"
                                 >
-                                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                                    <span className="text-xs font-bold">{token.symbol[0]}</span>
+                                  <div className="w-6 h-6 rounded-full bg-green-500/30 flex items-center justify-center">
+                                    <span className="text-xs font-bold text-green-300">{token.symbol[0]}</span>
                                   </div>
                                   <div className="flex-1 text-left">
-                                    <div className="text-sm font-semibold">{token.symbol}</div>
-                                    <div className="text-xs text-gray-400">{token.name}</div>
+                                    <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
+                                    <div className="text-xs text-green-400">{token.name}</div>
                                   </div>
                                 </button>
                               ))}
@@ -831,18 +971,18 @@ export default function TradePage() {
                 </span>
               )}
             </div>
-            <div className="relative flex-1" ref={toSelectorRef}>
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1" ref={toSelectorRef}>
                 <input
                   type="text"
                   value={amountOut || (quoting ? "..." : "")}
                   readOnly
                   placeholder="0"
-                  className="flex-1 bg-transparent text-3xl font-bold outline-none placeholder:text-gray-600"
+                  className="w-full bg-transparent text-3xl font-bold outline-none placeholder:text-gray-600"
                 />
                 <button
                   onClick={() => setShowToSelector(!showToSelector)}
-                  className="flex items-center gap-2 glass-card px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                  className="absolute right-0 top-0 flex items-center gap-2 glass-card px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
                 >
                   <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
                     <span className="text-xs font-bold">{toToken.symbol[0]}</span>
@@ -850,37 +990,52 @@ export default function TradePage() {
                   <span className="font-semibold">{toToken.symbol}</span>
                   <ChevronDown className="w-4 h-4" />
                 </button>
-              </div>
               {showToSelector && (
-                <div className="absolute top-full left-0 right-0 mt-2 glass-card rounded-xl border border-white/10 max-h-80 overflow-y-auto z-50">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-green-900/95 rounded-xl border-2 border-green-500/50 max-h-80 overflow-y-auto z-50 shadow-2xl">
                   <div className="p-3">
                     <input
                       type="text"
-                      placeholder="Search by contract address (CA)..."
-                      value={searchCA}
-                      onChange={async (e) => {
+                      placeholder="Enter contract address (CA) to search..."
+                      value={toSearchCA}
+                      onChange={(e) => {
                         const ca = e.target.value.trim()
-                        setSearchCA(ca)
-                        if (ca && ethers.isAddress(ca)) {
-                          const token = await searchTokenByCA(ca)
+                        setToSearchCA(ca)
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter' && toSearchCA) {
+                          const token = await searchTokenByCA(toSearchCA, false)
                           if (token) {
                             setToToken(token)
                             setShowToSelector(false)
-                            setSearchCA("")
+                            setToSearchCA("")
                           }
                         }
                       }}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 mb-2 text-sm"
+                      className="w-full bg-green-800/50 border-2 border-green-500/50 rounded-lg px-3 py-2 mb-2 text-sm text-green-100 placeholder:text-green-400 focus:border-green-400 focus:outline-none"
                     />
+                    {toSearchCA && !ethers.isAddress(toSearchCA) && toSearchCA.length > 0 && (
+                      <div className="text-xs text-red-300 mb-2 px-2">Invalid contract address format</div>
+                    )}
                     {searchingCA && (
                       <div className="text-center py-2">
-                        <Loader className="w-4 h-4 animate-spin mx-auto text-green-400" />
+                        <Loader className="w-4 h-4 animate-spin mx-auto text-green-300" />
+                      </div>
+                    )}
+                    {loadingTokens && (
+                      <div className="text-center py-2 text-xs text-green-300">
+                        <Loader className="w-4 h-4 animate-spin mx-auto mb-1 text-green-400" />
+                        Loading tokens from API...
+                      </div>
+                    )}
+                    {!loadingTokens && filteredTokens.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length > 0 && (
+                      <div className="text-xs text-green-300 px-2 py-1 mb-2">
+                        {filteredTokens.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length} tokens available
                       </div>
                     )}
                     {filteredTokens
                       .filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase())
-                      .length === 0 ? (
-                      <div className="p-4 text-center text-gray-400 text-sm">No tokens found</div>
+                      .length === 0 && !loadingTokens ? (
+                      <div className="p-4 text-center text-green-400 text-sm">No tokens found</div>
                     ) : (
                       <>
                         {filteredTokens
@@ -890,7 +1045,7 @@ export default function TradePage() {
                           })
                           .length > 0 && (
                           <div className="mb-2">
-                            <div className="text-xs text-green-400 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
+                            <div className="text-xs text-green-300 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
                             {filteredTokens
                               .filter(token => {
                                 const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
@@ -904,17 +1059,17 @@ export default function TradePage() {
                                     onClick={() => {
                                       setToToken({ ...token, balance })
                                       setShowToSelector(false)
-                                      setSearchCA("")
+                                      setToSearchCA("")
                                       setAmountOut("")
                                     }}
-                                    className="w-full flex items-center gap-2 p-2 hover:bg-white/10 rounded-lg transition-colors bg-green-500/5 border border-green-500/20 mb-1"
+                                    className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors bg-green-700/30 border border-green-500/50 mb-1"
                                   >
-                                    <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                                      <span className="text-xs font-bold">{token.symbol[0]}</span>
+                                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                                      <span className="text-xs font-bold text-black">{token.symbol[0]}</span>
                                     </div>
                                     <div className="flex-1 text-left">
-                                      <div className="text-sm font-semibold">{token.symbol}</div>
-                                      <div className="text-xs text-gray-400">{token.name}</div>
+                                      <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
+                                      <div className="text-xs text-green-400">{token.name}</div>
                                     </div>
                                   </button>
                                 )
@@ -922,14 +1077,14 @@ export default function TradePage() {
                           </div>
                         )}
                         <div>
-                          {filteredTokens
-                            .filter(token => {
-                              const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                              return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
-                            })
-                            .length > 0 && (
-                            <div className="text-xs text-gray-400 px-2 py-1 mb-1 mt-2">All Tokens</div>
-                          )}
+                            {filteredTokens
+                              .filter(token => {
+                                const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                              })
+                              .length > 0 && (
+                                <div className="text-xs text-green-300 px-2 py-1 mb-1 mt-2">All Tokens</div>
+                              )}
                           {filteredTokens
                             .filter(token => {
                               const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
@@ -941,17 +1096,17 @@ export default function TradePage() {
                                 onClick={() => {
                                   setToToken(token)
                                   setShowToSelector(false)
-                                  setSearchCA("")
+                                  setToSearchCA("")
                                   setAmountOut("")
                                 }}
-                                className="w-full flex items-center gap-2 p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors border border-transparent hover:border-green-500/30"
                               >
-                                <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                                  <span className="text-xs font-bold">{token.symbol[0]}</span>
+                                <div className="w-6 h-6 rounded-full bg-green-500/30 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-green-300">{token.symbol[0]}</span>
                                 </div>
                                 <div className="flex-1 text-left">
-                                  <div className="text-sm font-semibold">{token.symbol}</div>
-                                  <div className="text-xs text-gray-400">{token.name}</div>
+                                  <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
+                                  <div className="text-xs text-green-400">{token.name}</div>
                                 </div>
                               </button>
                             ))}
@@ -1036,3 +1191,4 @@ export default function TradePage() {
     </div>
   )
 }
+
