@@ -10,10 +10,17 @@ export const metadata: Metadata = {
   title: "PEPU VAULT",
   description: "Non-custodial VAULT WALLET for ETH and PEPU",
   icons: {
-    icon: "/pepu-vault-logo.png",
-    apple: "/pepu-vault-logo.png",
+    icon: [
+      { url: "/pepu-vault-logo.png", type: "image/png" },
+      { url: "/pepu-vault-logo.png", sizes: "32x32", type: "image/png" },
+      { url: "/pepu-vault-logo.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [
+      { url: "/pepu-vault-logo.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/pepu-vault-logo.png",
   },
-    generator: 'v0.app'
+  generator: 'v0.app'
 }
 
 export default function RootLayout({
