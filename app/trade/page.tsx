@@ -123,7 +123,7 @@ export default function TradePage() {
     loadTokens()
   }, [chainId, router, walletAddress])
 
-  // Scan wallet for all tokens using RPC (Transfer events)
+  // Scan wallet for all tokens using RPC (Transfer events) - Comprehensive scan
   const scanWalletForTokens = async (address: string, chain: number): Promise<Token[]> => {
     const foundTokens: Token[] = []
     
@@ -140,15 +140,18 @@ export default function TradePage() {
         console.error("[Trade] Error getting native balance:", error)
       }
       
-      // Scan for ERC20 tokens via Transfer events
+      // Scan for ERC20 tokens via Transfer events - scan both TO and FROM the wallet
       const transferTopic = ethers.id("Transfer(address,address,uint256)")
       const currentBlock = await provider.getBlockNumber()
-      const lookback = 10000
+      const lookback = 50000 // Increased to 50,000 blocks for more comprehensive scanning
       const fromBlock = Math.max(0, currentBlock - lookback)
       
+      const addressTopic = ethers.zeroPadValue(address, 32)
+      const allTokenAddresses = new Set<string>()
+      
       try {
-        const addressTopic = ethers.zeroPadValue(address, 32)
-        const logs = await provider.getLogs({
+        // Scan for tokens received (TO address)
+        const receivedLogs = await provider.getLogs({
           fromBlock,
           toBlock: "latest",
           topics: [
@@ -158,18 +161,40 @@ export default function TradePage() {
           ],
         })
         
-        // Extract unique token addresses
-        const tokenAddresses = [...new Set(logs.map((log) => log.address.toLowerCase()))]
+        receivedLogs.forEach((log) => {
+          allTokenAddresses.add(log.address.toLowerCase())
+        })
         
-        console.log(`[Trade] Found ${tokenAddresses.length} potential tokens from Transfer events`)
+        console.log(`[Trade] Found ${receivedLogs.length} Transfer events TO wallet`)
         
-        // Get token info and balance for each
-        for (const tokenAddress of tokenAddresses) {
+        // Also scan for tokens sent (FROM address) - user might still have balance
+        const sentLogs = await provider.getLogs({
+          fromBlock,
+          toBlock: "latest",
+          topics: [
+            transferTopic,
+            addressTopic, // from address (user's wallet)
+            null, // to address (any)
+          ],
+        })
+        
+        sentLogs.forEach((log) => {
+          allTokenAddresses.add(log.address.toLowerCase())
+        })
+        
+        console.log(`[Trade] Found ${sentLogs.length} Transfer events FROM wallet`)
+        console.log(`[Trade] Total unique token addresses found: ${allTokenAddresses.size}`)
+        
+        // Get token info and balance for each unique token
+        const tokenAddressesArray = Array.from(allTokenAddresses)
+        for (const tokenAddress of tokenAddressesArray) {
           try {
-            const tokenInfo = await getTokenInfo(tokenAddress, chain)
-            if (tokenInfo) {
-              const balance = await getTokenBalance(tokenAddress, address, chain)
-              if (Number.parseFloat(balance) > 0) {
+            // Check balance first - if balance is 0, skip fetching token info
+            const balance = await getTokenBalance(tokenAddress, address, chain)
+            if (Number.parseFloat(balance) > 0) {
+              // Only fetch token info if user has balance
+              const tokenInfo = await getTokenInfo(tokenAddress, chain)
+              if (tokenInfo) {
                 foundTokens.push({
                   address: tokenAddress,
                   decimals: tokenInfo.decimals,
@@ -178,10 +203,11 @@ export default function TradePage() {
                   balance,
                   isNative: false,
                 })
+                console.log(`[Trade] Found token with balance: ${tokenInfo.symbol} (${tokenAddress}) - Balance: ${balance}`)
               }
             }
           } catch (error) {
-            // Skip invalid tokens
+            // Skip invalid tokens or tokens we can't query
             continue
           }
         }
@@ -189,7 +215,7 @@ export default function TradePage() {
         console.error("[Trade] Error scanning Transfer events:", error)
       }
       
-      console.log(`[Trade] Scanned wallet: Found ${foundTokens.length} tokens with balance`)
+      console.log(`[Trade] Scanned wallet: Found ${foundTokens.length} tokens with balance > 0`)
       return foundTokens
     } catch (error) {
       console.error("[Trade] Error scanning wallet for tokens:", error)
