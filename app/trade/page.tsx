@@ -785,8 +785,8 @@ export default function TradePage() {
   const filteredTokens = sortTokens(allTokens)
 
   return (
-    <div className="min-h-screen bg-black text-white pb-20">
-      <div className="max-w-lg mx-auto px-4 py-6">
+    <div className="min-h-screen bg-black text-white pb-20 flex items-center justify-center">
+      <div className="w-full max-w-lg mx-auto px-4 py-6 sm:px-4 md:px-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Swap</h1>
@@ -857,17 +857,17 @@ export default function TradePage() {
                   value={amountIn}
                   onChange={(e) => setAmountIn(e.target.value)}
                   placeholder="0"
-                  className="w-full bg-transparent text-3xl font-bold outline-none placeholder:text-gray-600"
+                  className="w-full bg-transparent text-3xl font-bold outline-none placeholder:text-gray-600 pr-24 sm:pr-28"
                 />
                 <button
                   onClick={() => setShowFromSelector(!showFromSelector)}
-                  className="absolute right-0 top-0 flex items-center gap-2 glass-card px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                  className="absolute right-0 top-0 flex items-center gap-1 glass-card px-2 py-1 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="text-xs font-bold">{fromToken.symbol[0]}</span>
+                  <div className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <span className="text-[10px] font-bold">{fromToken.symbol[0]}</span>
                   </div>
-                  <span className="font-semibold">{fromToken.symbol}</span>
-                  <ChevronDown className="w-4 h-4" />
+                  <span className="text-xs font-medium">{fromToken.symbol}</span>
+                  <ChevronDown className="w-3 h-3" />
                 </button>
                 {showFromSelector && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-green-900/95 rounded-xl border-2 border-green-500/50 max-h-80 overflow-y-auto z-50 shadow-2xl">
@@ -1032,17 +1032,17 @@ export default function TradePage() {
                   value={amountOut || (quoting ? "..." : "")}
                   readOnly
                   placeholder="0"
-                  className="w-full bg-transparent text-3xl font-bold outline-none placeholder:text-gray-600"
+                  className="w-full bg-transparent text-3xl font-bold outline-none placeholder:text-gray-600 pr-24 sm:pr-28"
                 />
                 <button
                   onClick={() => setShowToSelector(!showToSelector)}
-                  className="absolute right-0 top-0 flex items-center gap-2 glass-card px-3 py-2 rounded-xl hover:bg-white/10 transition-colors"
+                  className="absolute right-0 top-0 flex items-center gap-1 glass-card px-2 py-1 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="text-xs font-bold">{toToken.symbol[0]}</span>
+                  <div className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <span className="text-[10px] font-bold">{toToken.symbol[0]}</span>
                   </div>
-                  <span className="font-semibold">{toToken.symbol}</span>
-                  <ChevronDown className="w-4 h-4" />
+                  <span className="text-xs font-medium">{toToken.symbol}</span>
+                  <ChevronDown className="w-3 h-3" />
                 </button>
                 {showToSelector && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-green-900/95 rounded-xl border-2 border-green-500/50 max-h-80 overflow-y-auto z-50 shadow-2xl">
