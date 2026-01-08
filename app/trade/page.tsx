@@ -205,6 +205,16 @@ export default function TradePage() {
     const balanceMap = new Map<string, string>()
     
     try {
+      // Load native PEPU balance first
+      try {
+        const nativeBalance = await getNativeBalance(address, chain)
+        if (Number.parseFloat(nativeBalance) > 0) {
+          balanceMap.set(PEPU_NATIVE.address.toLowerCase(), nativeBalance)
+        }
+      } catch (error) {
+        console.error("[Trade] Error loading native balance:", error)
+      }
+      
       // First, scan wallet for all tokens using RPC
       const walletTokens = await scanWalletForTokens(address, chain)
       
@@ -215,13 +225,13 @@ export default function TradePage() {
         }
       })
       
-      // Also check balances for API tokens (in case they weren't found in scan)
+      // Also check balances for all tokens (hardcoded + API) to find any we might have missed
       const batchSize = 10
       for (let i = 0; i < tokens.length; i += batchSize) {
         const batch = tokens.slice(i, i + batchSize)
         await Promise.allSettled(
           batch.map(async (token) => {
-            if (token.isNative) return
+            if (token.isNative) return // Already loaded above
             
             // Skip if already found in wallet scan
             if (balanceMap.has(token.address.toLowerCase())) return
@@ -345,17 +355,304 @@ export default function TradePage() {
         console.warn("[Trade] Failed to fetch tokens from API:", apiError)
       }
 
-      // Add native PEPU and WPEPU
-      const tokens: Token[] = [
+      // Hardcoded tokens list - All tokens from PEPU explorer
+      const hardcodedTokens: Token[] = [
         PEPU_NATIVE,
+        {
+          address: "0xc824bb59ca79e708c2c74ea5a0c23c0579845725",
+          decimals: 18,
+          symbol: "CKOM",
+          name: "Chimp King Of Meme",
+        },
         {
           address: "0xf9cf4a16d26979b929be7176bac4e7084975fcb8",
           decimals: 18,
           symbol: "WPEPU",
           name: "Wrapped PEPU",
         },
-        ...apiTokens,
+        {
+          address: "0x99c5f05d0c46ec0e2fc3a58cfd3ea78761fd8ddd",
+          decimals: 18,
+          symbol: "TT",
+          name: "TT",
+        },
+        {
+          address: "0x910c1acdbefc866f2cb2c482e044582e44395152",
+          decimals: 18,
+          symbol: "Booost",
+          name: "Bobby Booost",
+        },
+        {
+          address: "0x82144c93bd531e46f31033fe22d1055af17a514c",
+          decimals: 18,
+          symbol: "$PENK",
+          name: "PEPU BANK",
+        },
+        {
+          address: "0x0b52dfa17542f30f3072c53ca5061120c74d86e9",
+          decimals: 18,
+          symbol: "TOSH",
+          name: "TOSH",
+        },
+        {
+          address: "0xd42fabf08d04d1eb5c69f770c6e049832b69d788",
+          decimals: 18,
+          symbol: "HoRa",
+          name: "HolderRadar",
+        },
+        {
+          address: "0xb7fbb045a14a5d7d6e55dbbf7005ec138eaddde9",
+          decimals: 18,
+          symbol: "YASH",
+          name: "YASHIX",
+        },
+        {
+          address: "0x3cb51202e41890c89b2a46bd5c921e2d55665637",
+          decimals: 18,
+          symbol: "DGT",
+          name: "Degen Time",
+        },
+        {
+          address: "0x434dd2afe3baf277ffcfe9bef9787eda6b4c38d5",
+          decimals: 18,
+          symbol: "MFG",
+          name: "MatrixFrog",
+        },
+        {
+          address: "0x8746d6fc80708775461226657a6947497764bbe6",
+          decimals: 18,
+          symbol: "$VAULT",
+          name: "PEPU VAULT",
+        },
+        {
+          address: "0x10e3a356bcf3aa779cc5ef0be13f2b112fb20e8a",
+          decimals: 18,
+          symbol: "EAU",
+          name: "Eaucooling",
+        },
+        {
+          address: "0xbfa627b2ce0dc7b73717d4cc02ca732c38f24012",
+          decimals: 18,
+          symbol: "AWF",
+          name: "f-caw-f",
+        },
+        {
+          address: "0x153b5ae0ff770ebe5c30b1de751d8820b2505774",
+          decimals: 18,
+          symbol: "DAWGZ",
+          name: "D.A.W.G.Z",
+        },
+        {
+          address: "0x421402ffc649d2ba0f2655c42bcde1e7dcc6f3970",
+          decimals: 18,
+          symbol: "FINPEPE",
+          name: "Finnish Pepe",
+        },
+        {
+          address: "0xf5cb0ffe8df1e931bd8c1cd5be84ed4d8e1400f7",
+          decimals: 18,
+          symbol: "$LUXURIOUS",
+          name: "Big Crypto Bull",
+        },
+        {
+          address: "0xf548a177f50c4be31dcd5762d07aa98c6ecf1d4e",
+          decimals: 18,
+          symbol: "JONNY",
+          name: "Locker Room",
+        },
+        {
+          address: "0xef528d8db1bca0f0f8c63c78f62f692c1e449b94",
+          decimals: 18,
+          symbol: "PEPP",
+          name: "PEPE PUNCH",
+        },
+        {
+          address: "0xe8f1d533ce13463ac4d208568b24d2c5af9b0db7",
+          decimals: 18,
+          symbol: "BRO",
+          name: "Brodo Beats",
+        },
+        {
+          address: "0xf8ad4fcfa809e7d788533107ccba8f917e8375dc",
+          decimals: 18,
+          symbol: "TRPE",
+          name: "TRADER PEPU",
+        },
+        {
+          address: "0x20fb684bfc1abaad3acec5712f2aa30bd494df74",
+          decimals: 6,
+          symbol: "USDC",
+          name: "USD Coin",
+        },
+        {
+          address: "0x28dd14d951cc1b9ff32bdc27dcc7da04fbfe3af6",
+          decimals: 18,
+          symbol: "$SPRING",
+          name: "Springfield",
+        },
+        {
+          address: "0x17309d9cf30c75abf1e063a4b075ee5c9439ba4a",
+          decimals: 18,
+          symbol: "$SFT",
+          name: "Skill",
+        },
+        {
+          address: "0x3e7f421dc6f79a0b9268f6c90ffc54a32cbe10e6",
+          decimals: 18,
+          symbol: "$ANON",
+          name: "$ANON UNCHAINED",
+        },
+        {
+          address: "0x74ded13443829a08eb912f7a7f4f1a0f3906d387",
+          decimals: 18,
+          symbol: "PLOCK",
+          name: "PepuLock",
+        },
+        {
+          address: "0x2e709a0771203c3e7ac6bcc86c38557345e8164c",
+          decimals: 18,
+          symbol: "VCPEPU",
+          name: "VenturePEPU",
+        },
+        {
+          address: "0xc2fc08b595d9333fa7d641e526d15c6a37d8d44d",
+          decimals: 18,
+          symbol: "SafeF",
+          name: "Safeyield Falcon SYC",
+        },
+        {
+          address: "0xd2e6a84bed4fd60c3387c7f487d9748f94b35c23",
+          decimals: 18,
+          symbol: "Zen",
+          name: "Zenmonkey",
+        },
+        {
+          address: "0x473e280563fe023d45e256af977f2cce2d88638c",
+          decimals: 18,
+          symbol: "BOG",
+          name: "BOGLORD",
+        },
+        {
+          address: "0x7ccc51754216c04d4bb1210630cca16e5430aa70",
+          decimals: 18,
+          symbol: "WETH",
+          name: "Wrapped Ether",
+        },
+        {
+          address: "0x5f8974172f353d6c255c89a7b92420d6357622f9",
+          decimals: 18,
+          symbol: "ToshLove",
+          name: "I love Tosh",
+        },
+        {
+          address: "0x008e4509280c812648409cf4e40a11289c0910aa",
+          decimals: 18,
+          symbol: "UCHAIN",
+          name: "Unchained",
+        },
+        {
+          address: "0x9007d8c13c0f2cd544bd7e6ed7e5f44a1318d2f2",
+          decimals: 18,
+          symbol: "MMT",
+          name: "Market Maker Token",
+        },
+        {
+          address: "0x631420b5cd6342b3609e59e6e41b4c8aaddf93af",
+          decimals: 18,
+          symbol: "GYD",
+          name: "Gameyard",
+        },
+        {
+          address: "0x8fe6436498d4ed9560da2c9072ed0ece26045146",
+          decimals: 18,
+          symbol: "BOBBY",
+          name: "LEGENDARY BOBBY!",
+        },
+        {
+          address: "0x06f69a40c33c5a4cd038bbe1da689d4d636ec448",
+          decimals: 6,
+          symbol: "USDT",
+          name: "Tether USD",
+        },
+        {
+          address: "0x0ddc98c6f8a8356977770ed8972b7bfd777d40b4",
+          decimals: 18,
+          symbol: "dSafe",
+          name: "Diamond Safeyield CST",
+        },
+        {
+          address: "0xa085c13facf80a63edea328b3474543d0bbc0197",
+          decimals: 18,
+          symbol: "LQS",
+          name: "Liquids",
+        },
+        {
+          address: "0xdb0976d5edc9bd329d354dabdeae00e4de11c941",
+          decimals: 18,
+          symbol: "PLINK",
+          name: "PEPULink",
+        },
+        {
+          address: "0xa115d9ccbdedd86d47a188e866cf51b51762b0e4",
+          decimals: 18,
+          symbol: "PepOra",
+          name: "PepOra",
+        },
+        {
+          address: "0xcc4510e0c2276b76c09f493c110f09df60c13192",
+          decimals: 18,
+          symbol: "HAM",
+          name: "Cutest Hammer",
+        },
+        {
+          address: "0xca795797e1b38318e6fc1173975e146355fdae80",
+          decimals: 18,
+          symbol: "NONZ",
+          name: "TestTokenbyHoRa",
+        },
+        {
+          address: "0x812a4653da823eb06977b87a07a7f8691eb307c3",
+          decimals: 18,
+          symbol: "PEPEXAI",
+          name: "PepeX-AI",
+        },
+        {
+          address: "0x901db3533a321e64f3da4468138935ed01e19345",
+          decimals: 18,
+          symbol: "PSTARS",
+          name: "PepuStars",
+        },
+        {
+          address: "0x9592be924a69f88ef9c2b26d9d649fe19c6771d4",
+          decimals: 18,
+          symbol: "ULAB",
+          name: "Unchained Lab",
+        },
+        {
+          address: "0x59ffa32152303cf8cc75e5630eb57ab3e1f2804e",
+          decimals: 18,
+          symbol: "JARS",
+          name: "Monkey Jars",
+        },
+        {
+          address: "0x1c1bd105e03129a5909e935aaf4a77f21285148d",
+          decimals: 18,
+          symbol: "EDGE",
+          name: "SilverEdge",
+        },
       ]
+
+      // Combine hardcoded tokens with API tokens (avoid duplicates)
+      const allTokensMap = new Map<string, Token>()
+      hardcodedTokens.forEach(token => {
+        allTokensMap.set(token.address.toLowerCase(), token)
+      })
+      apiTokens.forEach(token => {
+        if (!allTokensMap.has(token.address.toLowerCase())) {
+          allTokensMap.set(token.address.toLowerCase(), token)
+        }
+      })
+      const tokens: Token[] = Array.from(allTokensMap.values())
 
       setAllTokens(tokens)
       
@@ -782,7 +1079,16 @@ export default function TradePage() {
     })
   }
 
-  const filteredTokens = sortTokens(allTokens)
+  // For "You pay" dropdown: Only show tokens user actually holds (balance > 0)
+  const fromTokenList = sortTokens(
+    allTokens.filter(token => {
+      const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+      return Number.parseFloat(balance) > 0
+    })
+  )
+
+  // For "You receive" dropdown: Show all tokens (hardcoded + API)
+  const toTokenList = sortTokens(allTokens)
 
   return (
     <div className="min-h-screen bg-black text-white pb-20 flex items-center justify-center">
@@ -906,91 +1212,44 @@ export default function TradePage() {
                           Loading tokens from API...
                         </div>
                       )}
-                      {!loadingTokens && filteredTokens.length > 0 && (
+                      {!loadingTokens && fromTokenList.length > 0 && (
                         <div className="text-xs text-green-300 px-2 py-1 mb-2">
-                          {filteredTokens.length} tokens available
+                          {fromTokenList.length} tokens in your wallet
                         </div>
                       )}
-                      {filteredTokens.length === 0 && !loadingTokens ? (
-                        <div className="p-4 text-center text-green-400 text-sm">No tokens found</div>
+                      {fromTokenList.length === 0 && !loadingTokens ? (
+                        <div className="p-4 text-center text-green-400 text-sm">No tokens found in your wallet</div>
                       ) : (
-                        <>
-                          {filteredTokens
-                            .filter(token => {
-                              const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                              return Number.parseFloat(balance) > 0
-                            })
-                            .length > 0 && (
-                            <div className="mb-2">
-                              <div className="text-xs text-green-300 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
-                              {filteredTokens
-                                .filter(token => {
-                                  const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                  return Number.parseFloat(balance) > 0
-                                })
-                                .map((token) => {
-                                  const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                  return (
-                                    <button
-                                      key={token.address}
-                                      onClick={() => {
-                                        setFromToken({ ...token, balance })
-                                        setShowFromSelector(false)
-                                        setFromSearchCA("")
-                                        setAmountIn("")
-                                        setAmountOut("")
-                                      }}
-                                      className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors bg-green-700/30 border border-green-500/50 mb-1"
-                                    >
-                                      <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                                        <span className="text-xs font-bold text-black">{token.symbol[0]}</span>
-                                      </div>
-                                      <div className="flex-1 text-left">
-                                        <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
-                                        <div className="text-xs text-green-400">{token.name}</div>
-                                      </div>
-                                    </button>
-                                  )
-                                })}
-                            </div>
-                          )}
-                          <div>
-                              {filteredTokens
-                                .filter(token => {
-                                  const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                  return Number.parseFloat(balance) > 0
-                                })
-                                .length > 0 && (
-                                <div className="text-xs text-green-300 px-2 py-1 mb-1 mt-2">All Tokens</div>
-                              )}
-                            {filteredTokens
-                              .filter(token => {
-                                const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                return Number.parseFloat(balance) === 0
-                              })
-                              .map((token) => (
-                                <button
-                                  key={token.address}
-                                  onClick={() => {
-                                    setFromToken(token)
-                                    setShowFromSelector(false)
-                                    setFromSearchCA("")
-                                    setAmountIn("")
-                                    setAmountOut("")
-                                  }}
-                                  className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors border border-transparent hover:border-green-500/30"
-                                >
-                                  <div className="w-6 h-6 rounded-full bg-green-500/30 flex items-center justify-center">
-                                    <span className="text-xs font-bold text-green-300">{token.symbol[0]}</span>
-                                  </div>
-                                  <div className="flex-1 text-left">
-                                    <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
-                                    <div className="text-xs text-green-400">{token.name}</div>
-                                  </div>
-                                </button>
-                              ))}
-                          </div>
-                        </>
+                        <div>
+                          <div className="text-xs text-green-300 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
+                          {fromTokenList.map((token) => {
+                            const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                            return (
+                              <button
+                                key={token.address}
+                                onClick={() => {
+                                  setFromToken({ ...token, balance })
+                                  setShowFromSelector(false)
+                                  setFromSearchCA("")
+                                  setAmountIn("")
+                                  setAmountOut("")
+                                }}
+                                className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors bg-green-700/30 border border-green-500/50 mb-1"
+                              >
+                                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-black">{token.symbol[0]}</span>
+                                </div>
+                                <div className="flex-1 text-left">
+                                  <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
+                                  <div className="text-xs text-green-400">{token.name}</div>
+                                </div>
+                                <div className="text-xs text-green-300">
+                                  {Number.parseFloat(balance).toFixed(4)}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1081,18 +1340,18 @@ export default function TradePage() {
                         Loading tokens from API...
                       </div>
                     )}
-                    {!loadingTokens && filteredTokens.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length > 0 && (
+                    {!loadingTokens && toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length > 0 && (
                       <div className="text-xs text-green-300 px-2 py-1 mb-2">
-                        {filteredTokens.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length} tokens available
+                        {toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length} tokens available
                       </div>
                     )}
-                    {filteredTokens
+                    {toTokenList
                       .filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase())
                       .length === 0 && !loadingTokens ? (
                       <div className="p-4 text-center text-green-400 text-sm">No tokens found</div>
                     ) : (
                       <>
-                        {filteredTokens
+                        {toTokenList
                           .filter(token => {
                             const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
                             return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
@@ -1100,7 +1359,7 @@ export default function TradePage() {
                           .length > 0 && (
                           <div className="mb-2">
                             <div className="text-xs text-green-300 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
-                            {filteredTokens
+                            {toTokenList
                               .filter(token => {
                                 const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
                                 return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
@@ -1131,7 +1390,7 @@ export default function TradePage() {
                           </div>
                         )}
                         <div>
-                            {filteredTokens
+                            {toTokenList
                               .filter(token => {
                                 const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
                                 return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
@@ -1139,7 +1398,7 @@ export default function TradePage() {
                               .length > 0 && (
                                 <div className="text-xs text-green-300 px-2 py-1 mb-1 mt-2">All Tokens</div>
                               )}
-                          {filteredTokens
+                          {toTokenList
                             .filter(token => {
                               const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
                               return Number.parseFloat(balance) === 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
