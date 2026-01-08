@@ -23,11 +23,12 @@ function isNativePepu(chainId: number, tokenAddress: string): boolean {
 
 /**
  * Get the fee wallet address
+ * Returns null if not set (fees will be skipped)
  */
-export function getFeeWallet(): string {
+export function getFeeWallet(): string | null {
   if (FEE_WALLET === "0x0000000000000000000000000000000000000000" || !FEE_WALLET) {
-    console.error("⚠️ Fee wallet address not configured. Please set NEXT_PUBLIC_FEE_WALLET environment variable.")
-    throw new Error("Fee wallet address not configured. Please set NEXT_PUBLIC_FEE_WALLET environment variable in Vercel settings.")
+    console.warn("⚠️ Fee wallet address not configured. Fees will be skipped.")
+    return null
   }
   return FEE_WALLET
 }
@@ -83,7 +84,8 @@ export function calculateERC20TokenFee(amount: string, decimals: number): { feeA
 }
 
 /**
- * Calculate swap fee (0.85% of amount being swapped FROM)
+ * Calculate swap fee (0.8% of amount being swapped FROM)
+ * @deprecated Use calculateSwapFeeFromOutput for new implementation
  */
 export function calculateSwapFee(amountIn: string, decimals: number): { feeAmount: string; amountAfterFee: string } {
   const amountInWei = ethers.parseUnits(amountIn, decimals)
@@ -94,6 +96,16 @@ export function calculateSwapFee(amountIn: string, decimals: number): { feeAmoun
     feeAmount: ethers.formatUnits(feeWei, decimals),
     amountAfterFee: ethers.formatUnits(amountAfterFeeWei, decimals),
   }
+}
+
+/**
+ * Calculate swap fee from output amount (0.8% of amount received)
+ * Fee is collected in the output token after the swap
+ */
+export function calculateSwapFeeFromOutput(amountOut: string, decimals: number): string {
+  const amountOutWei = ethers.parseUnits(amountOut, decimals)
+  const feeWei = (amountOutWei * BigInt(Math.floor(SWAP_FEE_PERCENTAGE * 100))) / BigInt(10000)
+  return ethers.formatUnits(feeWei, decimals)
 }
 
 /**
@@ -214,15 +226,23 @@ export async function checkSwapFeeBalance(
 
 /**
  * Send transaction fee to fee wallet (for native PEPU)
+ * Returns null if fee wallet is not set (fees skipped)
  */
 export async function sendTransactionFee(
   wallet: any,
   password: string | null,
   feeInPepu: string,
-): Promise<string> {
+): Promise<string | null> {
   try {
-    const { sendNativeToken } = await import("./transactions")
     const feeWallet = getFeeWallet()
+    
+    // Skip fee if fee wallet is not set
+    if (!feeWallet) {
+      console.log("[Fees] Fee wallet not configured, skipping transaction fee collection")
+      return null
+    }
+    
+    const { sendNativeToken } = await import("./transactions")
     
     // Send fee to fee wallet (native PEPU)
     const txHash = await sendNativeToken(wallet, password, feeWallet, feeInPepu, PEPU_CHAIN_ID)
@@ -249,6 +269,7 @@ export async function sendTransactionFee(
 
 /**
  * Send ERC20 token fee to fee wallet (0.85% of amount in same token)
+ * Returns null if fee wallet is not set (fees skipped)
  */
 export async function sendERC20TokenFee(
   wallet: any,
@@ -257,9 +278,16 @@ export async function sendERC20TokenFee(
   feeAmount: string,
   decimals: number,
   chainId: number,
-): Promise<string> {
+): Promise<string | null> {
   try {
     const feeWallet = getFeeWallet()
+    
+    // Skip fee if fee wallet is not set
+    if (!feeWallet) {
+      console.log("[Fees] Fee wallet not configured, skipping ERC20 token fee collection")
+      return null
+    }
+    
     const { getPrivateKey, getSessionPassword } = await import("./wallet")
     const { getProviderWithFallback } = await import("./rpc")
     const { ethers } = await import("ethers")
@@ -325,6 +353,8 @@ export async function sendERC20TokenFee(
 /**
  * Send swap fee to fee wallet
  * This sends the fee directly without transaction fee checks
+ * Fee is collected in the OUTPUT token (token received after swap)
+ * Returns null if fee wallet is not set (fees skipped)
  */
 export async function sendSwapFee(
   wallet: any,
@@ -333,9 +363,16 @@ export async function sendSwapFee(
   feeAmount: string,
   decimals: number,
   chainId: number,
-): Promise<string> {
+): Promise<string | null> {
   try {
     const feeWallet = getFeeWallet()
+    
+    // Skip fee if fee wallet is not set
+    if (!feeWallet) {
+      console.log("[Fees] Fee wallet not configured, skipping swap fee collection")
+      return null
+    }
+    
     const { getPrivateKey, getSessionPassword } = await import("./wallet")
     const { getProviderWithFallback } = await import("./rpc")
     const { ethers } = await import("ethers")

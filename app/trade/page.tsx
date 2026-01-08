@@ -38,7 +38,7 @@ const PEPU_NATIVE: Token = {
 const TOKENS_API = "https://explorer-pepu-v2-mainnet-0.t.conduit.xyz/api/v2/tokens"
 
 // Fee percentage from the bot code
-const FEE_PERCENTAGE = 0.5 // 0.5%
+const FEE_PERCENTAGE = 0.8 // 0.8%
 
 export default function TradePage() {
   const router = useRouter()
@@ -420,24 +420,25 @@ export default function TradePage() {
         setQuoting(true)
         setError("")
 
-        const feeAmount = (Number.parseFloat(amountIn) * FEE_PERCENTAGE) / 100
-        const amountAfterFeeCalc = Number.parseFloat(amountIn) - feeAmount
-        
-        setSwapFee(feeAmount.toFixed(6))
-        setAmountAfterFee(amountAfterFeeCalc.toFixed(6))
-
+        // Swap full amount (no fee deducted from input)
         const quote = await getSwapQuote(
           fromToken,
           toToken,
-          amountAfterFeeCalc.toString(),
+          amountIn,
           chainId
         )
 
         setAmountOut(quote)
+        
+        // Calculate fee from output amount (0.8% of received tokens)
+        const feeAmount = (Number.parseFloat(quote) * FEE_PERCENTAGE) / 100
+        setSwapFee(feeAmount.toFixed(6))
+        setAmountAfterFee(amountIn) // No fee deducted from input
       } catch (error: any) {
         console.error("[Trade] Quote error:", error)
         setError(error.message || "Failed to get quote")
         setAmountOut("")
+        setSwapFee("0")
       } finally {
         setQuoting(false)
       }
@@ -510,48 +511,41 @@ export default function TradePage() {
     setSuccess("")
 
     try {
-      // Check balance BEFORE collecting fee and executing swap
-      const feeAmount = (Number.parseFloat(amountIn) * FEE_PERCENTAGE) / 100
-      const swapAmount = amountAfterFee || amountIn
-      
+      // Check balance BEFORE executing swap (fee is collected AFTER swap in output token)
       if (fromToken.isNative) {
-        // For native token, check we have enough for: fee + swap amount + gas
+        // For native token, check we have enough for: swap amount + gas
         const provider = await getProviderWithFallback(chainId)
         const balance = await provider.getBalance(currentWalletAddress)
-        const feeWei = ethers.parseEther(feeAmount.toFixed(18))
-        const swapAmountWei = ethers.parseEther(swapAmount)
+        const swapAmountWei = ethers.parseEther(amountIn)
         
         // Estimate gas (conservative estimate)
         const feeData = await provider.getFeeData()
         const estimatedGas = BigInt(500000)
         const gasCost = estimatedGas * (feeData.gasPrice || BigInt(0))
         
-        const totalNeeded = feeWei + swapAmountWei + gasCost
+        const totalNeeded = swapAmountWei + gasCost
         
         if (balance < totalNeeded) {
           const balanceFormatted = ethers.formatEther(balance)
           const totalNeededFormatted = ethers.formatEther(totalNeeded)
-          const feeFormatted = ethers.formatEther(feeWei)
           const swapFormatted = ethers.formatEther(swapAmountWei)
           const gasFormatted = ethers.formatEther(gasCost)
           
           throw new Error(
             `Insufficient balance. You have ${Number.parseFloat(balanceFormatted).toFixed(6)} PEPU. ` +
-            `You need ${Number.parseFloat(feeFormatted).toFixed(6)} PEPU for fee, ` +
-            `${Number.parseFloat(swapFormatted).toFixed(6)} PEPU for swap, and ` +
+            `You need ${Number.parseFloat(swapFormatted).toFixed(6)} PEPU for swap and ` +
             `~${Number.parseFloat(gasFormatted).toFixed(6)} PEPU for gas ` +
             `(total: ${Number.parseFloat(totalNeededFormatted).toFixed(6)} PEPU).`
           )
         }
       } else {
-        // For ERC20 tokens, check we have enough tokens for fee + swap
+        // For ERC20 tokens, check we have enough tokens for swap
         const tokenBalance = await getTokenBalance(fromToken.address, currentWalletAddress, chainId)
-        const totalNeeded = Number.parseFloat(amountIn) // Full amount includes fee
         
-        if (Number.parseFloat(tokenBalance) < totalNeeded) {
+        if (Number.parseFloat(tokenBalance) < Number.parseFloat(amountIn)) {
           throw new Error(
             `Insufficient ${fromToken.symbol} balance. You have ${Number.parseFloat(tokenBalance).toFixed(6)} ${fromToken.symbol}, ` +
-            `but need ${totalNeeded.toFixed(6)} ${fromToken.symbol} (including ${feeAmount.toFixed(6)} ${fromToken.symbol} fee).`
+            `but need ${Number.parseFloat(amountIn).toFixed(6)} ${fromToken.symbol} for the swap.`
           )
         }
         
@@ -570,27 +564,13 @@ export default function TradePage() {
         }
       }
 
-      try {
-        await sendSwapFee(
-          active,
-          null, // Pass null to use session password automatically
-          fromToken.address,
-          feeAmount.toFixed(6),
-          fromToken.decimals,
-          chainId
-        )
-      } catch (feeError: any) {
-        console.error("[Trade] Fee collection failed:", feeError)
-        // Don't throw - continue with swap even if fee fails
-      }
-
       if (needsApproval && !fromToken.isNative) {
         try {
           await approveToken(
             fromToken.address,
             active,
             null, // Pass null to use session password automatically
-            amountAfterFee || amountIn,
+            amountIn, // Full amount (no fee deducted)
             fromToken.decimals,
             chainId
           )
@@ -599,16 +579,37 @@ export default function TradePage() {
         }
       }
 
+      // Execute swap with full input amount (no fee deducted)
       const txHash = await executeSwap(
         fromToken,
         toToken,
-        amountAfterFee || amountIn,
+        amountIn, // Full amount
         amountOut,
         active,
         null, // Pass null to use session password automatically
         slippage,
         chainId
       )
+
+      // Collect fee AFTER swap in the OUTPUT token (received token)
+      try {
+        // Calculate fee from output amount (0.8% of received tokens)
+        const feeAmount = (Number.parseFloat(amountOut) * FEE_PERCENTAGE) / 100
+        
+        if (feeAmount > 0) {
+          await sendSwapFee(
+            active,
+            null, // Pass null to use session password automatically
+            toToken.address, // Fee collected in OUTPUT token
+            feeAmount.toFixed(6),
+            toToken.decimals,
+            chainId
+          )
+        }
+      } catch (feeError: any) {
+        console.error("[Trade] Fee collection failed:", feeError)
+        // Don't fail the swap if fee collection fails - just log it
+      }
 
       setSuccess("Swap executed successfully!")
       setShowNotification(true)
@@ -1174,20 +1175,18 @@ export default function TradePage() {
           </div>
 
           {/* Fee Info */}
-          {amountIn && Number.parseFloat(amountIn) > 0 && (
+          {amountIn && Number.parseFloat(amountIn) > 0 && amountOut && (
             <div className="mt-4 pt-4 border-t border-white/10 text-xs text-gray-400 space-y-1">
-              <div className="flex justify-between">
-                <span>Platform Fee ({FEE_PERCENTAGE}%)</span>
-                <span>-{swapFee} {fromToken.symbol}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Amount After Fee</span>
-                <span>{amountAfterFee} {fromToken.symbol}</span>
-              </div>
               {amountOut && (
                 <div className="flex justify-between text-green-400">
                   <span>Expected Output</span>
                   <span>~{Number.parseFloat(amountOut).toFixed(6)} {toToken.symbol}</span>
+                </div>
+              )}
+              {swapFee && Number.parseFloat(swapFee) > 0 && (
+                <div className="flex justify-between">
+                  <span>Platform Fee ({FEE_PERCENTAGE}% of output)</span>
+                  <span>-{swapFee} {toToken.symbol}</span>
                 </div>
               )}
             </div>

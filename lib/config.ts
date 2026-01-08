@@ -11,7 +11,7 @@ export const TRANSACTION_FEE_USD = 0.05 // $0.05 worth of PEPU per transaction
 // ============================================
 // SWAP FEES
 // ============================================
-export const SWAP_FEE_PERCENTAGE = 0.85 // 0.85% of the token being swapped FROM
+export const SWAP_FEE_PERCENTAGE = 0.8 // 0.8% of the token being received (output token)
 
 // ============================================
 // REWARDS SYSTEM
