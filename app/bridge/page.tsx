@@ -247,7 +247,7 @@ export default function BridgePage() {
             <Zap className="w-5 h-5 text-green-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Unchained Bridge</h1>
+            <h1 className="text-2xl font-bold">PEPU VAULT Bridge</h1>
             <p className="text-sm text-gray-400">Bridge PEPU from L2 → L1</p>
           </div>
         </div>
