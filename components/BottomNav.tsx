@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Wallet, Send, Globe, Settings, ImageIcon, Hash, ArrowLeftRight } from "lucide-react"
+import { Wallet, Send, Globe, Settings, ImageIcon, Hash } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface BottomNavProps {
@@ -60,9 +60,9 @@ export default function BottomNav({ active = "dashboard" }: BottomNavProps) {
             </Link>
           )}
 
-          <Link href="/trade" className={`flex flex-col items-center gap-0 transition-colors flex-shrink-0 flex-1 min-w-0 ${isActive("trade")}`}>
-            <ArrowLeftRight className="w-3 h-3" />
-            <span className="text-[8px] font-semibold leading-tight">Trade</span>
+          <Link href="/send" className={`flex flex-col items-center gap-0 transition-colors flex-shrink-0 flex-1 min-w-0 ${isActive("send")}`}>
+            <Send className="w-3 h-3" />
+            <span className="text-[8px] font-semibold leading-tight">Send</span>
           </Link>
 
           <Link
