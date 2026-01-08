@@ -66,7 +66,7 @@ async function getWalletConnectClient(): Promise<any> {
       projectId,
       metadata: {
         name: "PEPU VAULT",
-        description: "PEPU VAULT - Non-custodial VAULT WALLET for ETH and PEPU",
+        description: "PEPU VAULT - Non-custodial PEPU VAULT WALLET for ETH and PEPU",
         url: window.location.origin,
         icons: [`${window.location.origin}/pepu-vault-logo.png`],
       },

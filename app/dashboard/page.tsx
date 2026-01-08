@@ -92,7 +92,7 @@ export default function DashboardPage() {
     decimals: number
   } | null>(null)
 
-  // Load Unchained Domains for all wallets so we can show domain names instead of raw wallet labels
+  // Load VAULT Domains for all wallets so we can show domain names instead of raw wallet labels
   useEffect(() => {
     let isMounted = true
 
@@ -632,11 +632,11 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="text-left">
-                    <p className="text-xs text-gray-400">Active VAULT WALLET</p>
+                    <p className="text-xs text-gray-400">Active PEPU VAULT WALLET</p>
                     <p className="text-sm font-semibold">
                       {(() => {
                         const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
-                        return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My VAULT WALLET"
+                        return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My PEPU VAULT WALLET"
                       })()}
                     </p>
           </div>
@@ -707,7 +707,7 @@ export default function DashboardPage() {
           {/* Active wallet display inside portfolio */}
           {wallets.length > 0 && (
             <div className="mb-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Active VAULT WALLET</p>
+              <p className="text-xs text-gray-500 mb-1">Active PEPU VAULT WALLET</p>
               <p className="text-xs font-mono text-gray-400">
                 {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(0, 6)}...
                 {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(-4)}
@@ -958,7 +958,7 @@ export default function DashboardPage() {
                   onClick={() => setAddWalletMode("from-seed")}
                   className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all text-sm"
                 >
-                  Create New VAULT WALLET (New Seed)
+                  Create New PEPU VAULT WALLET (New Seed)
                 </button>
                 <button
                   onClick={() => setAddWalletMode("import-seed")}
@@ -981,7 +981,7 @@ export default function DashboardPage() {
             {addWalletMode === "from-seed" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">VAULT WALLET Name (Optional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
                   <input
                     type="text"
                     value={newWalletName}
@@ -1025,14 +1025,14 @@ export default function DashboardPage() {
                       setNewWalletName("")
                       fetchBalances()
                     } catch (err: any) {
-                      setAddWalletError(err.message || "Failed to create VAULT WALLET")
+                      setAddWalletError(err.message || "Failed to create PEPU VAULT WALLET")
                     } finally {
                       setAddWalletLoading(false)
                     }
                   }}
                   className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
                 >
-                  {addWalletLoading ? "Creating..." : "Create VAULT WALLET"}
+                  {addWalletLoading ? "Creating..." : "Create PEPU VAULT WALLET"}
                 </button>
               </div>
             )}
@@ -1040,12 +1040,12 @@ export default function DashboardPage() {
             {addWalletMode === "import-seed" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">VAULT WALLET Name (Optional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
                   <input
                     type="text"
                     value={newWalletName}
                     onChange={(e) => setNewWalletName(e.target.value)}
-                    placeholder="My Imported VAULT WALLET"
+                    placeholder="My Imported PEPU VAULT WALLET"
                     className="input-field"
                   />
                 </div>
@@ -1083,7 +1083,7 @@ export default function DashboardPage() {
                       const newWallet = await importWalletFromMnemonic(
                         addSeedPhrase.trim(),
                         addPassword,
-                        newWalletName || "Imported VAULT WALLET",
+                        newWalletName || "Imported PEPU VAULT WALLET",
                         chainId,
                       )
                       addWallet(newWallet)
@@ -1114,12 +1114,12 @@ export default function DashboardPage() {
             {addWalletMode === "import-key" && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">VAULT WALLET Name (Optional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
                   <input
                     type="text"
                     value={newWalletName}
                     onChange={(e) => setNewWalletName(e.target.value)}
-                    placeholder="My Imported VAULT WALLET"
+                    placeholder="My Imported PEPU VAULT WALLET"
                     className="input-field"
                   />
                 </div>
@@ -1157,7 +1157,7 @@ export default function DashboardPage() {
                       const newWallet = await importWalletFromPrivateKey(
                         addPrivateKey.trim(),
                         addPassword,
-                        newWalletName || "Imported VAULT WALLET",
+                        newWalletName || "Imported PEPU VAULT WALLET",
                         chainId,
                       )
                       addWallet(newWallet)

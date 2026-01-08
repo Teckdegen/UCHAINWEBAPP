@@ -1,5 +1,5 @@
 /**
- * Configuration file for Unchained Wallet
+ * Configuration file for PEPU VAULT WALLET
  * Update these values to change fees, rewards, and other settings
  */
 

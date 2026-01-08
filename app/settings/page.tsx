@@ -243,7 +243,7 @@ export default function SettingsPage() {
       setWallets(updated)
       setError("")
     } catch (err: any) {
-      setError(err.message || "Failed to delete VAULT WALLET")
+      setError(err.message || "Failed to delete PEPU VAULT WALLET")
     }
   }
 
@@ -268,7 +268,7 @@ export default function SettingsPage() {
           {/* Wallet Info */}
           {wallets.length > 0 && (
             <div className="glass-card p-6">
-              <h2 className="text-lg font-bold mb-4">Active VAULT WALLET</h2>
+              <h2 className="text-lg font-bold mb-4">Active PEPU VAULT WALLET</h2>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-400 mb-2">Address</p>
@@ -290,8 +290,8 @@ export default function SettingsPage() {
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-400 mb-2">VAULT WALLET Name</p>
-                  <p className="font-semibold">{(getCurrentWallet() || wallets[0]).name || "My VAULT WALLET"}</p>
+                  <p className="text-sm text-gray-400 mb-2">PEPU VAULT WALLET Name</p>
+                  <p className="font-semibold">{(getCurrentWallet() || wallets[0]).name || "My PEPU VAULT WALLET"}</p>
                 </div>
 
                 {wallets.length > 1 && (

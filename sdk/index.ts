@@ -1,8 +1,8 @@
 /**
- * Unchained Wallet SDK
+ * PEPU VAULT WALLET SDK
  * 
- * A simple SDK for dApps to connect to Unchained Wallet, MetaMask, and Coinbase Wallet
- * using wagmi and viem. Automatically detects and prioritizes Unchained wallet.
+ * A simple SDK for dApps to connect to PEPU VAULT WALLET, MetaMask, and Coinbase Wallet
+ * using wagmi and viem. Automatically detects and prioritizes the PEPU VAULT WALLET provider.
  */
 
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors'
@@ -23,7 +23,7 @@ declare global {
 }
 
 /**
- * Check if Unchained wallet is installed
+ * Check if PEPU VAULT WALLET is installed (internally uses ethereum.isUnchained flag)
  */
 export function isUnchainedInstalled(): boolean {
   if (typeof window === 'undefined') return false
@@ -36,7 +36,7 @@ export function isUnchainedInstalled(): boolean {
 export function isMetaMaskInstalled(): boolean {
   if (typeof window === 'undefined') return false
   const ethereum = window.ethereum as any
-  return !!(ethereum?.isMetaMask && !ethereum?.isUnchained) // Exclude Unchained
+  return !!(ethereum?.isMetaMask && !ethereum?.isUnchained) // Exclude PEPU VAULT WALLET provider
 }
 
 /**
@@ -45,7 +45,7 @@ export function isMetaMaskInstalled(): boolean {
 export function isCoinbaseWalletInstalled(): boolean {
   if (typeof window === 'undefined') return false
   const ethereum = window.ethereum as any
-  return !!(ethereum?.isCoinbaseWallet && !ethereum?.isUnchained) // Exclude Unchained
+  return !!(ethereum?.isCoinbaseWallet && !ethereum?.isUnchained) // Exclude PEPU VAULT WALLET provider
 }
 
 /**
@@ -55,7 +55,7 @@ export function getWalletProvider() {
   if (typeof window === 'undefined') return null
   const ethereum = window.ethereum as any
   
-  // Prioritize Unchained
+  // Prioritize PEPU VAULT WALLET (isUnchained flag)
   if (ethereum?.isUnchained) {
     return { provider: ethereum, type: 'unchained' as const }
   }
@@ -79,7 +79,7 @@ export function getWalletProvider() {
 }
 
 /**
- * Get the Unchained provider (legacy function for backwards compatibility)
+ * Get the PEPU VAULT WALLET provider (legacy function name for backwards compatibility)
  */
 export function getUnchainedProvider() {
   const wallet = getWalletProvider()
@@ -102,10 +102,10 @@ export interface WalletConnectRPC {
 }
 
 /**
- * Create a wagmi config optimized for Unchained Wallet, MetaMask, and Coinbase Wallet
+ * Create a wagmi config optimized for PEPU VAULT WALLET, MetaMask, and Coinbase Wallet
  * 
  * Automatically detects and prioritizes wallets in this order:
- * 1. Unchained Wallet (if window.ethereum.isUnchained === true)
+ * 1. PEPU VAULT WALLET (if window.ethereum.isUnchained === true)
  * 2. MetaMask (if window.ethereum.isMetaMask === true)
  * 3. Coinbase Wallet (if window.ethereum.isCoinbaseWallet === true)
  * 4. Generic injected provider
@@ -140,15 +140,15 @@ export function createUnchainedConfig(options?: {
 
   const connectors: any[] = []
 
-  // 1. Injected connector (detects Unchained, MetaMask, Coinbase automatically)
-  // This will prioritize Unchained if window.ethereum.isUnchained === true
+  // 1. Injected connector (detects PEPU VAULT WALLET, MetaMask, Coinbase automatically)
+  // This will prioritize PEPU VAULT WALLET if window.ethereum.isUnchained === true
   connectors.push(
     injected({
       shimDisconnect: true,
     })
   )
 
-  // 2. Coinbase Wallet connector (if enabled and not Unchained)
+  // 2. Coinbase Wallet connector (if enabled and PEPU VAULT WALLET is not present)
   if (enableCoinbase && typeof window !== 'undefined') {
     const isUnchained = isUnchainedInstalled()
     if (!isUnchained) {
@@ -193,7 +193,7 @@ export function createUnchainedConfig(options?: {
     // Warn if no RPCs provided for WalletConnect chains
     if (Object.keys(rpcMap).length === 0) {
       console.warn(
-        '[Unchained SDK] Warning: No RPC URLs provided for WalletConnect. ' +
+        '[PEPU VAULT SDK] Warning: No RPC URLs provided for WalletConnect. ' +
         'Please provide walletConnectRPCs or rpcUrls in the config.'
       )
     }
@@ -202,8 +202,8 @@ export function createUnchainedConfig(options?: {
       walletConnect({
         projectId,
         metadata: {
-          name: 'Unchained Wallet',
-          description: 'Connect with Unchained Wallet, MetaMask, or Coinbase Wallet',
+          name: 'PEPU VAULT WALLET',
+          description: 'Connect with PEPU VAULT WALLET, MetaMask, or Coinbase Wallet',
           url: typeof window !== 'undefined' ? window.location.origin : '',
           icons: [],
         },
@@ -249,7 +249,7 @@ export function getDetectedWallet() {
   }
 
   const names: Record<string, string> = {
-    unchained: 'Unchained Wallet',
+    unchained: 'PEPU VAULT WALLET',
     metamask: 'MetaMask',
     coinbase: 'Coinbase Wallet',
     injected: 'Injected Wallet',

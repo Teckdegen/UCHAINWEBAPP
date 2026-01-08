@@ -154,7 +154,7 @@ export default function SignPage() {
       setSelectedWalletId(allWallets[0].id)
     }
 
-    // Load Unchained Domains for all wallets so we can show domain names in the selector
+    // Load VAULT Domains for all wallets so we can show domain names in the selector
     const loadDomains = async () => {
       const domainMap: Record<string, string> = {}
 

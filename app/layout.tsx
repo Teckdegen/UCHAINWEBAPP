@@ -8,7 +8,7 @@ const geist = Geist({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "PEPU VAULT",
-  description: "Non-custodial VAULT WALLET for ETH and PEPU",
+  description: "Non-custodial PEPU VAULT WALLET for ETH and PEPU",
   icons: {
     icon: [
       { url: "/pepu-vault-logo.png", type: "image/png" },

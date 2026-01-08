@@ -1,6 +1,6 @@
 ## PEPU VAULT – Full Architecture & Code Walkthrough
 
-PEPU VAULT is a **non‑custodial VAULT WALLET** for Ethereum and PEPU (Pepe Unchained V2).  
+PEPU VAULT is a **non‑custodial PEPU VAULT WALLET** for Ethereum and PEPU (Pepe Unchained V2).  
 It ships as:
 
 - **Next.js 16 app** (`app/`, `lib/`, `components/`)
@@ -14,7 +14,7 @@ This README walks through how all the major pieces fit together, with a **line�
 
 ## 1. High‑Level System Overview
 
-- **VAULT WALLET core (web app)**  
+- **PEPU VAULT WALLET core (web app)**  
   - Built with Next.js / React (app router)  
   - Stores **encrypted keys in localStorage only**  
   - Handles setup, unlock, signing, sending, swapping, rewards, etc.
@@ -26,7 +26,7 @@ This README walks through how all the major pieces fit together, with a **line�
 
 - **Browser extension (`extension/`)**  
   - Injects `window.ethereum` into *every* site  
-  - For wallet‑specific methods (`eth_requestAccounts`, `eth_sendTransaction`, signing) it opens the VAULT WALLET UI for approval, then returns the result to the dApp.
+  - For wallet‑specific methods (`eth_requestAccounts`, `eth_sendTransaction`, signing) it opens the PEPU VAULT WALLET UI for approval, then returns the result to the dApp.
 
 - **SDK (`sdk/`)**  
   - Makes dApps prefer PEPU VAULT when `window.ethereum.isUnchained === true`  
@@ -134,7 +134,7 @@ The **security model** is:
 
 ### 2.3 Setup Flow (`app/setup/page.tsx`)
 
-`SetupPage` is where a new user creates or imports a VAULT WALLET.
+`SetupPage` is where a new user creates or imports a PEPU VAULT WALLET.
 
 Key state and hooks:
 
@@ -164,7 +164,7 @@ export default function SetupPage() {
   const [loading, setLoading] = useState(false)
 ```
 
-#### 2.3.1 Creating a VAULT WALLET
+#### 2.3.1 Creating a PEPU VAULT WALLET
 
 ```startLine:endLine:app/setup/page.tsx
 const handleCreateWallet = async () => {
@@ -175,12 +175,12 @@ const handleCreateWallet = async () => {
 
   setLoading(true)
   try {
-    const wallet = await createWallet(password, walletName || "My VAULT WALLET", 1)
+    const wallet = await createWallet(password, walletName || "My PEPU VAULT WALLET", 1)
     addWallet(wallet)
     const savedWallets = getWallets()
     const saved = savedWallets.find(w => w.id === wallet.id)
     if (!saved) {
-      throw new Error("Failed to save VAULT WALLET - VAULT WALLET not found after save")
+      throw new Error("Failed to save PEPU VAULT WALLET - PEPU VAULT WALLET not found after save")
     }
     unlockWallet(password)
     const mnemonic = getMnemonic(wallet, password)
@@ -188,7 +188,7 @@ const handleCreateWallet = async () => {
     // then it prepares the 3‑word quiz to confirm backup
   } catch (err: any) {
     console.error("[Setup] Error creating wallet:", err)
-    setError(err.message || "Failed to create VAULT WALLET. Please try again.")
+    setError(err.message || "Failed to create PEPU VAULT WALLET. Please try again.")
   } finally {
     setLoading(false)
   }
@@ -217,7 +217,7 @@ Both flows are similar:
 
 The main balance and transaction logic lives in:
 
-- `app/dashboard/page.tsx` – portfolio, tokens, recent TXs, active VAULT WALLET, rewards summary.
+- `app/dashboard/page.tsx` – portfolio, tokens, recent TXs, active PEPU VAULT WALLET, rewards summary.
 - `app/send/page.tsx` – build and send ERC‑20 / native PEPU transactions using `lib/transactions.ts` and `lib/provider.ts`.
 - `app/swap/page.tsx` – integrates swap routes (Uniswap style) and applies the **0.85% fee + 10% reward** structure described in `REWARDS_MECHANISM.md`.
 - `app/rewards/page.tsx` – shows accumulated UCHAIN rewards, checks eligibility, allows claiming via `lib/rewards.ts`.
@@ -470,13 +470,13 @@ if (iframeRef.current) {
 }
 ```
 
-It also listens for `postMessage` from the iframe (`UNCHAINED_STORE_REQUEST` / `UNCHAINED_WALLET_REQUEST`), stores request metadata in `localStorage`, and routes to the VAULT WALLET approval pages.
+It also listens for `postMessage` from the iframe (`UNCHAINED_STORE_REQUEST` / `UNCHAINED_WALLET_REQUEST`), stores request metadata in `localStorage`, and routes to the PEPU VAULT WALLET approval pages.
 
 ---
 
 ## 4. Extension Architecture (Manifest v3)
 
-The extension makes VAULT WALLET behave like a browser‑wide wallet (MetaMask‑style).
+The extension makes PEPU VAULT WALLET behave like a browser‑wide wallet (MetaMask‑style).
 
 ### 4.1 Manifest (`extension/manifest.json`)
 
@@ -660,7 +660,7 @@ return new Promise(function (resolve, reject) {
 
 ### 4.4 Background Service Worker (`extension/background.js`)
 
-Handles **opening VAULT WALLET UIs** and **returning results**.
+Handles **opening PEPU VAULT WALLET UIs** and **returning results**.
 
 Main responsibilities:
 
@@ -720,7 +720,7 @@ chrome.windows.create(
 
 ### 4.5 Popup UI (`extension/popup.html` + `extension/popup.js`)
 
-The popup simply loads an iframe pointing at the VAULT WALLET, with optional password gating.
+The popup simply loads an iframe pointing at the PEPU VAULT WALLET, with optional password gating.
 
 - `popup.html` defines a small black card layout with title, subtitle, inputs, and a root `<div id="root">`.
 - `popup.js`:
@@ -748,7 +748,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 ```
 
-So the popup **always** shows VAULT WALLET inside an iframe, and the optional password code is in place if you want to re‑enable it.
+So the popup **always** shows PEPU VAULT WALLET inside an iframe, and the optional password code is in place if you want to re‑enable it.
 
 ---
 
@@ -793,7 +793,7 @@ Rewards accumulate per address; users can claim in the **Rewards** page once the
 For exact formulas and examples, see:
 
 ```startLine:endLine:REWARDS_MECHANISM.md
-# Unchained Wallet Rewards Mechanism
+# PEPU VAULT WALLET Rewards Mechanism
 ...
 ```
 

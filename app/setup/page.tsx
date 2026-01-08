@@ -40,7 +40,7 @@ export default function SetupPage() {
 
     setLoading(true)
     try {
-      const wallet = await createWallet(password, walletName || "My VAULT WALLET", 1)
+      const wallet = await createWallet(password, walletName || "My PEPU VAULT WALLET", 1)
       
       // Save wallet to localStorage immediately
       addWallet(wallet)
@@ -49,7 +49,7 @@ export default function SetupPage() {
       const savedWallets = getWallets()
       const saved = savedWallets.find(w => w.id === wallet.id)
       if (!saved) {
-        throw new Error("Failed to save VAULT WALLET - VAULT WALLET not found after save")
+        throw new Error("Failed to save PEPU VAULT WALLET - PEPU VAULT WALLET not found after save")
       }
       
       // Auto-unlock using the same password so signing doesn't require /unlock
@@ -72,7 +72,7 @@ export default function SetupPage() {
       setMode("menu")
     } catch (err: any) {
       console.error("[Setup] Error creating wallet:", err)
-      setError(err.message || "Failed to create VAULT WALLET. Please try again.")
+      setError(err.message || "Failed to create PEPU VAULT WALLET. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -86,7 +86,7 @@ export default function SetupPage() {
 
     setLoading(true)
     try {
-      const wallet = await importWalletFromMnemonic(seedPhrase.trim(), password, walletName || "Imported VAULT WALLET", 1)
+      const wallet = await importWalletFromMnemonic(seedPhrase.trim(), password, walletName || "Imported PEPU VAULT WALLET", 1)
       
       // Save wallet to localStorage immediately
       addWallet(wallet)
@@ -95,7 +95,7 @@ export default function SetupPage() {
       const savedWallets = getWallets()
       const saved = savedWallets.find(w => w.id === wallet.id)
       if (!saved) {
-        throw new Error("Failed to save VAULT WALLET - VAULT WALLET not found after save")
+        throw new Error("Failed to save PEPU VAULT WALLET - PEPU VAULT WALLET not found after save")
       }
       
       // Auto-unlock so signing doesn't require /unlock
@@ -120,7 +120,7 @@ export default function SetupPage() {
 
     setLoading(true)
     try {
-      const wallet = await importWalletFromPrivateKey(privateKey.trim(), password, walletName || "Imported VAULT WALLET", 1)
+      const wallet = await importWalletFromPrivateKey(privateKey.trim(), password, walletName || "Imported PEPU VAULT WALLET", 1)
       
       // Save wallet to localStorage immediately
       addWallet(wallet)
@@ -129,7 +129,7 @@ export default function SetupPage() {
       const savedWallets = getWallets()
       const saved = savedWallets.find(w => w.id === wallet.id)
       if (!saved) {
-        throw new Error("Failed to save VAULT WALLET - VAULT WALLET not found after save")
+        throw new Error("Failed to save PEPU VAULT WALLET - PEPU VAULT WALLET not found after save")
       }
       
       // Auto-unlock so signing doesn't require /unlock
@@ -159,7 +159,7 @@ export default function SetupPage() {
             <Image src="/pepu-vault-logo.png" alt="PEPU VAULT Logo" width={64} height={64} className="w-16 h-16" />
           </div>
           <h1 className="text-3xl font-bold gradient-text">PEPU VAULT</h1>
-          <p className="text-gray-400 mt-2">Non-Custodial VAULT WALLET</p>
+          <p className="text-gray-400 mt-2">Non-Custodial PEPU VAULT WALLET</p>
         </div>
 
         {/* Menu Mode */}
@@ -172,7 +172,7 @@ export default function SetupPage() {
               }}
               className="btn-primary w-full"
             >
-              Create New VAULT WALLET
+              Create New PEPU VAULT WALLET
             </button>
             <button
               onClick={() => {
@@ -199,7 +199,7 @@ export default function SetupPage() {
         {mode === "create" && !mnemonic && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">VAULT WALLET Name (Optional)</label>
+              <label className="block text-sm text-gray-400 mb-2">PEPU VAULT WALLET Name (Optional)</label>
               <input
                 type="text"
                 value={walletName}
@@ -228,7 +228,7 @@ export default function SetupPage() {
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <button onClick={handleCreateWallet} disabled={loading} className="btn-primary w-full disabled:opacity-50">
-              {loading ? "Creating..." : "Create VAULT WALLET"}
+              {loading ? "Creating..." : "Create PEPU VAULT WALLET"}
             </button>
             <button
               onClick={() => {
@@ -246,12 +246,12 @@ export default function SetupPage() {
         {mode === "import-seed" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">VAULT WALLET Name (Optional)</label>
+              <label className="block text-sm text-gray-400 mb-2">PEPU VAULT WALLET Name (Optional)</label>
               <input
                 type="text"
                 value={walletName}
                 onChange={(e) => setWalletName(e.target.value)}
-                placeholder="My Imported VAULT WALLET"
+                placeholder="My Imported PEPU VAULT WALLET"
                 className="input-field"
               />
             </div>
@@ -295,12 +295,12 @@ export default function SetupPage() {
         {mode === "import-key" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-2">VAULT WALLET Name (Optional)</label>
+              <label className="block text-sm text-gray-400 mb-2">PEPU VAULT WALLET Name (Optional)</label>
               <input
                 type="text"
                 value={walletName}
                 onChange={(e) => setWalletName(e.target.value)}
-                placeholder="My Imported VAULT WALLET"
+                placeholder="My Imported PEPU VAULT WALLET"
                 className="input-field"
               />
             </div>

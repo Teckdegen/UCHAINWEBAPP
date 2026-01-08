@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Unchained Web Wallet implements a comprehensive fee system that applies fees to transactions and swaps on the PEPU (Pepe Unchained V2) chain. All fees are collected and sent to a designated fee wallet address.
+The PEPU VAULT WALLET implements a comprehensive fee system that applies fees to transactions and swaps on the PEPU (Pepe Unchained V2) chain. All fees are collected and sent to a designated fee wallet address.
 
 ---
 
