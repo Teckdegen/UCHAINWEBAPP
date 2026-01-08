@@ -510,8 +510,67 @@ export default function TradePage() {
     setSuccess("")
 
     try {
+      // Check balance BEFORE collecting fee and executing swap
+      const feeAmount = (Number.parseFloat(amountIn) * FEE_PERCENTAGE) / 100
+      const swapAmount = amountAfterFee || amountIn
+      
+      if (fromToken.isNative) {
+        // For native token, check we have enough for: fee + swap amount + gas
+        const provider = await getProviderWithFallback(chainId)
+        const balance = await provider.getBalance(currentWalletAddress)
+        const feeWei = ethers.parseEther(feeAmount.toFixed(18))
+        const swapAmountWei = ethers.parseEther(swapAmount)
+        
+        // Estimate gas (conservative estimate)
+        const feeData = await provider.getFeeData()
+        const estimatedGas = BigInt(500000)
+        const gasCost = estimatedGas * (feeData.gasPrice || BigInt(0))
+        
+        const totalNeeded = feeWei + swapAmountWei + gasCost
+        
+        if (balance < totalNeeded) {
+          const balanceFormatted = ethers.formatEther(balance)
+          const totalNeededFormatted = ethers.formatEther(totalNeeded)
+          const feeFormatted = ethers.formatEther(feeWei)
+          const swapFormatted = ethers.formatEther(swapAmountWei)
+          const gasFormatted = ethers.formatEther(gasCost)
+          
+          throw new Error(
+            `Insufficient balance. You have ${Number.parseFloat(balanceFormatted).toFixed(6)} PEPU. ` +
+            `You need ${Number.parseFloat(feeFormatted).toFixed(6)} PEPU for fee, ` +
+            `${Number.parseFloat(swapFormatted).toFixed(6)} PEPU for swap, and ` +
+            `~${Number.parseFloat(gasFormatted).toFixed(6)} PEPU for gas ` +
+            `(total: ${Number.parseFloat(totalNeededFormatted).toFixed(6)} PEPU).`
+          )
+        }
+      } else {
+        // For ERC20 tokens, check we have enough tokens for fee + swap
+        const tokenBalance = await getTokenBalance(fromToken.address, currentWalletAddress, chainId)
+        const totalNeeded = Number.parseFloat(amountIn) // Full amount includes fee
+        
+        if (Number.parseFloat(tokenBalance) < totalNeeded) {
+          throw new Error(
+            `Insufficient ${fromToken.symbol} balance. You have ${Number.parseFloat(tokenBalance).toFixed(6)} ${fromToken.symbol}, ` +
+            `but need ${totalNeeded.toFixed(6)} ${fromToken.symbol} (including ${feeAmount.toFixed(6)} ${fromToken.symbol} fee).`
+          )
+        }
+        
+        // Also check we have enough native token for gas
+        const provider = await getProviderWithFallback(chainId)
+        const nativeBalance = await provider.getBalance(currentWalletAddress)
+        const feeData = await provider.getFeeData()
+        const estimatedGas = BigInt(500000)
+        const gasCost = estimatedGas * (feeData.gasPrice || BigInt(0))
+        
+        if (nativeBalance < gasCost) {
+          const gasFormatted = ethers.formatEther(gasCost)
+          throw new Error(
+            `Insufficient PEPU for gas fees. You need at least ${Number.parseFloat(gasFormatted).toFixed(6)} PEPU for gas.`
+          )
+        }
+      }
+
       try {
-        const feeAmount = (Number.parseFloat(amountIn) * FEE_PERCENTAGE) / 100
         await sendSwapFee(
           active,
           null, // Pass null to use session password automatically
@@ -522,6 +581,7 @@ export default function TradePage() {
         )
       } catch (feeError: any) {
         console.error("[Trade] Fee collection failed:", feeError)
+        // Don't throw - continue with swap even if fee fails
       }
 
       if (needsApproval && !fromToken.isNative) {
