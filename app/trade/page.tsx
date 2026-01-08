@@ -62,6 +62,7 @@ export default function TradePage() {
   const [tokensWithBalances, setTokensWithBalances] = useState<Map<string, string>>(new Map())
   const [walletAddress, setWalletAddress] = useState<string>("")
   const [loadingTokens, setLoadingTokens] = useState(true)
+  const [loadingBalances, setLoadingBalances] = useState(false)
   const [showFromSelector, setShowFromSelector] = useState(false)
   const [showToSelector, setShowToSelector] = useState(false)
   const [slippage, setSlippage] = useState(0.5)
@@ -281,19 +282,29 @@ export default function TradePage() {
       
       // Add scanned tokens to allTokens if not already there
       // This ensures ALL tokens found via RPC are available in the dropdown
+      // Use a single state update to avoid race conditions
+      const tokensToAdd: Token[] = []
       walletTokens.forEach(walletToken => {
         if (!tokens.find(t => t.address.toLowerCase() === walletToken.address.toLowerCase())) {
-          setAllTokens(prev => {
-            if (!prev.find(t => t.address.toLowerCase() === walletToken.address.toLowerCase())) {
-              console.log(`[Trade] Adding RPC-scanned token to allTokens: ${walletToken.symbol} (${walletToken.address})`)
-              return [...prev, walletToken]
-            }
-            return prev
-          })
+          tokensToAdd.push(walletToken)
         }
       })
       
+      if (tokensToAdd.length > 0) {
+        setAllTokens(prev => {
+          const existingAddresses = new Set(prev.map(t => t.address.toLowerCase()))
+          const newTokens = tokensToAdd.filter(t => !existingAddresses.has(t.address.toLowerCase()))
+          if (newTokens.length > 0) {
+            console.log(`[Trade] Adding ${newTokens.length} RPC-scanned tokens to allTokens`)
+            newTokens.forEach(t => console.log(`  - ${t.symbol} (${t.address})`))
+            return [...prev, ...newTokens]
+          }
+          return prev
+        })
+      }
+      
       console.log(`[Trade] Total tokens with balance: ${balanceMap.size}`)
+      console.log(`[Trade] Wallet tokens found: ${walletTokens.length}`)
       setTokensWithBalances(balanceMap)
     } catch (error) {
       console.error("[Trade] Error loading all token balances:", error)
@@ -1151,13 +1162,41 @@ export default function TradePage() {
     })
   }
 
-  // For "You pay" dropdown: Only show tokens user actually holds (balance > 0)
-  const fromTokenList = sortTokens(
-    allTokens.filter(token => {
-      const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-      return Number.parseFloat(balance) > 0
+  // For "You pay" dropdown: Show ALL tokens user holds (balance > 0) from RPC scanning
+  // Build list directly from tokensWithBalances to ensure we show ALL tokens with balance
+  const fromTokenList = (() => {
+    const tokensWithBalance: Token[] = []
+    
+    // Build a map of all tokens by address for quick lookup
+    const tokenMap = new Map<string, Token>()
+    allTokens.forEach(token => {
+      tokenMap.set(token.address.toLowerCase(), token)
     })
-  )
+    
+    // Get all tokens that have balance > 0
+    tokensWithBalances.forEach((balance, address) => {
+      if (Number.parseFloat(balance) > 0) {
+        const token = tokenMap.get(address.toLowerCase())
+        if (token) {
+          // Token exists in allTokens, use it
+          tokensWithBalance.push({ ...token, balance })
+        } else {
+          // Token has balance but not in allTokens yet - this happens when RPC scanning finds tokens
+          // Create a temporary token entry - it will be updated when token info is fetched
+          tokensWithBalance.push({
+            address: address,
+            decimals: 18, // Default, will be updated when token info is fetched
+            symbol: address.slice(0, 6) + "..." + address.slice(-4), // Temporary display
+            name: "Loading...",
+            balance,
+            isNative: address.toLowerCase() === PEPU_NATIVE.address.toLowerCase(),
+          })
+        }
+      }
+    })
+    
+    return sortTokens(tokensWithBalance)
+  })()
 
   // For "You receive" dropdown: Show all tokens (hardcoded + API)
   const toTokenList = sortTokens(allTokens)
