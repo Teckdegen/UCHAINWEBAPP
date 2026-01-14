@@ -160,8 +160,10 @@ export default function SendPage() {
             )
 
             if (!feeCheck.hasEnough) {
+              const nativeSymbol = chainId === 1 ? "ETH" : "PEPU"
+              const symbol = selectedToken.isNative ? nativeSymbol : selectedToken.symbol
               setFeeWarning(
-                `Insufficient balance. Required: ${Number.parseFloat(feeCheck.requiredTotal).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}, Available: ${Number.parseFloat(feeCheck.currentBalance).toFixed(6)} ${selectedToken.isNative ? 'PEPU' : selectedToken.symbol}`,
+                `Insufficient balance. Required: ${Number.parseFloat(feeCheck.requiredTotal).toFixed(6)} ${symbol}, Available: ${Number.parseFloat(feeCheck.currentBalance).toFixed(6)} ${symbol}`,
               )
               setFeeCalculated(false)
             } else {
