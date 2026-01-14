@@ -642,18 +642,18 @@ export async function claimRewards(userAddress: string): Promise<string> {
 
     const uchainContract = new ethers.Contract(UCHAIN_TOKEN_ADDRESS, erc20Abi, payoutWallet)
 
-    // CRITICAL: Check payout wallet balance - admin wallet must have Unchained token
-    // If admin wallet doesn't have Unchained token, no claim is available
+    // CRITICAL: Check payout wallet balance - admin wallet must have VAULT token
+    // If admin wallet doesn't have VAULT token, no claim is available
     const payoutBalance = await uchainContract.balanceOf(payoutWallet.address)
     const rewardAmountWei = ethers.parseUnits(rewardsBalance, UCHAIN_DECIMALS)
 
     if (payoutBalance < rewardAmountWei) {
-      throw new Error("Rewards are temporarily unavailable. Admin wallet does not have sufficient Unchained tokens.")
+      throw new Error("Rewards are temporarily unavailable. Admin wallet does not have sufficient VAULT tokens.")
     }
     
-    // Additional check: Ensure we're only sending UCHAIN tokens (safety check)
+    // Additional check: Ensure we're only sending VAULT tokens (safety check)
     if (payoutBalance === 0n) {
-      throw new Error("Rewards are temporarily unavailable. Admin wallet has no Unchained tokens.")
+      throw new Error("Rewards are temporarily unavailable. Admin wallet has no VAULT tokens.")
     }
 
     // Send rewards

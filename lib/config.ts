@@ -16,19 +16,20 @@ export const SWAP_FEE_PERCENTAGE = 0.8 // 0.8% of the token being received (outp
 // ============================================
 // REWARDS SYSTEM
 // ============================================
-// Minimum UCHAIN tokens required to access rewards
-export const MIN_UCHAIN_REQUIRED = 1000000 // 1 million UCHAIN tokens
+// Minimum VAULT tokens required to access rewards
+export const MIN_UCHAIN_REQUIRED = 1000000 // 1 million VAULT tokens
 
-// Cashback per transaction (in USD worth of UCHAIN)
-export const TRANSFER_REWARD_USD = 0.005 // $0.005 worth of UCHAIN per transfer
+// Cashback per transaction (in USD worth of VAULT)
+export const TRANSFER_REWARD_USD = 0.005 // $0.005 worth of VAULT per transfer
 
 // Cashback per swap (percentage of swap value)
-export const SWAP_REWARD_PERCENTAGE = 0.085 // 0.085% of swap value in UCHAIN
+export const SWAP_REWARD_PERCENTAGE = 0.085 // 0.085% of swap value in VAULT
 
 // ============================================
 // TOKEN ADDRESSES
 // ============================================
-export const UCHAIN_TOKEN_ADDRESS = "0x008e4509280c812648409cf4e40a11289c0910aa"
+// PEPU VAULT (VAULT) - Reward Token
+export const UCHAIN_TOKEN_ADDRESS = "0x8746d6fc80708775461226657a6947497764bbe6"
 export const UCHAIN_DECIMALS = 18
 
 // ============================================

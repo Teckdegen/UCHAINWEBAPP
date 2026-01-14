@@ -45,7 +45,7 @@ export default function RewardsPage() {
         const balance = getRewardsBalance(active.address)
         setRewardsBalance(balance)
         
-        // Refresh UCHAIN price
+        // Refresh VAULT price
         fetchGeckoTerminalData(UCHAIN_TOKEN_ADDRESS, "pepe-unchained")
           .then((geckoData) => {
             if (geckoData && geckoData.price_usd) {
@@ -55,7 +55,7 @@ export default function RewardsPage() {
               }
             }
           })
-          .catch((err) => console.error("Error fetching UCHAIN price:", err))
+          .catch((err) => console.error("Error fetching VAULT price:", err))
       }
     }, 5000)
 
@@ -80,7 +80,7 @@ export default function RewardsPage() {
       setUchainBalance(eligibility.balance)
       setRequired(eligibility.required)
 
-      // Fetch UCHAIN price for USD display
+      // Fetch VAULT price for USD display
       try {
         const geckoData = await fetchGeckoTerminalData(UCHAIN_TOKEN_ADDRESS, "pepe-unchained")
         if (geckoData && geckoData.price_usd) {
@@ -90,16 +90,16 @@ export default function RewardsPage() {
           }
         }
       } catch (err) {
-        console.error("Error fetching UCHAIN price:", err)
+        console.error("Error fetching VAULT price:", err)
       }
       
-      // CRITICAL: Check if admin wallet has Unchained tokens
-      // If admin wallet doesn't have Unchained tokens, no claim is available
+      // CRITICAL: Check if admin wallet has VAULT tokens
+      // If admin wallet doesn't have VAULT tokens, no claim is available
       try {
         const adminCheck = await checkAdminWalletBalance(balance)
         setAdminHasBalance(adminCheck.hasBalance)
         setAdminBalanceCheck(adminCheck)
-        console.log(`[Rewards] Admin wallet balance check: ${adminCheck.hasBalance}, balance: ${adminCheck.adminBalance} UCHAIN`)
+        console.log(`[Rewards] Admin wallet balance check: ${adminCheck.hasBalance}, balance: ${adminCheck.adminBalance} VAULT`)
       } catch (err) {
         console.error("Error checking admin wallet balance:", err)
         setAdminHasBalance(false)
@@ -182,16 +182,16 @@ export default function RewardsPage() {
                 <h2 className="text-lg font-bold text-yellow-400">Not Eligible</h2>
               </div>
               <p className="text-sm text-gray-300 mb-4">
-                You need to hold at least <span className="font-bold text-white">1,000,000 UCHAIN</span> tokens to access rewards.
+                You need to hold at least <span className="font-bold text-white">1,000,000 VAULT</span> tokens to access rewards.
               </p>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Your UCHAIN Balance:</span>
-                  <span className="font-semibold">{Number.parseFloat(uchainBalance).toLocaleString()} UCHAIN</span>
+                  <span className="text-gray-400">Your VAULT Balance:</span>
+                  <span className="font-semibold">{Number.parseFloat(uchainBalance).toLocaleString()} VAULT</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">Required:</span>
-                  <span className="font-semibold">{required.toLocaleString()} UCHAIN</span>
+                  <span className="font-semibold">{required.toLocaleString()} VAULT</span>
                 </div>
               </div>
             </div>
@@ -207,7 +207,7 @@ export default function RewardsPage() {
                   <div>
                     <p className="text-sm text-gray-400 mb-1">Total Rewards Earned</p>
                     <p className="text-3xl font-bold text-green-400">
-                      {Number.parseFloat(rewardsBalance).toFixed(6)} UCHAIN
+                      {Number.parseFloat(rewardsBalance).toFixed(6)} VAULT
                     </p>
                     {uchainPrice > 0 && (
                       <p className="text-sm text-gray-400 mt-1">
@@ -218,8 +218,8 @@ export default function RewardsPage() {
                   <div className="pt-4 border-t border-white/10">
                     <p className="text-xs text-gray-400 mb-2">Rewards Rates:</p>
                     <ul className="text-xs text-gray-300 space-y-1">
-                      <li>• $0.005 worth of UCHAIN per token transfer</li>
-                      <li>• 0.085% of swap value in UCHAIN (cashback)</li>
+                      <li>• $0.005 worth of VAULT per token transfer</li>
+                      <li>• 0.085% of swap value in VAULT (cashback)</li>
                     </ul>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export default function RewardsPage() {
               {!adminHasBalance && adminBalanceCheck && (
                 <div className="glass-card p-4 border border-yellow-500/50 bg-yellow-500/10">
                   <p className="text-yellow-400 text-sm">
-                    ⚠️ Rewards are temporarily unavailable. {adminBalanceCheck.message || "Admin wallet does not have sufficient Unchained tokens."}
+                    ⚠️ Rewards are temporarily unavailable. {adminBalanceCheck.message || "Admin wallet does not have sufficient VAULT tokens."}
                   </p>
                 </div>
               )}
@@ -261,7 +261,7 @@ export default function RewardsPage() {
               <div className="glass-card p-4 border border-white/10">
                 <p className="text-xs text-gray-400">
                   Rewards are automatically tracked for all transfers and swaps on the PEPU chain. 
-                  Claim your rewards anytime to receive UCHAIN tokens directly to your wallet.
+                  Claim your rewards anytime to receive VAULT tokens directly to your wallet.
                 </p>
               </div>
             </>
