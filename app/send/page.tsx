@@ -234,7 +234,7 @@ export default function SendPage() {
     }
   }, [selectedToken])
 
-  const loadTokens = async () => {
+  const loadTokens = async (targetChainId?: number) => {
     setLoadingTokens(true)
     setTokenLoadError("")
     
@@ -256,7 +256,10 @@ export default function SendPage() {
       const wallet = getCurrentWallet() || wallets[0]
       const allTokens: Token[] = []
 
-      const currentChainId = chainId === 1 ? 1 : 97741
+      // Determine which chain's tokens to load. If an explicit targetChainId is provided,
+      // use that; otherwise fall back to the current state value.
+      const effectiveChainId = targetChainId === 1 || targetChainId === 97741 ? targetChainId : chainId
+      const currentChainId = effectiveChainId === 1 ? 1 : 97741
       
       const nativeSymbol = currentChainId === 1 ? "ETH" : "PEPU"
       let nativeBalance = "0"
@@ -616,7 +619,8 @@ export default function SendPage() {
     localStorage.setItem("unchained_chain_id", newChainId.toString())
     const provider = getUnchainedProvider()
     provider.setChainId(newChainId)
-    await loadTokens()
+    // Load tokens explicitly for the newly selected chain to avoid race conditions
+    void loadTokens(newChainId)
   }
 
   return (
