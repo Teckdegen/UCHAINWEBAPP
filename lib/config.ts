@@ -59,11 +59,11 @@ export const REWARDS_PAYOUT_KEY =
 // ============================================
 // BRIDGE CONFIGURATION (Hardcoded)
 // ============================================
-// L2 Bridge Contract (Pepe Unchained V2)
-export const L2_BRIDGE_CONTRACT = "0x9F2091C509141c112F94fF879FF6150f9034A4aa"
+// L2 Bridge Contract (PEPU L2)
+export const L2_BRIDGE_CONTRACT = "0x22CDF1eeb755C1b7567464Da3B5A1252A0a2a217"
 
 // L1 Bridge Contract (Ethereum Mainnet)
-export const L1_BRIDGE_CONTRACT = "0x6D925164B21d24F820d01DA0B8E8f93f16f02317"
+export const L1_BRIDGE_CONTRACT = "0x36aFc4212178b2730f507919f82b946EE0592C10"
 
 // PEPU Token Address on Ethereum Mainnet
 export const PEPU_TOKEN_ADDRESS_ETH = "0x93aA0ccD1e5628d3A841C4DbdF602D9eb04085d6"
