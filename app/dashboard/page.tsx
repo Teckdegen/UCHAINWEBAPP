@@ -752,15 +752,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
           ) : (
-            // PEPU: Bridge + Swap + Tokens + Transactions - All on one line, compact size
+            // PEPU: Swap + Tokens + Transactions - All on one line, compact size (Bridge hidden)
             <div className="flex items-center justify-between gap-1 flex-nowrap">
-              <Link href="/bridge" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
-                <div className="flex justify-center mb-0.5">
-                  <Network className="w-2.5 h-2.5 text-green-500" />
-                </div>
-                <p className="text-[8px] font-semibold leading-tight">Bridge</p>
-              </Link>
-
               <Link href="/trade" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
                   <ArrowLeftRight className="w-2.5 h-2.5 text-green-500" />
