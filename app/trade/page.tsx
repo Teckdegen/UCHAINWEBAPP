@@ -1288,14 +1288,14 @@ export default function TradePage() {
                 </button>
                 {showFromSelector && (
                   <>
-                    {/* Backdrop */}
+                    {/* Backdrop - More transparent so background shows through */}
                     <div 
-                      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+                      className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9998]"
                       onClick={() => setShowFromSelector(false)}
                     />
                     {/* Full-screen overlay */}
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col">
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col pointer-events-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
                           <h2 className="text-xl font-bold text-green-300">Select Token to Pay</h2>
@@ -1443,14 +1443,14 @@ export default function TradePage() {
                 </button>
                 {showToSelector && (
                   <>
-                    {/* Backdrop */}
+                    {/* Backdrop - More transparent so background shows through */}
                     <div 
-                      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+                      className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9998]"
                       onClick={() => setShowToSelector(false)}
                     />
                     {/* Full-screen overlay */}
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col">
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col pointer-events-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
                           <h2 className="text-xl font-bold text-green-300">Select Token to Receive</h2>
@@ -1650,8 +1650,8 @@ export default function TradePage() {
         {/* Swap Button */}
         <button
           onClick={handleSwap}
-          disabled={loading || !amountIn || !amountOut || Number.parseFloat(amountIn) === 0 || needsApproval === undefined}
-          className="w-full py-4 rounded-xl font-bold text-lg bg-white text-green-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          disabled={loading || !amountIn || !amountOut || Number.parseFloat(amountIn) === 0 || needsApproval === undefined || showFromSelector || showToSelector}
+          className="w-full py-4 rounded-xl font-bold text-lg bg-white text-green-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 relative z-10"
         >
           {loading ? (
             <>
