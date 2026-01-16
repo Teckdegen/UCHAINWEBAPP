@@ -1303,7 +1303,7 @@ export default function TradePage() {
                     />
                     {/* Full-screen overlay */}
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col pointer-events-auto">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900 to-green-800 rounded-2xl border-2 border-green-500/60 shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
                           <h2 className="text-xl font-bold text-green-300">Select Token to Pay</h2>
@@ -1469,7 +1469,7 @@ export default function TradePage() {
                     />
                     {/* Full-screen overlay */}
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col pointer-events-auto">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900 to-green-800 rounded-2xl border-2 border-green-500/60 shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
                           <h2 className="text-xl font-bold text-green-300">Select Token to Receive</h2>
