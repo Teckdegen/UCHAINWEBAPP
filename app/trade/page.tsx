@@ -685,16 +685,24 @@ export default function TradePage() {
 
       // Combine hardcoded tokens with API tokens (avoid duplicates)
       const allTokensMap = new Map<string, Token>()
+      
+      // First, add hardcoded tokens (these should always be available)
       hardcodedTokens.forEach(token => {
         allTokensMap.set(token.address.toLowerCase(), token)
       })
+      
+      // Then, add API tokens (these may fail, but hardcoded tokens should still work)
       apiTokens.forEach(token => {
         if (!allTokensMap.has(token.address.toLowerCase())) {
           allTokensMap.set(token.address.toLowerCase(), token)
         }
       })
+      
       const tokens: Token[] = Array.from(allTokensMap.values())
+      
+      console.log(`[Trade] Total tokens loaded: ${tokens.length} (Hardcoded: ${hardcodedTokens.length}, API: ${apiTokens.length})`)
 
+      // Always set tokens, even if API fails - hardcoded tokens should work
       setAllTokens(tokens)
       
       if (currentWalletAddress) {
@@ -1550,11 +1558,11 @@ export default function TradePage() {
                                   </div>
                                 )}
                                 
-                                {/* All Tokens Section */}
+                                {/* All Tokens Section - Show ALL tokens except fromToken */}
                                 {toTokenList
                                   .filter(token => {
-                                    const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                    return Number.parseFloat(balance) === 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                    // Show all tokens except the fromToken
+                                    return token.address.toLowerCase() !== fromToken.address.toLowerCase()
                                   })
                                   .length > 0 && (
                                   <div>
@@ -1569,8 +1577,11 @@ export default function TradePage() {
                                     <div className="space-y-2">
                                       {toTokenList
                                         .filter(token => {
+                                          // Show all tokens except fromToken in "All Tokens" section
+                                          // Filter out tokens that already appeared in "Your Tokens" section
                                           const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                          return Number.parseFloat(balance) === 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                          const hasBalance = Number.parseFloat(balance) > 0
+                                          return !hasBalance && token.address.toLowerCase() !== fromToken.address.toLowerCase()
                                         })
                                         .map((token) => (
                                           <button
