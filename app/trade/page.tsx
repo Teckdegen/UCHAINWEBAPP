@@ -1355,7 +1355,18 @@ export default function TradePage() {
                               <div>
                                 <div className="text-sm text-green-300/90 px-2 py-2 mb-3 font-semibold uppercase tracking-wide">Your Tokens</div>
                                 <div className="space-y-2">
-                                  {fromTokenList.map((token) => {
+                                  {fromTokenList
+                                    .filter(token => {
+                                      // If search CA is entered, filter by matching address
+                                      if (fromSearchCA && fromSearchCA.trim().length > 0) {
+                                        const searchLower = fromSearchCA.trim().toLowerCase()
+                                        return token.address.toLowerCase().includes(searchLower) ||
+                                               token.symbol.toLowerCase().includes(searchLower) ||
+                                               token.name.toLowerCase().includes(searchLower)
+                                      }
+                                      return true
+                                    })
+                                    .map((token) => {
                                     const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
                                     return (
                                       <button
@@ -1523,7 +1534,17 @@ export default function TradePage() {
                                       {toTokenList
                                         .filter(token => {
                                           const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                          return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                          const hasBalance = Number.parseFloat(balance) > 0
+                                          const notFromToken = token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                          // If search CA is entered, filter by matching address/symbol/name
+                                          if (toSearchCA && toSearchCA.trim().length > 0) {
+                                            const searchLower = toSearchCA.trim().toLowerCase()
+                                            const matches = token.address.toLowerCase().includes(searchLower) ||
+                                                           token.symbol.toLowerCase().includes(searchLower) ||
+                                                           token.name.toLowerCase().includes(searchLower)
+                                            return hasBalance && notFromToken && matches
+                                          }
+                                          return hasBalance && notFromToken
                                         })
                                         .map((token) => {
                                           const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
