@@ -396,7 +396,7 @@ export default function TradePage() {
         console.warn("[Trade] Failed to fetch tokens from API:", apiError)
       }
 
-      // Hardcoded tokens list - All tokens from PEPU explorer
+      // Hardcoded tokens list - All ERC-20 tokens from PEPU explorer API (48 tokens)
       const hardcodedTokens: Token[] = [
         PEPU_NATIVE,
         {
@@ -478,16 +478,16 @@ export default function TradePage() {
           name: "f-caw-f",
         },
         {
-          address: "0x153b5ae0ff770ebe5c30b1de751d8820b2505774",
-          decimals: 18,
-          symbol: "DAWGZ",
-          name: "D.A.W.G.Z",
-        },
-        {
           address: "0x421402ffc649d2ba0f2655c42bcde1e7dcc6f3970",
           decimals: 18,
           symbol: "FINPEPE",
           name: "Finnish Pepe",
+        },
+        {
+          address: "0x153b5ae0ff770ebe5c30b1de751d8820b2505774",
+          decimals: 18,
+          symbol: "DAWGZ",
+          name: "D.A.W.G.Z",
         },
         {
           address: "0xf5cb0ffe8df1e931bd8c1cd5be84ed4d8e1400f7",
@@ -520,22 +520,16 @@ export default function TradePage() {
           name: "TRADER PEPU",
         },
         {
-          address: "0x20fb684bfc1abaad3acec5712f2aa30bd494df74",
-          decimals: 6,
-          symbol: "USDC",
-          name: "USD Coin",
-        },
-        {
           address: "0x28dd14d951cc1b9ff32bdc27dcc7da04fbfe3af6",
           decimals: 18,
           symbol: "$SPRING",
           name: "Springfield",
         },
         {
-          address: "0x17309d9cf30c75abf1e063a4b075ee5c9439ba4a",
-          decimals: 18,
-          symbol: "$SFT",
-          name: "Skill",
+          address: "0x20fb684bfc1abaad3acec5712f2aa30bd494df74",
+          decimals: 6,
+          symbol: "USDC",
+          name: "USD Coin",
         },
         {
           address: "0x3e7f421dc6f79a0b9268f6c90ffc54a32cbe10e6",
@@ -550,10 +544,10 @@ export default function TradePage() {
           name: "PepuLock",
         },
         {
-          address: "0x2e709a0771203c3e7ac6bcc86c38557345e8164c",
+          address: "0xd2e6a84bed4fd60c3387c7f487d9748f94b35c23",
           decimals: 18,
-          symbol: "VCPEPU",
-          name: "VenturePEPU",
+          symbol: "Zen",
+          name: "Zenmonkey",
         },
         {
           address: "0xc2fc08b595d9333fa7d641e526d15c6a37d8d44d",
@@ -562,10 +556,10 @@ export default function TradePage() {
           name: "Safeyield Falcon SYC",
         },
         {
-          address: "0xd2e6a84bed4fd60c3387c7f487d9748f94b35c23",
+          address: "0x2e709a0771203c3e7ac6bcc86c38557345e8164c",
           decimals: 18,
-          symbol: "Zen",
-          name: "Zenmonkey",
+          symbol: "VCPEPU",
+          name: "VenturePEPU",
         },
         {
           address: "0x473e280563fe023d45e256af977f2cce2d88638c",
@@ -586,6 +580,12 @@ export default function TradePage() {
           name: "I love Tosh",
         },
         {
+          address: "0xa085c13facf80a63edea328b3474543d0bbc0197",
+          decimals: 18,
+          symbol: "LQS",
+          name: "Liquids",
+        },
+        {
           address: "0x008e4509280c812648409cf4e40a11289c0910aa",
           decimals: 18,
           symbol: "UCHAIN",
@@ -604,6 +604,24 @@ export default function TradePage() {
           name: "Gameyard",
         },
         {
+          address: "0x0ddc98c6f8a8356977770ed8972b7bfd777d40b4",
+          decimals: 18,
+          symbol: "dSafe",
+          name: "Diamond Safeyield CST",
+        },
+        {
+          address: "0x812a4653da823eb06977b87a07a7f8691eb307c3",
+          decimals: 18,
+          symbol: "PEPEXAI",
+          name: "PepeX-AI",
+        },
+        {
+          address: "0xcc4510e0c2276b76c09f493c110f09df60c13192",
+          decimals: 18,
+          symbol: "HAM",
+          name: "Cutest Hammer",
+        },
+        {
           address: "0x8fe6436498d4ed9560da2c9072ed0ece26045146",
           decimals: 18,
           symbol: "BOBBY",
@@ -614,18 +632,6 @@ export default function TradePage() {
           decimals: 6,
           symbol: "USDT",
           name: "Tether USD",
-        },
-        {
-          address: "0x0ddc98c6f8a8356977770ed8972b7bfd777d40b4",
-          decimals: 18,
-          symbol: "dSafe",
-          name: "Diamond Safeyield CST",
-        },
-        {
-          address: "0xa085c13facf80a63edea328b3474543d0bbc0197",
-          decimals: 18,
-          symbol: "LQS",
-          name: "Liquids",
         },
         {
           address: "0xdb0976d5edc9bd329d354dabdeae00e4de11c941",
@@ -640,10 +646,10 @@ export default function TradePage() {
           name: "PepOra",
         },
         {
-          address: "0xcc4510e0c2276b76c09f493c110f09df60c13192",
+          address: "0x901db3533a321e64f3da4468138935ed01e19345",
           decimals: 18,
-          symbol: "HAM",
-          name: "Cutest Hammer",
+          symbol: "PSTARS",
+          name: "PepuStars",
         },
         {
           address: "0xca795797e1b38318e6fc1173975e146355fdae80",
@@ -652,22 +658,16 @@ export default function TradePage() {
           name: "TestTokenbyHoRa",
         },
         {
-          address: "0x812a4653da823eb06977b87a07a7f8691eb307c3",
+          address: "0x7c533c1d9b054f18f85413d2a113e84f921cf7b6",
           decimals: 18,
-          symbol: "PEPEXAI",
-          name: "PepeX-AI",
+          symbol: "PREDICTX",
+          name: "PREDICT X",
         },
         {
-          address: "0x901db3533a321e64f3da4468138935ed01e19345",
+          address: "0x1c1bd105e03129a5909e935aaf4a77f21285148d",
           decimals: 18,
-          symbol: "PSTARS",
-          name: "PepuStars",
-        },
-        {
-          address: "0x9592be924a69f88ef9c2b26d9d649fe19c6771d4",
-          decimals: 18,
-          symbol: "ULAB",
-          name: "Unchained Lab",
+          symbol: "EDGE",
+          name: "SilverEdge",
         },
         {
           address: "0x59ffa32152303cf8cc75e5630eb57ab3e1f2804e",
@@ -676,10 +676,10 @@ export default function TradePage() {
           name: "Monkey Jars",
         },
         {
-          address: "0x1c1bd105e03129a5909e935aaf4a77f21285148d",
+          address: "0x9592be924a69f88ef9c2b26d9d649fe19c6771d4",
           decimals: 18,
-          symbol: "EDGE",
-          name: "SilverEdge",
+          symbol: "ULAB",
+          name: "Unchained Lab",
         },
       ]
 
@@ -1091,7 +1091,7 @@ export default function TradePage() {
     }
   }
 
-  // Auto-search when valid CA is entered in "You pay" dropdown
+      // Auto-search when valid CA is entered in "You pay" dropdown
   useEffect(() => {
     if (!fromSearchCA || !showFromSelector || searchingCA) return
     
@@ -1100,11 +1100,8 @@ export default function TradePage() {
     if (ca.length === 42 && ethers.isAddress(ca)) {
       const timer = setTimeout(async () => {
         const token = await searchTokenByCA(ca, true)
-        if (token) {
-          setFromToken(token)
-          setShowFromSelector(false)
-          setFromSearchCA("")
-        }
+        // Don't close modal automatically - let user select the token
+        // Token will be added to the list and user can click to select
       }, 500) // Debounce 500ms after user stops typing
       
       return () => clearTimeout(timer)
@@ -1121,11 +1118,8 @@ export default function TradePage() {
     if (ca.length === 42 && ethers.isAddress(ca)) {
       const timer = setTimeout(async () => {
         const token = await searchTokenByCA(ca, false)
-        if (token) {
-          setToToken(token)
-          setShowToSelector(false)
-          setToSearchCA("")
-        }
+        // Don't close modal automatically - let user select the token
+        // Token will be added to the list and user can click to select
       }, 500) // Debounce 500ms after user stops typing
       
       return () => clearTimeout(timer)
