@@ -1582,6 +1582,14 @@ export default function TradePage() {
                                 {/* All Tokens Section - Show ALL tokens except fromToken */}
                                 {toTokenList
                                   .filter(token => {
+                                    // If search CA is entered, filter by matching address/symbol/name
+                                    if (toSearchCA && toSearchCA.trim().length > 0) {
+                                      const searchLower = toSearchCA.trim().toLowerCase()
+                                      const matches = token.address.toLowerCase().includes(searchLower) ||
+                                                     token.symbol.toLowerCase().includes(searchLower) ||
+                                                     token.name.toLowerCase().includes(searchLower)
+                                      return matches && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                    }
                                     // Show all tokens except the fromToken
                                     return token.address.toLowerCase() !== fromToken.address.toLowerCase()
                                   })
@@ -1602,7 +1610,17 @@ export default function TradePage() {
                                           // Filter out tokens that already appeared in "Your Tokens" section
                                           const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
                                           const hasBalance = Number.parseFloat(balance) > 0
-                                          return !hasBalance && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                          const notFromToken = token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                          const inAllTokens = !hasBalance
+                                          // If search CA is entered, filter by matching address/symbol/name
+                                          if (toSearchCA && toSearchCA.trim().length > 0) {
+                                            const searchLower = toSearchCA.trim().toLowerCase()
+                                            const matches = token.address.toLowerCase().includes(searchLower) ||
+                                                           token.symbol.toLowerCase().includes(searchLower) ||
+                                                           token.name.toLowerCase().includes(searchLower)
+                                            return inAllTokens && notFromToken && matches
+                                          }
+                                          return inAllTokens && notFromToken
                                         })
                                         .map((token) => (
                                           <button
