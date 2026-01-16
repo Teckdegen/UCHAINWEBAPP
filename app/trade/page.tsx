@@ -1104,13 +1104,16 @@ export default function TradePage() {
     if (!fromSearchCA || !showFromSelector || searchingCA) return
     
     const ca = fromSearchCA.trim()
-    // Auto-search when address is complete (42 chars) and valid
+    // Auto-search when address is complete (42 chars) and valid - fetch from RPC
     if (ca.length === 42 && ethers.isAddress(ca)) {
       const timer = setTimeout(async () => {
+        console.log(`[Trade] Auto-searching token by CA in "You pay": ${ca}`)
         const token = await searchTokenByCA(ca, true)
-        // Don't close modal automatically - let user select the token
-        // Token will be added to the list and user can click to select
-      }, 500) // Debounce 500ms after user stops typing
+        if (token) {
+          console.log(`[Trade] Token found via RPC: ${token.symbol} (${token.name})`)
+          // Token is now in allTokens list and will appear in filtered results
+        }
+      }, 800) // Debounce 800ms after user stops typing
       
       return () => clearTimeout(timer)
     }
@@ -1122,13 +1125,16 @@ export default function TradePage() {
     if (!toSearchCA || !showToSelector || searchingCA) return
     
     const ca = toSearchCA.trim()
-    // Auto-search when address is complete (42 chars) and valid
+    // Auto-search when address is complete (42 chars) and valid - fetch from RPC
     if (ca.length === 42 && ethers.isAddress(ca)) {
       const timer = setTimeout(async () => {
+        console.log(`[Trade] Auto-searching token by CA in "You receive": ${ca}`)
         const token = await searchTokenByCA(ca, false)
-        // Don't close modal automatically - let user select the token
-        // Token will be added to the list and user can click to select
-      }, 500) // Debounce 500ms after user stops typing
+        if (token) {
+          console.log(`[Trade] Token found via RPC: ${token.symbol} (${token.name})`)
+          // Token is now in allTokens list and will appear in filtered results
+        }
+      }, 800) // Debounce 800ms after user stops typing
       
       return () => clearTimeout(timer)
     }
@@ -1506,17 +1512,63 @@ export default function TradePage() {
                               <p className="text-sm text-green-300">Loading tokens from API...</p>
                             </div>
                           )}
-                          {!loadingTokens && !searchingCA && toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length > 0 && (
+                          {!loadingTokens && !searchingCA && (() => {
+                            const filtered = toTokenList.filter(token => {
+                              // If searching by CA, show matching tokens
+                              if (toSearchCA && toSearchCA.trim().length > 0) {
+                                const searchLower = toSearchCA.trim().toLowerCase()
+                                const matches = token.address.toLowerCase().includes(searchLower) ||
+                                               token.symbol.toLowerCase().includes(searchLower) ||
+                                               token.name.toLowerCase().includes(searchLower)
+                                return matches && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                              }
+                              return token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                            })
+                            return filtered.length > 0
+                          })() && (
                             <div className="text-sm text-green-300/80 px-2 py-2 mb-3 font-medium bg-green-800/30 rounded-lg inline-block">
-                              {toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length} tokens available
+                              {(() => {
+                                const filtered = toTokenList.filter(token => {
+                                  if (toSearchCA && toSearchCA.trim().length > 0) {
+                                    const searchLower = toSearchCA.trim().toLowerCase()
+                                    const matches = token.address.toLowerCase().includes(searchLower) ||
+                                                   token.symbol.toLowerCase().includes(searchLower) ||
+                                                   token.name.toLowerCase().includes(searchLower)
+                                    return matches && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                  }
+                                  return token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                })
+                                return filtered.length
+                              })()} tokens available
                             </div>
                           )}
-                          {!loadingTokens && !searchingCA && toTokenList
-                            .filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase())
-                            .length === 0 ? (
+                          {!loadingTokens && !searchingCA && (() => {
+                            const filtered = toTokenList.filter(token => {
+                              if (toSearchCA && toSearchCA.trim().length > 0) {
+                                const searchLower = toSearchCA.trim().toLowerCase()
+                                const matches = token.address.toLowerCase().includes(searchLower) ||
+                                               token.symbol.toLowerCase().includes(searchLower) ||
+                                               token.name.toLowerCase().includes(searchLower)
+                                return matches && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                              }
+                              return token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                            })
+                            return filtered.length === 0
+                          })() ? (
                             <div className="p-8 text-center">
-                              <p className="text-green-400 text-base mb-2">No tokens found</p>
-                              <p className="text-green-500/70 text-sm">Use the search above to add tokens by contract address</p>
+                              <p className="text-green-400 text-base mb-2">
+                                {toSearchCA && toSearchCA.trim().length >= 10 && !ethers.isAddress(toSearchCA.trim()) 
+                                  ? "Invalid contract address format" 
+                                  : toSearchCA && toSearchCA.trim().length === 42 && ethers.isAddress(toSearchCA.trim())
+                                  ? "Searching token via RPC..."
+                                  : "No tokens found"}
+                              </p>
+                              {toSearchCA && toSearchCA.trim().length === 42 && ethers.isAddress(toSearchCA.trim()) && (
+                                <p className="text-green-500/70 text-sm">Fetching token details from blockchain...</p>
+                              )}
+                              {(!toSearchCA || toSearchCA.trim().length === 0) && (
+                                <p className="text-green-500/70 text-sm">Use the search above to add tokens by contract address</p>
+                              )}
                             </div>
                           ) : (
                             !searchingCA && (
