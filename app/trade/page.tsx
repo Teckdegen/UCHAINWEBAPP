@@ -1296,9 +1296,9 @@ export default function TradePage() {
                 </button>
                 {showFromSelector && (
                   <>
-                    {/* Backdrop - More transparent so background shows through */}
+                    {/* Backdrop - Opaque to fully cover swap button */}
                     <div 
-                      className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9998]"
+                      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998]"
                       onClick={() => setShowFromSelector(false)}
                     />
                     {/* Full-screen overlay */}
@@ -1462,9 +1462,9 @@ export default function TradePage() {
                 </button>
                 {showToSelector && (
                   <>
-                    {/* Backdrop - More transparent so background shows through */}
+                    {/* Backdrop - Opaque to fully cover swap button */}
                     <div 
-                      className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9998]"
+                      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998]"
                       onClick={() => setShowToSelector(false)}
                     />
                     {/* Full-screen overlay */}
@@ -1747,7 +1747,7 @@ export default function TradePage() {
         <button
           onClick={handleSwap}
           disabled={loading || !amountIn || !amountOut || Number.parseFloat(amountIn) === 0 || needsApproval === undefined || showFromSelector || showToSelector}
-          className="w-full py-4 rounded-xl font-bold text-lg bg-white text-green-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 relative z-10"
+          className="w-full py-4 rounded-xl font-bold text-lg bg-white text-green-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 relative z-0"
         >
           {loading ? (
             <>
