@@ -1287,73 +1287,110 @@ export default function TradePage() {
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 {showFromSelector && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-green-900/95 rounded-xl border-2 border-green-500/50 max-h-80 overflow-y-auto z-50 shadow-2xl">
-                    <div className="p-3">
-                      <input
-                        type="text"
-                        placeholder="Enter contract address (CA) to search..."
-                        value={fromSearchCA}
-                        onChange={(e) => {
-                          const ca = e.target.value.trim()
-                          setFromSearchCA(ca)
-                        }}
-                        className="w-full bg-green-800/50 border-2 border-green-500/50 rounded-lg px-3 py-2 mb-2 text-sm text-green-100 placeholder:text-green-400 focus:border-green-400 focus:outline-none"
-                      />
-                      {fromSearchCA && !ethers.isAddress(fromSearchCA) && fromSearchCA.length > 0 && (
-                        <div className="text-xs text-red-300 mb-2 px-2">Invalid contract address format</div>
-                      )}
-                      {searchingCA && (
-                        <div className="text-center py-2">
-                          <Loader className="w-4 h-4 animate-spin mx-auto text-green-300" />
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+                      onClick={() => setShowFromSelector(false)}
+                    />
+                    {/* Full-screen overlay */}
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
+                          <h2 className="text-xl font-bold text-green-300">Select Token to Pay</h2>
+                          <button
+                            onClick={() => setShowFromSelector(false)}
+                            className="p-2 hover:bg-green-700/50 rounded-lg transition-colors"
+                          >
+                            <X className="w-5 h-5 text-green-300" />
+                          </button>
                         </div>
-                      )}
-                      {loadingTokens && (
-                        <div className="text-center py-2 text-xs text-green-300">
-                          <Loader className="w-4 h-4 animate-spin mx-auto mb-1 text-green-400" />
-                          Loading tokens from API...
+                        
+                        {/* Search Input */}
+                        <div className="p-4 border-b border-green-500/20">
+                          <input
+                            type="text"
+                            placeholder="Enter contract address (CA) to search..."
+                            value={fromSearchCA}
+                            onChange={(e) => {
+                              const ca = e.target.value.trim()
+                              setFromSearchCA(ca)
+                            }}
+                            className="w-full bg-green-800/60 border-2 border-green-500/50 rounded-xl px-4 py-3 text-sm text-green-100 placeholder:text-green-400/70 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50"
+                          />
+                          {fromSearchCA && !ethers.isAddress(fromSearchCA) && fromSearchCA.length > 0 && (
+                            <div className="text-xs text-red-300 mt-2 px-1">Invalid contract address format</div>
+                          )}
                         </div>
-                      )}
-                      {!loadingTokens && fromTokenList.length > 0 && (
-                        <div className="text-xs text-green-300 px-2 py-1 mb-2">
-                          {fromTokenList.length} tokens in your wallet
-                        </div>
-                      )}
-                      {fromTokenList.length === 0 && !loadingTokens ? (
-                        <div className="p-4 text-center text-green-400 text-sm">No tokens found in your wallet</div>
-                      ) : (
-                        <div>
-                          <div className="text-xs text-green-300 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
-                          {fromTokenList.map((token) => {
-                            const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                            return (
-                              <button
-                                key={token.address}
-                                onClick={() => {
-                                  setFromToken({ ...token, balance })
-                                  setShowFromSelector(false)
-                                  setFromSearchCA("")
-                                  setAmountIn("")
-                                  setAmountOut("")
-                                }}
-                                className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors bg-green-700/30 border border-green-500/50 mb-1"
-                              >
-                                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                                  <span className="text-xs font-bold text-black">{token.symbol[0]}</span>
+
+                        {/* Content - Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                          {searchingCA && (
+                            <div className="text-center py-8">
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <p className="text-sm text-green-300">Searching token...</p>
+                            </div>
+                          )}
+                          {loadingTokens && !searchingCA && (
+                            <div className="text-center py-8">
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <p className="text-sm text-green-300">Loading tokens from API...</p>
+                            </div>
+                          )}
+                          {!loadingTokens && !searchingCA && fromTokenList.length > 0 && (
+                            <div className="text-sm text-green-300/80 px-2 py-2 mb-3 font-medium bg-green-800/30 rounded-lg inline-block">
+                              {fromTokenList.length} tokens in your wallet
+                            </div>
+                          )}
+                          {!loadingTokens && !searchingCA && fromTokenList.length === 0 ? (
+                            <div className="p-8 text-center">
+                              <p className="text-green-400 text-base mb-2">No tokens found in your wallet</p>
+                              <p className="text-green-500/70 text-sm">Use the search above to add tokens by contract address</p>
+                            </div>
+                          ) : (
+                            !searchingCA && (
+                              <div>
+                                <div className="text-sm text-green-300/90 px-2 py-2 mb-3 font-semibold uppercase tracking-wide">Your Tokens</div>
+                                <div className="space-y-2">
+                                  {fromTokenList.map((token) => {
+                                    const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                    return (
+                                      <button
+                                        key={token.address}
+                                        onClick={() => {
+                                          setFromToken({ ...token, balance })
+                                          setShowFromSelector(false)
+                                          setFromSearchCA("")
+                                          setAmountIn("")
+                                          setAmountOut("")
+                                        }}
+                                        className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all bg-green-800/40 border border-green-500/40 hover:border-green-400/60 hover:shadow-lg"
+                                      >
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                                          <span className="text-sm font-bold text-black">{token.symbol[0]}</span>
+                                        </div>
+                                        <div className="flex-1 text-left">
+                                          <div className="text-base font-bold text-green-200">{token.symbol}</div>
+                                          <div className="text-xs text-green-400/80">{token.name}</div>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className="text-sm font-semibold text-green-300">
+                                            {Number.parseFloat(balance).toFixed(4)}
+                                          </div>
+                                          <div className="text-xs text-green-500/70">{token.symbol}</div>
+                                        </div>
+                                      </button>
+                                    )
+                                  })}
                                 </div>
-                                <div className="flex-1 text-left">
-                                  <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
-                                  <div className="text-xs text-green-400">{token.name}</div>
-                                </div>
-                                <div className="text-xs text-green-300">
-                                  {Number.parseFloat(balance).toFixed(4)}
-                                </div>
-                              </button>
+                              </div>
                             )
-                          })}
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
               <button
@@ -1405,120 +1442,172 @@ export default function TradePage() {
                   <ChevronDown className="w-3 h-3" />
                 </button>
                 {showToSelector && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-green-900/95 rounded-xl border-2 border-green-500/50 max-h-80 overflow-y-auto z-50 shadow-2xl">
-                  <div className="p-3">
-                    <input
-                      type="text"
-                      placeholder="Enter contract address (CA) to search..."
-                      value={toSearchCA}
-                      onChange={(e) => {
-                        const ca = e.target.value.trim()
-                        setToSearchCA(ca)
-                      }}
-                      className="w-full bg-green-800/50 border-2 border-green-500/50 rounded-lg px-3 py-2 mb-2 text-sm text-green-100 placeholder:text-green-400 focus:border-green-400 focus:outline-none"
+                  <>
+                    {/* Backdrop */}
+                    <div 
+                      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998]"
+                      onClick={() => setShowToSelector(false)}
                     />
-                    {toSearchCA && !ethers.isAddress(toSearchCA) && toSearchCA.length > 0 && (
-                      <div className="text-xs text-red-300 mb-2 px-2">Invalid contract address format</div>
-                    )}
-                    {searchingCA && (
-                      <div className="text-center py-2">
-                        <Loader className="w-4 h-4 animate-spin mx-auto text-green-300" />
-                      </div>
-                    )}
-                    {loadingTokens && (
-                      <div className="text-center py-2 text-xs text-green-300">
-                        <Loader className="w-4 h-4 animate-spin mx-auto mb-1 text-green-400" />
-                        Loading tokens from API...
-                      </div>
-                    )}
-                    {!loadingTokens && toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length > 0 && (
-                      <div className="text-xs text-green-300 px-2 py-1 mb-2">
-                        {toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length} tokens available
-                      </div>
-                    )}
-                    {toTokenList
-                      .filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase())
-                      .length === 0 && !loadingTokens ? (
-                      <div className="p-4 text-center text-green-400 text-sm">No tokens found</div>
-                    ) : (
-                      <>
-                        {toTokenList
-                          .filter(token => {
-                            const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                            return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
-                          })
-                          .length > 0 && (
-                          <div className="mb-2">
-                            <div className="text-xs text-green-300 px-2 py-1 mb-1 font-semibold">Your Tokens</div>
-                            {toTokenList
-                              .filter(token => {
-                                const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
-                              })
-                              .map((token) => {
-                                const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                return (
-                                  <button
-                                    key={token.address}
-                                    onClick={() => {
-                                      setToToken({ ...token, balance })
-                                      setShowToSelector(false)
-                                      setToSearchCA("")
-                                      setAmountOut("")
-                                    }}
-                                    className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors bg-green-700/30 border border-green-500/50 mb-1"
-                                  >
-                                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                                      <span className="text-xs font-bold text-black">{token.symbol[0]}</span>
-                                    </div>
-                                    <div className="flex-1 text-left">
-                                      <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
-                                      <div className="text-xs text-green-400">{token.name}</div>
-                                    </div>
-                                  </button>
-                                )
-                              })}
-                          </div>
-                        )}
-                        <div>
-                            {toTokenList
-                              .filter(token => {
-                                const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                                return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
-                              })
-                              .length > 0 && (
-                                <div className="text-xs text-green-300 px-2 py-1 mb-1 mt-2">All Tokens</div>
-                              )}
-                          {toTokenList
-                            .filter(token => {
-                              const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
-                              return Number.parseFloat(balance) === 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
-                            })
-                            .map((token) => (
-                              <button
-                                key={token.address}
-                                onClick={() => {
-                                  setToToken(token)
-                                  setShowToSelector(false)
-                                  setToSearchCA("")
-                                  setAmountOut("")
-                                }}
-                                className="w-full flex items-center gap-2 p-2 hover:bg-green-800/50 rounded-lg transition-colors border border-transparent hover:border-green-500/30"
-                              >
-                                <div className="w-6 h-6 rounded-full bg-green-500/30 flex items-center justify-center">
-                                  <span className="text-xs font-bold text-green-300">{token.symbol[0]}</span>
-                                </div>
-                                <div className="flex-1 text-left">
-                                  <div className="text-sm font-semibold text-green-300">{token.symbol}</div>
-                                  <div className="text-xs text-green-400">{token.name}</div>
-                                </div>
-                              </button>
-                            ))}
+                    {/* Full-screen overlay */}
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900/98 to-green-800/98 rounded-2xl border-2 border-green-500/60 shadow-2xl backdrop-blur-xl overflow-hidden flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
+                          <h2 className="text-xl font-bold text-green-300">Select Token to Receive</h2>
+                          <button
+                            onClick={() => setShowToSelector(false)}
+                            className="p-2 hover:bg-green-700/50 rounded-lg transition-colors"
+                          >
+                            <X className="w-5 h-5 text-green-300" />
+                          </button>
                         </div>
-                      </>
-                    )}
-                  </div>
-                </div>
+                        
+                        {/* Search Input */}
+                        <div className="p-4 border-b border-green-500/20">
+                          <input
+                            type="text"
+                            placeholder="Enter contract address (CA) to search..."
+                            value={toSearchCA}
+                            onChange={(e) => {
+                              const ca = e.target.value.trim()
+                              setToSearchCA(ca)
+                            }}
+                            className="w-full bg-green-800/60 border-2 border-green-500/50 rounded-xl px-4 py-3 text-sm text-green-100 placeholder:text-green-400/70 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50"
+                          />
+                          {toSearchCA && !ethers.isAddress(toSearchCA) && toSearchCA.length > 0 && (
+                            <div className="text-xs text-red-300 mt-2 px-1">Invalid contract address format</div>
+                          )}
+                        </div>
+
+                        {/* Content - Scrollable */}
+                        <div className="flex-1 overflow-y-auto p-4">
+                          {searchingCA && (
+                            <div className="text-center py-8">
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <p className="text-sm text-green-300">Searching token...</p>
+                            </div>
+                          )}
+                          {loadingTokens && !searchingCA && (
+                            <div className="text-center py-8">
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <p className="text-sm text-green-300">Loading tokens from API...</p>
+                            </div>
+                          )}
+                          {!loadingTokens && !searchingCA && toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length > 0 && (
+                            <div className="text-sm text-green-300/80 px-2 py-2 mb-3 font-medium bg-green-800/30 rounded-lg inline-block">
+                              {toTokenList.filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase()).length} tokens available
+                            </div>
+                          )}
+                          {!loadingTokens && !searchingCA && toTokenList
+                            .filter(token => token.address.toLowerCase() !== fromToken.address.toLowerCase())
+                            .length === 0 ? (
+                            <div className="p-8 text-center">
+                              <p className="text-green-400 text-base mb-2">No tokens found</p>
+                              <p className="text-green-500/70 text-sm">Use the search above to add tokens by contract address</p>
+                            </div>
+                          ) : (
+                            !searchingCA && (
+                              <>
+                                {/* Your Tokens Section */}
+                                {toTokenList
+                                  .filter(token => {
+                                    const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                    return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                  })
+                                  .length > 0 && (
+                                  <div className="mb-4">
+                                    <div className="text-sm text-green-300/90 px-2 py-2 mb-3 font-semibold uppercase tracking-wide">Your Tokens</div>
+                                    <div className="space-y-2">
+                                      {toTokenList
+                                        .filter(token => {
+                                          const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                          return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                        })
+                                        .map((token) => {
+                                          const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                          return (
+                                            <button
+                                              key={token.address}
+                                              onClick={() => {
+                                                setToToken({ ...token, balance })
+                                                setShowToSelector(false)
+                                                setToSearchCA("")
+                                                setAmountOut("")
+                                              }}
+                                              className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all bg-green-800/40 border border-green-500/40 hover:border-green-400/60 hover:shadow-lg"
+                                            >
+                                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                                                <span className="text-sm font-bold text-black">{token.symbol[0]}</span>
+                                              </div>
+                                              <div className="flex-1 text-left">
+                                                <div className="text-base font-bold text-green-200">{token.symbol}</div>
+                                                <div className="text-xs text-green-400/80">{token.name}</div>
+                                              </div>
+                                              <div className="text-right">
+                                                <div className="text-sm font-semibold text-green-300">
+                                                  {Number.parseFloat(balance).toFixed(4)}
+                                                </div>
+                                                <div className="text-xs text-green-500/70">{token.symbol}</div>
+                                              </div>
+                                            </button>
+                                          )
+                                        })}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* All Tokens Section */}
+                                {toTokenList
+                                  .filter(token => {
+                                    const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                    return Number.parseFloat(balance) === 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                  })
+                                  .length > 0 && (
+                                  <div>
+                                    {toTokenList
+                                      .filter(token => {
+                                        const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                        return Number.parseFloat(balance) > 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                      })
+                                      .length > 0 && (
+                                      <div className="text-sm text-green-300/90 px-2 py-2 mb-3 font-semibold uppercase tracking-wide">All Tokens</div>
+                                    )}
+                                    <div className="space-y-2">
+                                      {toTokenList
+                                        .filter(token => {
+                                          const balance = tokensWithBalances.get(token.address.toLowerCase()) || "0"
+                                          return Number.parseFloat(balance) === 0 && token.address.toLowerCase() !== fromToken.address.toLowerCase()
+                                        })
+                                        .map((token) => (
+                                          <button
+                                            key={token.address}
+                                            onClick={() => {
+                                              setToToken(token)
+                                              setShowToSelector(false)
+                                              setToSearchCA("")
+                                              setAmountOut("")
+                                            }}
+                                            className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all border border-green-500/30 hover:border-green-400/50 hover:shadow-lg bg-green-800/20"
+                                          >
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500/40 to-green-600/40 flex items-center justify-center shadow-lg">
+                                              <span className="text-sm font-bold text-green-300">{token.symbol[0]}</span>
+                                            </div>
+                                            <div className="flex-1 text-left">
+                                              <div className="text-base font-bold text-green-200">{token.symbol}</div>
+                                              <div className="text-xs text-green-400/80">{token.name}</div>
+                                            </div>
+                                          </button>
+                                        ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
