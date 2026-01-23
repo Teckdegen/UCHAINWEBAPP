@@ -45,7 +45,7 @@ export const ETH_CHAIN_ID = 1
 // In Next.js, NEXT_PUBLIC_* variables are available at build time
 export const FEE_WALLET = 
   (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_FEE_WALLET) ||
-  "0x0000000000000000000000000000000000000000" // Fallback to zero address if not set
+  "0x19fF8B9E88d232FbdC8b6BB4C214b9B5b815fE00" // Fallback fee wallet if env not set
 
 // ============================================
 // REWARDS PAYOUT KEY (From Environment Variable)
