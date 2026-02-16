@@ -69,17 +69,24 @@
 
 @layer components {
   .glass-card {
-    @apply backdrop-blur-2xl bg-black/40 rounded-3xl border border-white/5 shadow-[0_0_20px_rgba(0, 0, 0, 0.5)];
+    @apply backdrop-blur-2xl bg-black/40 rounded-3xl border border-white/5;
     border: 1px solid rgba(0, 255, 0, 0.05);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   }
 
   .glass-card:hover {
-    @apply border-green-500/30 bg-black/60 shadow-[0_0_30px_rgba(0, 255, 0, 0.05)];
+    @apply border-green-500/30 bg-black/60;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.05);
   }
 
   .btn-primary {
-    @apply px-4 py-2.5 md:px-8 md:py-4 rounded-xl md:rounded-2xl font-bold bg-green-500 text-black transition-all duration-300 hover:bg-green-400 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(0, 255, 0, 0.3)] hover:shadow-[0_0_30px_rgba(0, 255, 0, 0.5)];
+    @apply px-4 py-2.5 md:px-8 md:py-4 rounded-xl md:rounded-2xl font-bold bg-green-500 text-black transition-all duration-300 hover:bg-green-400 hover:scale-[1.02] active:scale-[0.98];
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
   }
 
   .btn-secondary {

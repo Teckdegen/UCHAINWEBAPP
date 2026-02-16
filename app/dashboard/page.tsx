@@ -579,8 +579,8 @@ export default function DashboardPage() {
       <div className="glass-card rounded-none p-6 border-b border-white/10 relative z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Chain Toggle Switch - Top Left */}
-          <div className="flex items-center gap-1.5 md:gap-2">
-            <span className={`text-[10px] md:text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
+          <div className="flex items-center gap-1">
+            <span className={`text-[9px] font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
               ETH
             </span>
             <button
@@ -597,17 +597,18 @@ export default function DashboardPage() {
                 provider.setChainId(newChainId)
                 console.log(`[Dashboard] Chain switched to ${newChainId === 97741 ? 'PEPU' : 'ETH'}`)
               }}
-              className={`relative inline-flex h-6 w-11 md:h-7 md:w-14 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${chainId === 97741 ? 'bg-primary shadow-[0_0_10px_rgba(0,255,0,0.3)]' : 'bg-gray-700'
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-300 focus:outline-none ${chainId === 97741 ? 'bg-primary' : 'bg-gray-700'
                 }`}
+              style={chainId === 97741 ? { boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)' } : undefined}
               role="switch"
               aria-checked={chainId === 97741}
             >
               <span
-                className={`inline-block h-4 w-4 md:h-5 md:w-5 transform rounded-full bg-black transition-transform duration-300 ${chainId === 97741 ? 'translate-x-6 md:translate-x-8' : 'translate-x-1'
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-black transition-transform duration-300 ${chainId === 97741 ? 'translate-x-5' : 'translate-x-0.5'
                   }`}
               />
             </button>
-            <span className={`text-[10px] md:text-xs font-semibold md:font-medium transition-colors ${chainId === 97741 ? 'text-primary' : 'text-gray-500'}`}>
+            <span className={`text-[9px] font-semibold transition-colors ${chainId === 97741 ? 'text-primary' : 'text-gray-500'}`}>
               PEPU
             </span>
           </div>
@@ -618,10 +619,10 @@ export default function DashboardPage() {
               <div className="relative">
                 <button
                   onClick={() => setShowWalletMenu((prev) => !prev)}
-                  className="glass-card px-2 py-1.5 md:px-3 md:py-2 rounded-xl flex items-center gap-1.5 md:gap-2 hover:bg-white/10 transition-colors"
+                  className="glass-card px-2 py-1 rounded-lg flex items-center gap-1.5 hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-[10px] md:text-xs font-bold text-primary">
+                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[9px] font-bold text-primary">
                       {(() => {
                         const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
                         const displayName = walletDomains[activeWallet?.id || ""] || activeWallet?.name || "W"
@@ -629,15 +630,13 @@ export default function DashboardPage() {
                       })()}
                     </span>
                   </div>
-                  <div className="text-left">
-                    <p className="hidden md:block text-[10px] text-gray-400">Active PEPU VAULT WALLET</p>
-                    <p className="text-xs md:text-sm font-semibold truncate max-w-[80px] md:max-w-none">
-                      {(() => {
-                        const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
-                        return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My PEPU VAULT WALLET"
-                      })()}
-                    </p>
-                  </div>
+                  <span className="text-[10px] font-mono text-gray-300">
+                    {(() => {
+                      const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
+                      const address = activeWallet?.address || ""
+                      return address ? `...${address.slice(-4)}` : "Wallet"
+                    })()}
+                  </span>
                 </button>
                 {/* Simple dropdown list, toggled by button */}
                 {showWalletMenu && (
