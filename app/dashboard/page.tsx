@@ -818,8 +818,9 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+      </div>
 
-        {/* Add Custom Token Modal (Dashboard, ETH) */}
+      {/* Add Custom Token Modal (Dashboard, ETH) */}
         {showAddToken && chainId === 1 && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[999]">
             <div className="glass-card w-full max-w-md p-6 space-y-4">
