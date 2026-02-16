@@ -575,12 +575,12 @@ export default function DashboardPage() {
       {/* RPC Connection Notification */}
       <RpcConnectionNotification chainId={chainId} />
 
-      {/* Header */}
-      <div className="glass-card rounded-none p-6 border-b border-white/10 relative z-50">
+      {/* Header - GREEN SECTION */}
+      <div className="rounded-none p-6 border-b border-black/20 relative z-50" style={{ background: 'linear-gradient(135deg, #00ff00 0%, #00dd00 100%)' }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Chain Toggle Switch - Top Left */}
           <div className="flex items-center gap-1">
-            <span className={`text-[9px] font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
+            <span className={`text-[9px] font-bold transition-colors text-black`}>
               ETH
             </span>
             <button
@@ -597,18 +597,18 @@ export default function DashboardPage() {
                 provider.setChainId(newChainId)
                 console.log(`[Dashboard] Chain switched to ${newChainId === 97741 ? 'PEPU' : 'ETH'}`)
               }}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-300 focus:outline-none ${chainId === 97741 ? 'bg-primary' : 'bg-gray-700'
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-300 focus:outline-none ${chainId === 97741 ? 'bg-black' : 'bg-white/30'
                 }`}
-              style={chainId === 97741 ? { boxShadow: '0 0 8px rgba(0, 255, 0, 0.3)' } : undefined}
+              style={chainId === 97741 ? { boxShadow: '0 0 8px rgba(0, 0, 0, 0.5)' } : undefined}
               role="switch"
               aria-checked={chainId === 97741}
             >
               <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-black transition-transform duration-300 ${chainId === 97741 ? 'translate-x-5' : 'translate-x-0.5'
+                className={`inline-block h-3.5 w-3.5 transform rounded-full transition-transform duration-300 ${chainId === 97741 ? 'bg-green-400 translate-x-5' : 'bg-black translate-x-0.5'
                   }`}
               />
             </button>
-            <span className={`text-[9px] font-semibold transition-colors ${chainId === 97741 ? 'text-primary' : 'text-gray-500'}`}>
+            <span className={`text-[9px] font-bold transition-colors ${chainId === 97741 ? 'text-black' : 'text-black/60'}`}>
               PEPU
             </span>
           </div>
@@ -619,10 +619,11 @@ export default function DashboardPage() {
               <div className="relative">
                 <button
                   onClick={() => setShowWalletMenu((prev) => !prev)}
-                  className="glass-card px-2 py-1 rounded-lg flex items-center gap-1.5 hover:bg-white/10 transition-colors"
+                  className="px-2 py-1 rounded-lg flex items-center gap-1.5 transition-all backdrop-blur-sm"
+                  style={{ background: 'rgba(0, 0, 0, 0.15)', border: '1px solid rgba(0, 0, 0, 0.3)' }}
                 >
-                  <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[9px] font-bold text-primary">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(0, 0, 0, 0.2)' }}>
+                    <span className="text-[9px] font-bold text-black">
                       {(() => {
                         const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
                         const displayName = walletDomains[activeWallet?.id || ""] || activeWallet?.name || "W"
@@ -630,7 +631,7 @@ export default function DashboardPage() {
                       })()}
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-gray-300">
+                  <span className="text-[10px] font-mono font-bold text-black">
                     {(() => {
                       const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
                       const address = activeWallet?.address || ""
@@ -680,504 +681,508 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Portfolio */}
-      <div className="max-w-6xl mx-auto px-4 mt-8">
-        <div className="glass-card p-8 mb-8">
-          <div className="text-center">
-            <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Portfolio Value</p>
-            <h2 className="text-6xl font-bold gradient-text mb-3 tracking-tight">
-              {displayCurrency.symbol}{portfolioValue}
-            </h2>
-            {chainId === 97741 && pepuPrice > 0 && (
-              <p className="text-xs text-gray-500 mb-2">
-                PEPU Price: {displayCurrency.symbol}{pepuPrice.toFixed(8)}
-              </p>
-            )}
-            {chainId === 1 && ethPrice > 0 && (
-              <p className="text-xs text-gray-500 mb-2">
-                ETH Price: {displayCurrency.symbol}{ethPrice.toFixed(2)}
-              </p>
+      {/* Portfolio - GREEN SECTION */}
+      <div className="relative z-10 px-4 py-8" style={{ background: 'linear-gradient(180deg, rgba(0,255,0,0.15) 0%, rgba(0,0,0,0) 100%)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="glass-card p-8 mb-8 border-green-500/20 shadow-[0_0_30px_rgba(0,255,0,0.15)] backdrop-blur-xl">
+            <div className="text-center">
+              <p className="text-gray-300 text-xs uppercase tracking-wider mb-3 font-semibold">Total Balance</p>
+              <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                {displayCurrency.symbol}{portfolioValue}
+              </h1>
+
+              {/* Active Wallet Badge */}
+              {wallets.length > 0 && (
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/40 border border-green-500/30 backdrop-blur-md mb-4 shadow-lg">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#00ff00]" />
+                  <span className="text-xs font-mono font-bold text-green-400 tracking-wide">
+                    {(wallets.find((w) => w.id === currentWalletId) || wallets[0])?.address.slice(0, 6)}...{(wallets.find((w) => w.id === currentWalletId) || wallets[0])?.address.slice(-4)}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-center gap-4 text-xs font-medium text-gray-400">
+                {chainId === 97741 && pepuPrice > 0 && (
+                  <span className="bg-black/20 px-3 py-1 rounded-lg border border-white/5">
+                    PEPU: <span className="text-green-400">{displayCurrency.symbol}{pepuPrice.toFixed(8)}</span>
+                  </span>
+                )}
+                {chainId === 1 && ethPrice > 0 && (
+                  <span className="bg-black/20 px-3 py-1 rounded-lg border border-white/5">
+                    ETH: <span className="text-blue-400">{displayCurrency.symbol}{ethPrice.toFixed(2)}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions - Contrast Section */}
+          <div className="mt-8">
+            {chainId === 1 ? (
+              // Ethereum: Send + Receive + Add Custom Token (+)
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <Link href="/send" className="glass-card p-3 md:p-4 text-center hover:bg-white/10 transition-all">
+                    <div className="flex justify-center mb-1 md:mb-2">
+                      <Send className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                    </div>
+                    <p className="text-xs md:text-sm font-semibold">Send</p>
+                  </Link>
+
+                  <Link href="/receive" className="glass-card p-3 md:p-4 text-center hover:bg-white/10 transition-all">
+                    <div className="flex justify-center mb-1 md:mb-2">
+                      <Download className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                    </div>
+                    <p className="text-xs md:text-sm font-semibold">Receive</p>
+                  </Link>
+                </div>
+
+                {/* ETH Add Custom Token "+" button under Send/Receive */}
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => {
+                      setShowAddToken(true)
+                      setCustomTokenAddress("")
+                      setCustomTokenError("")
+                    }}
+                    className="w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center text-xl font-bold hover:bg-green-400 transition-colors"
+                    aria-label="Add custom token"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // PEPU: Swap + Tokens + Transactions - All on one line, compact size (Bridge hidden)
+              <div className="flex items-center justify-between gap-1 flex-nowrap">
+                <Link href="/trade" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                  <div className="flex justify-center mb-0.5">
+                    <ArrowLeftRight className="w-2.5 h-2.5 text-primary" />
+                  </div>
+                  <p className="text-[8px] font-semibold leading-tight">Trade</p>
+                </Link>
+
+                <Link href="/tokens" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                  <div className="flex justify-center mb-0.5">
+                    <Coins className="w-2.5 h-2.5 text-primary" />
+                  </div>
+                  <p className="text-[8px] font-semibold leading-tight">Tokens</p>
+                </Link>
+
+                <Link href="/transactions" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                  <div className="flex justify-center mb-0.5">
+                    <History className="w-2.5 h-2.5 text-primary" />
+                  </div>
+                  <p className="text-[8px] font-semibold leading-tight">Txs</p>
+                </Link>
+
+                <Link href="/rewards" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
+                  <div className="flex justify-center mb-0.5">
+                    <Gift className="w-2.5 h-2.5 text-primary" />
+                  </div>
+                  <p className="text-[8px] font-semibold leading-tight">Rewards</p>
+                </Link>
+              </div>
             )}
           </div>
 
-          {/* Active wallet display inside portfolio */}
-          {wallets.length > 0 && (
-            <div className="mb-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Active PEPU VAULT WALLET</p>
-              <p className="text-xs font-mono text-gray-400">
-                {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(0, 6)}...
-                {(wallets.find((w) => w.id === currentWalletId) || wallets[0]).address.slice(-4)}
-              </p>
-            </div>
-          )}
-
-
-          {/* Quick Actions */}
-          {chainId === 1 ? (
-            // Ethereum: Send + Receive + Add Custom Token (+)
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <Link href="/send" className="glass-card p-3 md:p-4 text-center hover:bg-white/10 transition-all">
-                  <div className="flex justify-center mb-1 md:mb-2">
-                    <Send className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-                  </div>
-                  <p className="text-xs md:text-sm font-semibold">Send</p>
-                </Link>
-
-                <Link href="/receive" className="glass-card p-3 md:p-4 text-center hover:bg-white/10 transition-all">
-                  <div className="flex justify-center mb-1 md:mb-2">
-                    <Download className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-                  </div>
-                  <p className="text-xs md:text-sm font-semibold">Receive</p>
-                </Link>
-              </div>
-
-              {/* ETH Add Custom Token "+" button under Send/Receive */}
-              <div className="flex justify-center">
-                <button
-                  onClick={() => {
-                    setShowAddToken(true)
-                    setCustomTokenAddress("")
-                    setCustomTokenError("")
-                  }}
-                  className="w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center text-xl font-bold hover:bg-green-400 transition-colors"
-                  aria-label="Add custom token"
-                >
-                  +
-                </button>
-              </div>
+          {/* Token List */}
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="spinner"></div>
             </div>
           ) : (
-            // PEPU: Swap + Tokens + Transactions - All on one line, compact size (Bridge hidden)
-            <div className="flex items-center justify-between gap-1 flex-nowrap">
-              <Link href="/trade" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
-                <div className="flex justify-center mb-0.5">
-                  <ArrowLeftRight className="w-2.5 h-2.5 text-primary" />
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-400">Your Tokens</h3>
+              {balances.map((token) => (
+                <div key={token.symbol} className="glass-card p-4 flex items-center justify-between hover:bg-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <span className="text-primary font-bold text-sm">{token.symbol[0]}</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold">{token.name}</p>
+                      <p className="text-xs text-gray-400">{token.symbol}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{Number.parseFloat(token.balance).toFixed(4)}</p>
+                    {!token.isNative && !token.isBonded ? (
+                      <p className="text-xs text-gray-500">Not Bonded</p>
+                    ) : (
+                      <p className="text-xs text-primary">{displayCurrency.symbol}{token.usdValue}</p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-[8px] font-semibold leading-tight">Trade</p>
-              </Link>
-
-              <Link href="/tokens" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
-                <div className="flex justify-center mb-0.5">
-                  <Coins className="w-2.5 h-2.5 text-primary" />
-                </div>
-                <p className="text-[8px] font-semibold leading-tight">Tokens</p>
-              </Link>
-
-              <Link href="/transactions" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
-                <div className="flex justify-center mb-0.5">
-                  <History className="w-2.5 h-2.5 text-primary" />
-                </div>
-                <p className="text-[8px] font-semibold leading-tight">Txs</p>
-              </Link>
-
-              <Link href="/rewards" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
-                <div className="flex justify-center mb-0.5">
-                  <Gift className="w-2.5 h-2.5 text-primary" />
-                </div>
-                <p className="text-[8px] font-semibold leading-tight">Rewards</p>
-              </Link>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Token List */}
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="spinner"></div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-400">Your Tokens</h3>
-            {balances.map((token) => (
-              <div key={token.symbol} className="glass-card p-4 flex items-center justify-between hover:bg-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <span className="text-primary font-bold text-sm">{token.symbol[0]}</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold">{token.name}</p>
-                    <p className="text-xs text-gray-400">{token.symbol}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">{Number.parseFloat(token.balance).toFixed(4)}</p>
-                  {!token.isNative && !token.isBonded ? (
-                    <p className="text-xs text-gray-500">Not Bonded</p>
-                  ) : (
-                    <p className="text-xs text-primary">{displayCurrency.symbol}{token.usdValue}</p>
-                  )}
-                </div>
+        {/* Add Custom Token Modal (Dashboard, ETH) */}
+        {showAddToken && chainId === 1 && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[999]">
+            <div className="glass-card w-full max-w-md p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold">Add Custom ETH Token</h2>
+                <button
+                  onClick={() => {
+                    setShowAddToken(false)
+                    setCustomTokenAddress("")
+                    setCustomTokenError("")
+                    setCustomTokenInfo(null)
+                  }}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
               </div>
-            ))}
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Token Contract Address</label>
+                <input
+                  type="text"
+                  value={customTokenAddress}
+                  onChange={(e) => {
+                    setCustomTokenAddress(e.target.value)
+                    setCustomTokenError("")
+                    setCustomTokenInfo(null)
+                  }}
+                  placeholder="0x..."
+                  className="input-field"
+                />
+              </div>
+
+              {customTokenError && <p className="text-xs text-red-400">{customTokenError}</p>}
+
+              {customTokenInfo && (
+                <div className="glass-card p-3 border border-white/10 text-xs space-y-1">
+                  <p className="text-gray-300">
+                    <span className="font-semibold">Symbol:</span> {customTokenInfo.symbol}
+                  </p>
+                  <p className="text-gray-300">
+                    <span className="font-semibold">Name:</span> {customTokenInfo.name}
+                  </p>
+                  <p className="text-gray-300">
+                    <span className="font-semibold">Decimals:</span> {customTokenInfo.decimals}
+                  </p>
+                  <p className="text-[11px] text-gray-500">
+                    Confirm this matches the token details on your explorer before saving.
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={async () => {
+                  try {
+                    setCustomTokenError("")
+                    if (!customTokenAddress.trim()) {
+                      setCustomTokenError("Enter a token contract address")
+                      return
+                    }
+
+                    const normalized = customTokenAddress.trim()
+
+                    // Step 1: lookup token details via public RPC
+                    if (!customTokenInfo) {
+                      const provider = new ethers.JsonRpcProvider("https://eth.llamarpc.com")
+                      const contract = new ethers.Contract(normalized, ERC20_ABI, provider)
+                      const [symbol, name, decimals] = await Promise.all([
+                        contract.symbol().catch(() => "???"),
+                        contract.name().catch(() => "Unknown Token"),
+                        contract.decimals(),
+                      ])
+                      setCustomTokenInfo({
+                        address: normalized,
+                        symbol,
+                        name,
+                        decimals: Number(decimals),
+                      })
+                      return
+                    }
+
+                    // Step 2: user confirms, so save token
+                    addEthCustomToken(customTokenInfo.address)
+                    setShowAddToken(false)
+                    setCustomTokenAddress("")
+                    setCustomTokenInfo(null)
+                    await fetchBalances()
+                  } catch (err: any) {
+                    setCustomTokenError(err.message || "Failed to add token")
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all text-sm"
+              >
+                {customTokenInfo ? "Confirm & Save Token" : "Lookup Token"}
+              </button>
+
+              <p className="text-[11px] text-gray-500">
+                This token will be remembered locally and included in your ETH portfolio, tokens list and send list using
+                only public RPC.
+              </p>
+            </div>
           </div>
         )}
+
+        {/* Add Wallet Modal */}
+        {showAddWallet && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="glass-card w-full max-w-md p-6 space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-bold">Add Wallet</h2>
+                <button
+                  onClick={() => {
+                    setShowAddWallet(false)
+                    setAddWalletMode("menu")
+                    setAddWalletError("")
+                    setAddPassword("")
+                    setAddSeedPhrase("")
+                    setAddPrivateKey("")
+                    setNewWalletName("")
+                  }}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {addWalletMode === "menu" && (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setAddWalletMode("from-seed")}
+                    className="w-full px-4 py-3 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-semibold transition-all text-sm"
+                  >
+                    Create New PEPU VAULT WALLET (New Seed)
+                  </button>
+                  <button
+                    onClick={() => setAddWalletMode("import-seed")}
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 text-gray-200 hover:bg-white/20 font-semibold transition-all text-sm"
+                  >
+                    Import Seed Phrase
+                  </button>
+                  <button
+                    onClick={() => setAddWalletMode("import-key")}
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 text-gray-200 hover:bg-white/20 font-semibold transition-all text-sm"
+                  >
+                    Import Private Key
+                  </button>
+                  <p className="text-xs text-gray-400">
+                    All wallets share the same 4-digit passcode. You&apos;ll be asked for it to add new wallets.
+                  </p>
+                </div>
+              )}
+
+              {addWalletMode === "from-seed" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={newWalletName}
+                      onChange={(e) => setNewWalletName(e.target.value)}
+                      placeholder="My New Wallet"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
+                    <input
+                      type="password"
+                      value={addPassword}
+                      onChange={(e) => setAddPassword(e.target.value)}
+                      maxLength={4}
+                      placeholder="Enter your existing 4-digit PIN"
+                      className="input-field"
+                    />
+                  </div>
+                  {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
+                  <button
+                    disabled={addWalletLoading}
+                    onClick={async () => {
+                      try {
+                        setAddWalletError("")
+                        if (!addPassword || addPassword.length !== 4) {
+                          setAddWalletError("Please enter your 4-digit PIN")
+                          return
+                        }
+                        setAddWalletLoading(true)
+                        const newWallet = await createWallet(addPassword, newWalletName || undefined, chainId)
+                        addWallet(newWallet)
+                        // Auto-unlock so signing doesn't require /unlock
+                        unlockWallet(addPassword)
+                        setWallets(getWallets())
+                        setCurrentWalletId(newWallet.id)
+                        setCurrentWalletIdState(newWallet.id)
+                        setShowAddWallet(false)
+                        setAddWalletMode("menu")
+                        setAddPassword("")
+                        setNewWalletName("")
+                        fetchBalances()
+                      } catch (err: any) {
+                        setAddWalletError(err.message || "Failed to create PEPU VAULT WALLET")
+                      } finally {
+                        setAddWalletLoading(false)
+                      }
+                    }}
+                    className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                  >
+                    {addWalletLoading ? "Creating..." : "Create PEPU VAULT WALLET"}
+                  </button>
+                </div>
+              )}
+
+              {addWalletMode === "import-seed" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={newWalletName}
+                      onChange={(e) => setNewWalletName(e.target.value)}
+                      placeholder="My Imported PEPU VAULT WALLET"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Seed Phrase</label>
+                    <textarea
+                      value={addSeedPhrase}
+                      onChange={(e) => setAddSeedPhrase(e.target.value)}
+                      placeholder="Enter your 12 or 24 word seed phrase"
+                      className="input-field min-h-[90px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
+                    <input
+                      type="password"
+                      value={addPassword}
+                      onChange={(e) => setAddPassword(e.target.value)}
+                      maxLength={4}
+                      placeholder="Enter your existing 4-digit PIN"
+                      className="input-field"
+                    />
+                  </div>
+                  {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
+                  <button
+                    disabled={addWalletLoading}
+                    onClick={async () => {
+                      try {
+                        setAddWalletError("")
+                        if (!addSeedPhrase || !addPassword || addPassword.length !== 4) {
+                          setAddWalletError("Enter seed phrase and your 4-digit PIN")
+                          return
+                        }
+                        setAddWalletLoading(true)
+                        const newWallet = await importWalletFromMnemonic(
+                          addSeedPhrase.trim(),
+                          addPassword,
+                          newWalletName || "Imported PEPU VAULT WALLET",
+                          chainId,
+                        )
+                        addWallet(newWallet)
+                        // Auto-unlock so signing doesn't require /unlock
+                        unlockWallet(addPassword)
+                        setWallets(getWallets())
+                        setCurrentWalletId(newWallet.id)
+                        setCurrentWalletIdState(newWallet.id)
+                        setShowAddWallet(false)
+                        setAddWalletMode("menu")
+                        setAddPassword("")
+                        setAddSeedPhrase("")
+                        setNewWalletName("")
+                        fetchBalances()
+                      } catch (err: any) {
+                        setAddWalletError(err.message || "Failed to import seed phrase")
+                      } finally {
+                        setAddWalletLoading(false)
+                      }
+                    }}
+                    className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                  >
+                    {addWalletLoading ? "Importing..." : "Import Seed Phrase"}
+                  </button>
+                </div>
+              )}
+
+              {addWalletMode === "import-key" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={newWalletName}
+                      onChange={(e) => setNewWalletName(e.target.value)}
+                      placeholder="My Imported PEPU VAULT WALLET"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Private Key</label>
+                    <textarea
+                      value={addPrivateKey}
+                      onChange={(e) => setAddPrivateKey(e.target.value)}
+                      placeholder="Enter your private key"
+                      className="input-field min-h-[80px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
+                    <input
+                      type="password"
+                      value={addPassword}
+                      onChange={(e) => setAddPassword(e.target.value)}
+                      maxLength={4}
+                      placeholder="Enter your existing 4-digit PIN"
+                      className="input-field"
+                    />
+                  </div>
+                  {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
+                  <button
+                    disabled={addWalletLoading}
+                    onClick={async () => {
+                      try {
+                        setAddWalletError("")
+                        if (!addPrivateKey || !addPassword || addPassword.length !== 4) {
+                          setAddWalletError("Enter private key and your 4-digit PIN")
+                          return
+                        }
+                        setAddWalletLoading(true)
+                        const newWallet = await importWalletFromPrivateKey(
+                          addPrivateKey.trim(),
+                          addPassword,
+                          newWalletName || "Imported PEPU VAULT WALLET",
+                          chainId,
+                        )
+                        addWallet(newWallet)
+                        // Auto-unlock so signing doesn't require /unlock
+                        unlockWallet(addPassword)
+                        setWallets(getWallets())
+                        setCurrentWalletId(newWallet.id)
+                        setCurrentWalletIdState(newWallet.id)
+                        setShowAddWallet(false)
+                        setAddWalletMode("menu")
+                        setAddPassword("")
+                        setAddPrivateKey("")
+                        setNewWalletName("")
+                        fetchBalances()
+                      } catch (err: any) {
+                        setAddWalletError(err.message || "Failed to import private key")
+                      } finally {
+                        setAddWalletLoading(false)
+                      }
+                    }}
+                    className="btn-primary w-full text-sm"
+                  >
+                    {addWalletLoading ? "Importing..." : "Import Private Key"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <BottomNav active="dashboard" />
       </div>
-
-      {/* Add Custom Token Modal (Dashboard, ETH) */}
-      {showAddToken && chainId === 1 && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[999]">
-          <div className="glass-card w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">Add Custom ETH Token</h2>
-              <button
-                onClick={() => {
-                  setShowAddToken(false)
-                  setCustomTokenAddress("")
-                  setCustomTokenError("")
-                  setCustomTokenInfo(null)
-                }}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Token Contract Address</label>
-              <input
-                type="text"
-                value={customTokenAddress}
-                onChange={(e) => {
-                  setCustomTokenAddress(e.target.value)
-                  setCustomTokenError("")
-                  setCustomTokenInfo(null)
-                }}
-                placeholder="0x..."
-                className="input-field"
-              />
-            </div>
-
-            {customTokenError && <p className="text-xs text-red-400">{customTokenError}</p>}
-
-            {customTokenInfo && (
-              <div className="glass-card p-3 border border-white/10 text-xs space-y-1">
-                <p className="text-gray-300">
-                  <span className="font-semibold">Symbol:</span> {customTokenInfo.symbol}
-                </p>
-                <p className="text-gray-300">
-                  <span className="font-semibold">Name:</span> {customTokenInfo.name}
-                </p>
-                <p className="text-gray-300">
-                  <span className="font-semibold">Decimals:</span> {customTokenInfo.decimals}
-                </p>
-                <p className="text-[11px] text-gray-500">
-                  Confirm this matches the token details on your explorer before saving.
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={async () => {
-                try {
-                  setCustomTokenError("")
-                  if (!customTokenAddress.trim()) {
-                    setCustomTokenError("Enter a token contract address")
-                    return
-                  }
-
-                  const normalized = customTokenAddress.trim()
-
-                  // Step 1: lookup token details via public RPC
-                  if (!customTokenInfo) {
-                    const provider = new ethers.JsonRpcProvider("https://eth.llamarpc.com")
-                    const contract = new ethers.Contract(normalized, ERC20_ABI, provider)
-                    const [symbol, name, decimals] = await Promise.all([
-                      contract.symbol().catch(() => "???"),
-                      contract.name().catch(() => "Unknown Token"),
-                      contract.decimals(),
-                    ])
-                    setCustomTokenInfo({
-                      address: normalized,
-                      symbol,
-                      name,
-                      decimals: Number(decimals),
-                    })
-                    return
-                  }
-
-                  // Step 2: user confirms, so save token
-                  addEthCustomToken(customTokenInfo.address)
-                  setShowAddToken(false)
-                  setCustomTokenAddress("")
-                  setCustomTokenInfo(null)
-                  await fetchBalances()
-                } catch (err: any) {
-                  setCustomTokenError(err.message || "Failed to add token")
-                }
-              }}
-              className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all text-sm"
-            >
-              {customTokenInfo ? "Confirm & Save Token" : "Lookup Token"}
-            </button>
-
-            <p className="text-[11px] text-gray-500">
-              This token will be remembered locally and included in your ETH portfolio, tokens list and send list using
-              only public RPC.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Add Wallet Modal */}
-      {showAddWallet && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="glass-card w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-bold">Add Wallet</h2>
-              <button
-                onClick={() => {
-                  setShowAddWallet(false)
-                  setAddWalletMode("menu")
-                  setAddWalletError("")
-                  setAddPassword("")
-                  setAddSeedPhrase("")
-                  setAddPrivateKey("")
-                  setNewWalletName("")
-                }}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            {addWalletMode === "menu" && (
-              <div className="space-y-3">
-                <button
-                  onClick={() => setAddWalletMode("from-seed")}
-                  className="w-full px-4 py-3 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-semibold transition-all text-sm"
-                >
-                  Create New PEPU VAULT WALLET (New Seed)
-                </button>
-                <button
-                  onClick={() => setAddWalletMode("import-seed")}
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 text-gray-200 hover:bg-white/20 font-semibold transition-all text-sm"
-                >
-                  Import Seed Phrase
-                </button>
-                <button
-                  onClick={() => setAddWalletMode("import-key")}
-                  className="w-full px-4 py-3 rounded-lg bg-white/10 text-gray-200 hover:bg-white/20 font-semibold transition-all text-sm"
-                >
-                  Import Private Key
-                </button>
-                <p className="text-xs text-gray-400">
-                  All wallets share the same 4-digit passcode. You&apos;ll be asked for it to add new wallets.
-                </p>
-              </div>
-            )}
-
-            {addWalletMode === "from-seed" && (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
-                  <input
-                    type="text"
-                    value={newWalletName}
-                    onChange={(e) => setNewWalletName(e.target.value)}
-                    placeholder="My New Wallet"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
-                  <input
-                    type="password"
-                    value={addPassword}
-                    onChange={(e) => setAddPassword(e.target.value)}
-                    maxLength={4}
-                    placeholder="Enter your existing 4-digit PIN"
-                    className="input-field"
-                  />
-                </div>
-                {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
-                <button
-                  disabled={addWalletLoading}
-                  onClick={async () => {
-                    try {
-                      setAddWalletError("")
-                      if (!addPassword || addPassword.length !== 4) {
-                        setAddWalletError("Please enter your 4-digit PIN")
-                        return
-                      }
-                      setAddWalletLoading(true)
-                      const newWallet = await createWallet(addPassword, newWalletName || undefined, chainId)
-                      addWallet(newWallet)
-                      // Auto-unlock so signing doesn't require /unlock
-                      unlockWallet(addPassword)
-                      setWallets(getWallets())
-                      setCurrentWalletId(newWallet.id)
-                      setCurrentWalletIdState(newWallet.id)
-                      setShowAddWallet(false)
-                      setAddWalletMode("menu")
-                      setAddPassword("")
-                      setNewWalletName("")
-                      fetchBalances()
-                    } catch (err: any) {
-                      setAddWalletError(err.message || "Failed to create PEPU VAULT WALLET")
-                    } finally {
-                      setAddWalletLoading(false)
-                    }
-                  }}
-                  className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
-                >
-                  {addWalletLoading ? "Creating..." : "Create PEPU VAULT WALLET"}
-                </button>
-              </div>
-            )}
-
-            {addWalletMode === "import-seed" && (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
-                  <input
-                    type="text"
-                    value={newWalletName}
-                    onChange={(e) => setNewWalletName(e.target.value)}
-                    placeholder="My Imported PEPU VAULT WALLET"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Seed Phrase</label>
-                  <textarea
-                    value={addSeedPhrase}
-                    onChange={(e) => setAddSeedPhrase(e.target.value)}
-                    placeholder="Enter your 12 or 24 word seed phrase"
-                    className="input-field min-h-[90px]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
-                  <input
-                    type="password"
-                    value={addPassword}
-                    onChange={(e) => setAddPassword(e.target.value)}
-                    maxLength={4}
-                    placeholder="Enter your existing 4-digit PIN"
-                    className="input-field"
-                  />
-                </div>
-                {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
-                <button
-                  disabled={addWalletLoading}
-                  onClick={async () => {
-                    try {
-                      setAddWalletError("")
-                      if (!addSeedPhrase || !addPassword || addPassword.length !== 4) {
-                        setAddWalletError("Enter seed phrase and your 4-digit PIN")
-                        return
-                      }
-                      setAddWalletLoading(true)
-                      const newWallet = await importWalletFromMnemonic(
-                        addSeedPhrase.trim(),
-                        addPassword,
-                        newWalletName || "Imported PEPU VAULT WALLET",
-                        chainId,
-                      )
-                      addWallet(newWallet)
-                      // Auto-unlock so signing doesn't require /unlock
-                      unlockWallet(addPassword)
-                      setWallets(getWallets())
-                      setCurrentWalletId(newWallet.id)
-                      setCurrentWalletIdState(newWallet.id)
-                      setShowAddWallet(false)
-                      setAddWalletMode("menu")
-                      setAddPassword("")
-                      setAddSeedPhrase("")
-                      setNewWalletName("")
-                      fetchBalances()
-                    } catch (err: any) {
-                      setAddWalletError(err.message || "Failed to import seed phrase")
-                    } finally {
-                      setAddWalletLoading(false)
-                    }
-                  }}
-                  className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
-                >
-                  {addWalletLoading ? "Importing..." : "Import Seed Phrase"}
-                </button>
-              </div>
-            )}
-
-            {addWalletMode === "import-key" && (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">PEPU VAULT WALLET Name (Optional)</label>
-                  <input
-                    type="text"
-                    value={newWalletName}
-                    onChange={(e) => setNewWalletName(e.target.value)}
-                    placeholder="My Imported PEPU VAULT WALLET"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Private Key</label>
-                  <textarea
-                    value={addPrivateKey}
-                    onChange={(e) => setAddPrivateKey(e.target.value)}
-                    placeholder="Enter your private key"
-                    className="input-field min-h-[80px]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Existing 4-Digit PIN</label>
-                  <input
-                    type="password"
-                    value={addPassword}
-                    onChange={(e) => setAddPassword(e.target.value)}
-                    maxLength={4}
-                    placeholder="Enter your existing 4-digit PIN"
-                    className="input-field"
-                  />
-                </div>
-                {addWalletError && <p className="text-xs text-red-400">{addWalletError}</p>}
-                <button
-                  disabled={addWalletLoading}
-                  onClick={async () => {
-                    try {
-                      setAddWalletError("")
-                      if (!addPrivateKey || !addPassword || addPassword.length !== 4) {
-                        setAddWalletError("Enter private key and your 4-digit PIN")
-                        return
-                      }
-                      setAddWalletLoading(true)
-                      const newWallet = await importWalletFromPrivateKey(
-                        addPrivateKey.trim(),
-                        addPassword,
-                        newWalletName || "Imported PEPU VAULT WALLET",
-                        chainId,
-                      )
-                      addWallet(newWallet)
-                      // Auto-unlock so signing doesn't require /unlock
-                      unlockWallet(addPassword)
-                      setWallets(getWallets())
-                      setCurrentWalletId(newWallet.id)
-                      setCurrentWalletIdState(newWallet.id)
-                      setShowAddWallet(false)
-                      setAddWalletMode("menu")
-                      setAddPassword("")
-                      setAddPrivateKey("")
-                      setNewWalletName("")
-                      fetchBalances()
-                    } catch (err: any) {
-                      setAddWalletError(err.message || "Failed to import private key")
-                    } finally {
-                      setAddWalletLoading(false)
-                    }
-                  }}
-                  className="btn-primary w-full text-sm"
-                >
-                  {addWalletLoading ? "Importing..." : "Import Private Key"}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <BottomNav active="dashboard" />
-    </div>
-  )
+      )
 }
