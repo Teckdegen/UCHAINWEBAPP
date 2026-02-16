@@ -586,9 +586,9 @@ export default function SignPage() {
   const wallet = wallets.find((w) => w.id === selectedWalletId) || wallets[0]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
+    <div className="min-h-screen bg-black text-white">
       {/* Header */}
-      <div className="bg-black/50 backdrop-blur-xl border-b border-white/10 p-4 sticky top-0 z-50">
+      <div className="bg-black backdrop-blur-xl border-b border-green-500/20 p-4 sticky top-0 z-50">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center shadow-lg">

@@ -1182,7 +1182,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <BottomNav active="dashboard" />
-      </div>
-      )
+      <BottomNav active="dashboard" />
+    </div>
+  )
 }

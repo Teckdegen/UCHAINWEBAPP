@@ -82,10 +82,10 @@ export default function SettingsPage() {
     if (confirm("Are you sure? This will delete all wallets, localStorage, and cookies. Make sure you have saved your seed phrases.")) {
       // Clear all wallet data using the proper function
       clearAllWallets()
-      
+
       // Delete all cookies (including unchained_user_id)
       deleteAllCookies()
-      
+
       router.push("/setup")
     }
   }
@@ -156,10 +156,10 @@ export default function SettingsPage() {
       setPrivateKey(null)
       return
     }
-    
+
     setLoadingPrivateKey(true)
     setError("")
-    
+
     try {
       const active = getCurrentWallet() || wallets[0]
       if (!active) {
@@ -167,7 +167,7 @@ export default function SettingsPage() {
         setLoadingPrivateKey(false)
         return
       }
-      
+
       const decryptedKey = getPrivateKey(active, password)
       setPrivateKey(decryptedKey)
     } catch (err: any) {
@@ -184,10 +184,10 @@ export default function SettingsPage() {
       setMnemonic(null)
       return
     }
-    
+
     setLoadingMnemonic(true)
     setError("")
-    
+
     try {
       const active = getCurrentWallet() || wallets[0]
       if (!active) {
@@ -195,7 +195,7 @@ export default function SettingsPage() {
         setLoadingMnemonic(false)
         return
       }
-      
+
       const decryptedMnemonic = getMnemonic(active, password)
       setMnemonic(decryptedMnemonic || "No mnemonic available")
     } catch (err: any) {
@@ -251,14 +251,15 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-black text-white pb-24">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
-        <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0">
+        {/* Header - GREEN SECTION */}
+        <div className="rounded-none p-6 border-b border-black/20 sticky top-0 z-50" style={{ background: 'linear-gradient(135deg, #00ff00 0%, #00dd00 100%)' }}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <Settings className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center shadow-md">
+              <Settings className="w-5 h-5 text-green-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Settings</h1>
-              <p className="text-sm text-gray-400">Manage your wallet</p>
+              <h1 className="text-2xl font-bold text-black">Settings</h1>
+              <p className="text-sm text-black/70 font-medium">Manage your wallet</p>
             </div>
           </div>
         </div>
@@ -329,90 +330,90 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-            {!showChangePasscode ? (
-              <button
-                onClick={() => setShowChangePasscode(true)}
-                className="w-full px-4 py-3 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-semibold transition-all"
-              >
-                Change Passcode
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Current Passcode</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => {
-                      setCurrentPassword(e.target.value)
-                      setError("")
-                    }}
-                    placeholder="Enter current passcode"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">New Passcode</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value)
-                      setError("")
-                    }}
-                    placeholder="Enter new passcode"
-                    className="input-field"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-2">Confirm New Passcode</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value)
-                      setError("")
-                    }}
-                    placeholder="Confirm new passcode"
-                    className="input-field"
-                  />
-                </div>
-
-                {error && (
-                  <div className="glass-card p-3 border border-red-500/50 bg-red-500/10">
-                    <p className="text-red-400 text-sm">{error}</p>
+              {!showChangePasscode ? (
+                <button
+                  onClick={() => setShowChangePasscode(true)}
+                  className="w-full px-4 py-3 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-semibold transition-all"
+                >
+                  Change Passcode
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Current Passcode</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => {
+                        setCurrentPassword(e.target.value)
+                        setError("")
+                      }}
+                      placeholder="Enter current passcode"
+                      className="input-field"
+                    />
                   </div>
-                )}
-
-                {changePasscodeSuccess && (
-                  <div className="glass-card p-3 border border-primary/50 bg-primary/10">
-                    <p className="text-primary text-sm">{changePasscodeSuccess}</p>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">New Passcode</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value)
+                        setError("")
+                      }}
+                      placeholder="Enter new passcode"
+                      className="input-field"
+                    />
                   </div>
-                )}
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Confirm New Passcode</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value)
+                        setError("")
+                      }}
+                      placeholder="Confirm new passcode"
+                      className="input-field"
+                    />
+                  </div>
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleChangePasscode}
-                    disabled={changePasscodeLoading}
-                    className="flex-1 px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50"
-                  >
-                    {changePasscodeLoading ? "Updating..." : "Update Passcode"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowChangePasscode(false)
-                      setCurrentPassword("")
-                      setNewPassword("")
-                      setConfirmPassword("")
-                      setError("")
-                    }}
-                    className="flex-1 px-4 py-3 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 font-semibold transition-all"
-                  >
-                    Cancel
-                  </button>
+                  {error && (
+                    <div className="glass-card p-3 border border-red-500/50 bg-red-500/10">
+                      <p className="text-red-400 text-sm">{error}</p>
+                    </div>
+                  )}
+
+                  {changePasscodeSuccess && (
+                    <div className="glass-card p-3 border border-primary/50 bg-primary/10">
+                      <p className="text-primary text-sm">{changePasscodeSuccess}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleChangePasscode}
+                      disabled={changePasscodeLoading}
+                      className="flex-1 px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50"
+                    >
+                      {changePasscodeLoading ? "Updating..." : "Update Passcode"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowChangePasscode(false)
+                        setCurrentPassword("")
+                        setNewPassword("")
+                        setConfirmPassword("")
+                        setError("")
+                      }}
+                      className="flex-1 px-4 py-3 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 font-semibold transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
           </div>
 
@@ -440,8 +441,8 @@ export default function SettingsPage() {
                   className="fancy-select"
                 >
                   {CURRENCIES.map((currency) => (
-                    <option 
-                      key={currency.code} 
+                    <option
+                      key={currency.code}
                       value={currency.code}
                     >
                       {currency.symbol} {currency.name} ({currency.code.toUpperCase()})

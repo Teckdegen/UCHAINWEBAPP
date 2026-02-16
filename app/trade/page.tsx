@@ -1747,7 +1747,7 @@ export default function TradePage() {
         <button
           onClick={handleSwap}
           disabled={loading || !amountIn || !amountOut || Number.parseFloat(amountIn) === 0 || needsApproval === undefined || showFromSelector || showToSelector}
-          className="w-full py-4 rounded-xl font-bold text-lg bg-white text-green-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 relative z-0"
+          className="w-full py-4 rounded-xl font-bold text-lg bg-primary text-black hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 relative z-0"
         >
           {loading ? (
             <>
