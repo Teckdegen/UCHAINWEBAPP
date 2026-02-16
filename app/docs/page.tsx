@@ -8,8 +8,8 @@ export default function DocsPage() {
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Header */}
         <header className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-            <Code className="w-5 h-5 text-green-500" />
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <Code className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">Unchained dApp Integration</h1>
@@ -19,7 +19,7 @@ export default function DocsPage() {
 
         {/* Overview */}
         <section className="glass-card p-6 space-y-4">
-          <div className="inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs text-green-300">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-green-300">
             <Book className="w-3 h-3" />
             Unchained SDK · wagmi · viem · Vanilla JS
           </div>
@@ -27,10 +27,10 @@ export default function DocsPage() {
             This page shows **two ways** to connect a dApp to **Unchained Wallet**:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-              <h3 className="text-sm font-semibold text-green-400 mb-2">1. Unchained SDK (Recommended)</h3>
+            <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg">
+              <h3 className="text-sm font-semibold text-primary mb-2">1. Unchained SDK (Recommended)</h3>
               <p className="text-xs text-gray-300 mb-2">
-                Use the <span className="font-semibold text-green-400">Unchained SDK</span> if you're building a React app with wagmi/viem.
+                Use the <span className="font-semibold text-primary">Unchained SDK</span> if you're building a React app with wagmi/viem.
               </p>
               <ul className="text-xs text-gray-400 space-y-1 list-disc list-inside">
                 <li>React components included</li>
@@ -57,7 +57,7 @@ export default function DocsPage() {
         {/* Installation */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Code className="w-4 h-4 text-green-500" />
+            <Code className="w-4 h-4 text-primary" />
             Installation
           </h2>
           <p className="text-xs text-gray-300">
@@ -72,7 +72,7 @@ export default function DocsPage() {
         {/* React Example (Only Unchained) */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-green-500" />
+            <Wallet className="w-4 h-4 text-primary" />
             React · Connect Only to Unchained
           </h2>
           <p className="text-xs text-gray-300">
@@ -121,7 +121,7 @@ export function App() {
         {/* Wallet Connect Features */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-green-500" />
+            <Wallet className="w-4 h-4 text-primary" />
             Wallet Connect Features
           </h2>
           <p className="text-xs text-gray-300 mb-4">
@@ -129,7 +129,7 @@ export function App() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-green-400">Connection Features</h3>
+              <h3 className="text-sm font-semibold text-primary">Connection Features</h3>
               <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
                 <li>Session Proposals (dApp connection requests)</li>
                 <li>Session Management (approve/reject connections)</li>
@@ -140,7 +140,7 @@ export function App() {
               </ul>
             </div>
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-green-400">Transaction & Signing</h3>
+              <h3 className="text-sm font-semibold text-primary">Transaction & Signing</h3>
               <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
                 <li>eth_sendTransaction</li>
                 <li>eth_signTransaction</li>
@@ -151,7 +151,7 @@ export function App() {
               </ul>
             </div>
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-green-400">Event Handling</h3>
+              <h3 className="text-sm font-semibold text-primary">Event Handling</h3>
               <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
                 <li>chainChanged events</li>
                 <li>accountsChanged events</li>
@@ -160,7 +160,7 @@ export function App() {
               </ul>
             </div>
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-green-400">Advanced Features</h3>
+              <h3 className="text-sm font-semibold text-primary">Advanced Features</h3>
               <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
                 <li>WalletConnect URI pairing</li>
                 <li>Deep linking support</li>
@@ -170,7 +170,7 @@ export function App() {
               </ul>
             </div>
           </div>
-          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <div className="mt-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
             <p className="text-xs text-green-300">
               ✅ <strong>Full Compatibility:</strong> Unchained Wallet supports all standard WalletConnect methods that MetaMask supports, 
               making it a drop-in replacement for dApp integrations.
@@ -181,7 +181,7 @@ export function App() {
         {/* Custom Connect Button Example */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-green-500" />
+            <Wallet className="w-4 h-4 text-primary" />
             Custom Connect Button · Use Unchained Extension
           </h2>
           <p className="text-xs text-gray-300">
@@ -270,7 +270,7 @@ export function ConnectUnchainedButton() {
         {/* Plain JavaScript Example */}
         <section className="glass-card p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Code className="w-4 h-4 text-green-500" />
+            <Code className="w-4 h-4 text-primary" />
             Vanilla JS · Complete Integration (No SDK)
           </h2>
           <p className="text-xs text-gray-300">
@@ -484,7 +484,7 @@ document.getElementById('connect-btn')?.addEventListener('click', async () => {
             <li>Retry logic for extension loading</li>
             <li>Error handling</li>
           </ul>
-          <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+          <div className="mt-4 p-3 bg-primary/10 border border-primary/30 rounded-lg">
             <p className="text-xs text-green-300">
               ✅ <strong>Full EIP-1193 Support:</strong> This uses the standard Ethereum Provider interface, so it works with any EIP-1193 compatible wallet, but prioritizes Unchained when available.
             </p>

@@ -30,7 +30,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
-      <body className={`${geist.className} bg-black text-white h-full w-full`}>
+      <body className={`${geist.className} antialiased selection:bg-primary selection:text-black`}>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

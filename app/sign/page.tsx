@@ -574,7 +574,7 @@ export default function SignPage() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-2 border-primary/30 border-t-green-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-gray-400">Loading transaction details...</p>
         </div>
       </div>
@@ -642,7 +642,7 @@ export default function SignPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {method === "eth_sendTransaction" ? (
-                <Zap className="w-5 h-5 text-green-400" />
+                <Zap className="w-5 h-5 text-primary" />
               ) : (
                 <FileText className="w-5 h-5 text-blue-400" />
               )}
@@ -651,7 +651,7 @@ export default function SignPage() {
             <span
               className={`px-3 py-1.5 rounded-lg text-xs font-bold ${
                 method === "eth_sendTransaction"
-                  ? "bg-green-500/20 text-green-400"
+                  ? "bg-primary/20 text-primary"
                   : "bg-blue-500/20 text-blue-400"
               }`}
             >
@@ -664,7 +664,7 @@ export default function SignPage() {
         {method === "eth_sendTransaction" && (
           <div className="glass-card rounded-xl p-4 border border-white/10">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
               <span className="text-gray-400 text-sm">Network</span>
             </div>
             <p className="text-white font-semibold mt-2">PEPU Chain</p>
@@ -684,7 +684,7 @@ export default function SignPage() {
                 </span>
                 <button
                   onClick={() => copyToClipboard(wallet?.address || "")}
-                  className="text-gray-400 hover:text-green-400 transition-colors"
+                  className="text-gray-400 hover:text-primary transition-colors"
                 >
                   <Copy className="w-4 h-4" />
                 </button>
@@ -697,7 +697,7 @@ export default function SignPage() {
             {/* Transaction Analysis */}
             {loadingAnalysis ? (
               <div className="glass-card rounded-xl p-6 border border-white/10 text-center">
-                <div className="w-8 h-8 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin mx-auto mb-2" />
+                <div className="w-8 h-8 border-2 border-primary/30 border-t-green-500 rounded-full animate-spin mx-auto mb-2" />
                 <p className="text-gray-400 text-sm">Analyzing transaction...</p>
               </div>
             ) : txAnalysis && (
@@ -710,10 +710,10 @@ export default function SignPage() {
                 {/* Token Transfer */}
                 {txAnalysis.type === "token_transfer" && txAnalysis.tokenInfo && (
                   <>
-                    <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-lg p-4 border border-green-500/20">
+                    <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-lg p-4 border border-primary/20">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <Coins className="w-5 h-5 text-green-400" />
+                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                          <Coins className="w-5 h-5 text-primary" />
                         </div>
                         <div>
                           <p className="font-bold text-lg">{txAnalysis.tokenInfo.name}</p>
@@ -737,7 +737,7 @@ export default function SignPage() {
                               href={getExplorerUrl(txAnalysis.recipient || "")}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-green-400 hover:text-green-300"
+                              className="text-primary hover:text-green-300"
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -753,7 +753,7 @@ export default function SignPage() {
                               href={getExplorerUrl(txAnalysis.contractAddress || "")}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-green-400 hover:text-green-300"
+                              className="text-primary hover:text-green-300"
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -798,7 +798,7 @@ export default function SignPage() {
                               href={getExplorerUrl(txAnalysis.spender || "")}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-green-400 hover:text-green-300"
+                              className="text-primary hover:text-green-300"
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -814,7 +814,7 @@ export default function SignPage() {
                               href={getExplorerUrl(txAnalysis.contractAddress || "")}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-green-400 hover:text-green-300"
+                              className="text-primary hover:text-green-300"
                             >
                               <ExternalLink className="w-4 h-4" />
                             </a>
@@ -854,7 +854,7 @@ export default function SignPage() {
                             href={getExplorerUrl(txAnalysis.recipient || "")}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-green-400 hover:text-green-300"
+                            className="text-primary hover:text-green-300"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
@@ -887,7 +887,7 @@ export default function SignPage() {
                             href={getExplorerUrl(txAnalysis.contractAddress || txData.to || "")}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-green-400 hover:text-green-300"
+                            className="text-primary hover:text-green-300"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
@@ -914,7 +914,7 @@ export default function SignPage() {
                         href={getExplorerUrl(txData.to)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-green-400 hover:text-green-300"
+                        className="text-primary hover:text-green-300"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -955,7 +955,7 @@ export default function SignPage() {
                     href={getExplorerUrl(txData.to)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-green-400 hover:text-green-300"
+                    className="text-primary hover:text-green-300"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
@@ -1018,9 +1018,9 @@ export default function SignPage() {
 
         {/* Success Message */}
         {approved && (
-          <div className="bg-green-500/10 border-2 border-green-500/30 rounded-xl p-4 flex items-center gap-3">
-            <CheckCircle className="w-6 h-6 text-green-400" />
-            <p className="text-green-400 font-bold">Transaction Approved</p>
+          <div className="bg-primary/10 border-2 border-primary/30 rounded-xl p-4 flex items-center gap-3">
+            <CheckCircle className="w-6 h-6 text-primary" />
+            <p className="text-primary font-bold">Transaction Approved</p>
           </div>
         )}
 

@@ -188,8 +188,8 @@ export default function TokensPage() {
       <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <Coins className="w-5 h-5 text-green-500" />
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <Coins className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Tokens</h1>
@@ -217,7 +217,7 @@ export default function TokensPage() {
                   provider.setChainId(newChainId)
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                  chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                  chainId === 1 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                 }`}
               >
                 Ethereum
@@ -231,7 +231,7 @@ export default function TokensPage() {
                   provider.setChainId(newChainId)
                 }}
                 className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                  chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                  chainId === 97741 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                 }`}
               >
                 PEPU
@@ -246,7 +246,7 @@ export default function TokensPage() {
                 setCustomAddress("")
                 setCustomError("")
               }}
-              className="self-start px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm font-semibold transition-all"
+              className="self-start px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 text-sm font-semibold transition-all"
             >
               + Add Custom ETH Token
             </button>
@@ -259,7 +259,7 @@ export default function TokensPage() {
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="flex flex-col items-center gap-3">
-              <Loader className="w-8 h-8 animate-spin text-green-500" />
+              <Loader className="w-8 h-8 animate-spin text-primary" />
               <p className="text-gray-400">Loading tokens...</p>
             </div>
           </div>
@@ -285,8 +285,8 @@ export default function TokensPage() {
                 }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="font-bold text-green-500">{token.symbol[0]}</span>
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="font-bold text-primary">{token.symbol[0]}</span>
                   </div>
                   <div>
                     <p className="font-semibold">{token.name}</p>
@@ -371,7 +371,7 @@ export default function TokensPage() {
                   setCustomError(err.message || "Failed to add token")
                 }
               }}
-              className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all text-sm"
+              className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all text-sm"
             >
               Save Token
             </button>

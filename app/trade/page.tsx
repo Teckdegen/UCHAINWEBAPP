@@ -1242,7 +1242,7 @@ export default function TradePage() {
                   onClick={() => setSlippage(value)}
                   className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${
                     slippage === value
-                      ? "bg-green-500 text-black"
+                      ? "bg-primary text-black"
                       : "bg-white/5 hover:bg-white/10"
                   }`}
                 >
@@ -1288,7 +1288,7 @@ export default function TradePage() {
                   onClick={() => setShowFromSelector(!showFromSelector)}
                   className="absolute right-0 top-0 flex items-center gap-1 glass-card px-2 py-1 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
                     <span className="text-[10px] font-bold">{fromToken.symbol[0]}</span>
                   </div>
                   <span className="text-xs font-medium">{fromToken.symbol}</span>
@@ -1303,9 +1303,9 @@ export default function TradePage() {
                     />
                     {/* Full-screen overlay */}
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900 to-green-800 rounded-2xl border-2 border-green-500/60 shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900 to-green-800 rounded-2xl border-2 border-primary/60 shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
+                        <div className="flex items-center justify-between p-4 border-b border-primary/30 bg-green-800/50">
                           <h2 className="text-xl font-bold text-green-300">Select Token to Pay</h2>
                           <button
                             onClick={() => setShowFromSelector(false)}
@@ -1316,7 +1316,7 @@ export default function TradePage() {
                         </div>
                         
                         {/* Search Input */}
-                        <div className="p-4 border-b border-green-500/20">
+                        <div className="p-4 border-b border-primary/20">
                           <input
                             type="text"
                             placeholder="Enter contract address (CA) to search..."
@@ -1325,7 +1325,7 @@ export default function TradePage() {
                               const ca = e.target.value.trim()
                               setFromSearchCA(ca)
                             }}
-                            className="w-full bg-green-800/60 border-2 border-green-500/50 rounded-xl px-4 py-3 text-sm text-green-100 placeholder:text-green-400/70 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50"
+                            className="w-full bg-green-800/60 border-2 border-primary/50 rounded-xl px-4 py-3 text-sm text-green-100 placeholder:text-primary/70 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50"
                           />
                           {fromSearchCA && !ethers.isAddress(fromSearchCA) && fromSearchCA.length > 0 && (
                             <div className="text-xs text-red-300 mt-2 px-1">Invalid contract address format</div>
@@ -1336,13 +1336,13 @@ export default function TradePage() {
                         <div className="flex-1 overflow-y-auto p-4">
                           {searchingCA && (
                             <div className="text-center py-8">
-                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-primary mb-2" />
                               <p className="text-sm text-green-300">Searching token...</p>
                             </div>
                           )}
                           {loadingTokens && !searchingCA && (
                             <div className="text-center py-8">
-                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-primary mb-2" />
                               <p className="text-sm text-green-300">Loading tokens from API...</p>
                             </div>
                           )}
@@ -1353,8 +1353,8 @@ export default function TradePage() {
                           )}
                           {!loadingTokens && !searchingCA && fromTokenList.length === 0 ? (
                             <div className="p-8 text-center">
-                              <p className="text-green-400 text-base mb-2">No tokens found in your wallet</p>
-                              <p className="text-green-500/70 text-sm">Use the search above to add tokens by contract address</p>
+                              <p className="text-primary text-base mb-2">No tokens found in your wallet</p>
+                              <p className="text-primary/70 text-sm">Use the search above to add tokens by contract address</p>
                             </div>
                           ) : (
                             !searchingCA && (
@@ -1384,20 +1384,20 @@ export default function TradePage() {
                                           setAmountIn("")
                                           setAmountOut("")
                                         }}
-                                        className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all bg-green-800/40 border border-green-500/40 hover:border-green-400/60 hover:shadow-lg"
+                                        className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all bg-green-800/40 border border-primary/40 hover:border-green-400/60 hover:shadow-lg"
                                       >
                                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
                                           <span className="text-sm font-bold text-black">{token.symbol[0]}</span>
                                         </div>
                                         <div className="flex-1 text-left">
                                           <div className="text-base font-bold text-green-200">{token.symbol}</div>
-                                          <div className="text-xs text-green-400/80">{token.name}</div>
+                                          <div className="text-xs text-primary/80">{token.name}</div>
                                         </div>
                                         <div className="text-right">
                                           <div className="text-sm font-semibold text-green-300">
                                             {Number.parseFloat(balance).toFixed(4)}
                                           </div>
-                                          <div className="text-xs text-green-500/70">{token.symbol}</div>
+                                          <div className="text-xs text-primary/70">{token.symbol}</div>
                                         </div>
                                       </button>
                                     )
@@ -1414,7 +1414,7 @@ export default function TradePage() {
               </div>
               <button
                 onClick={setMaxAmount}
-                className="px-3 py-1 text-xs font-semibold bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                className="px-3 py-1 text-xs font-semibold bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
               >
                 MAX
               </button>
@@ -1454,7 +1454,7 @@ export default function TradePage() {
                   onClick={() => setShowToSelector(!showToSelector)}
                   className="absolute right-0 top-0 flex items-center gap-1 glass-card px-2 py-1 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
                     <span className="text-[10px] font-bold">{toToken.symbol[0]}</span>
                   </div>
                   <span className="text-xs font-medium">{toToken.symbol}</span>
@@ -1469,9 +1469,9 @@ export default function TradePage() {
                     />
                     {/* Full-screen overlay */}
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900 to-green-800 rounded-2xl border-2 border-green-500/60 shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
+                      <div className="w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-green-900 to-green-800 rounded-2xl border-2 border-primary/60 shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
                         {/* Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-green-500/30 bg-green-800/50">
+                        <div className="flex items-center justify-between p-4 border-b border-primary/30 bg-green-800/50">
                           <h2 className="text-xl font-bold text-green-300">Select Token to Receive</h2>
                           <button
                             onClick={() => setShowToSelector(false)}
@@ -1482,7 +1482,7 @@ export default function TradePage() {
                         </div>
                         
                         {/* Search Input */}
-                        <div className="p-4 border-b border-green-500/20">
+                        <div className="p-4 border-b border-primary/20">
                           <input
                             type="text"
                             placeholder="Enter contract address (CA) to search..."
@@ -1491,7 +1491,7 @@ export default function TradePage() {
                               const ca = e.target.value.trim()
                               setToSearchCA(ca)
                             }}
-                            className="w-full bg-green-800/60 border-2 border-green-500/50 rounded-xl px-4 py-3 text-sm text-green-100 placeholder:text-green-400/70 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50"
+                            className="w-full bg-green-800/60 border-2 border-primary/50 rounded-xl px-4 py-3 text-sm text-green-100 placeholder:text-primary/70 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-400/50"
                           />
                           {toSearchCA && !ethers.isAddress(toSearchCA) && toSearchCA.length > 0 && (
                             <div className="text-xs text-red-300 mt-2 px-1">Invalid contract address format</div>
@@ -1502,13 +1502,13 @@ export default function TradePage() {
                         <div className="flex-1 overflow-y-auto p-4">
                           {searchingCA && (
                             <div className="text-center py-8">
-                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-primary mb-2" />
                               <p className="text-sm text-green-300">Searching token...</p>
                             </div>
                           )}
                           {loadingTokens && !searchingCA && (
                             <div className="text-center py-8">
-                              <Loader className="w-6 h-6 animate-spin mx-auto text-green-400 mb-2" />
+                              <Loader className="w-6 h-6 animate-spin mx-auto text-primary mb-2" />
                               <p className="text-sm text-green-300">Loading tokens from API...</p>
                             </div>
                           )}
@@ -1556,7 +1556,7 @@ export default function TradePage() {
                             return filtered.length === 0
                           })() ? (
                             <div className="p-8 text-center">
-                              <p className="text-green-400 text-base mb-2">
+                              <p className="text-primary text-base mb-2">
                                 {toSearchCA && toSearchCA.trim().length >= 10 && !ethers.isAddress(toSearchCA.trim()) 
                                   ? "Invalid contract address format" 
                                   : toSearchCA && toSearchCA.trim().length === 42 && ethers.isAddress(toSearchCA.trim())
@@ -1564,10 +1564,10 @@ export default function TradePage() {
                                   : "No tokens found"}
                               </p>
                               {toSearchCA && toSearchCA.trim().length === 42 && ethers.isAddress(toSearchCA.trim()) && (
-                                <p className="text-green-500/70 text-sm">Fetching token details from blockchain...</p>
+                                <p className="text-primary/70 text-sm">Fetching token details from blockchain...</p>
                               )}
                               {(!toSearchCA || toSearchCA.trim().length === 0) && (
-                                <p className="text-green-500/70 text-sm">Use the search above to add tokens by contract address</p>
+                                <p className="text-primary/70 text-sm">Use the search above to add tokens by contract address</p>
                               )}
                             </div>
                           ) : (
@@ -1609,20 +1609,20 @@ export default function TradePage() {
                                                 setToSearchCA("")
                                                 setAmountOut("")
                                               }}
-                                              className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all bg-green-800/40 border border-green-500/40 hover:border-green-400/60 hover:shadow-lg"
+                                              className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all bg-green-800/40 border border-primary/40 hover:border-green-400/60 hover:shadow-lg"
                                             >
                                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
                                                 <span className="text-sm font-bold text-black">{token.symbol[0]}</span>
                                               </div>
                                               <div className="flex-1 text-left">
                                                 <div className="text-base font-bold text-green-200">{token.symbol}</div>
-                                                <div className="text-xs text-green-400/80">{token.name}</div>
+                                                <div className="text-xs text-primary/80">{token.name}</div>
                                               </div>
                                               <div className="text-right">
                                                 <div className="text-sm font-semibold text-green-300">
                                                   {Number.parseFloat(balance).toFixed(4)}
                                                 </div>
-                                                <div className="text-xs text-green-500/70">{token.symbol}</div>
+                                                <div className="text-xs text-primary/70">{token.symbol}</div>
                                               </div>
                                             </button>
                                           )
@@ -1683,14 +1683,14 @@ export default function TradePage() {
                                               setToSearchCA("")
                                               setAmountOut("")
                                             }}
-                                            className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all border border-green-500/30 hover:border-green-400/50 hover:shadow-lg bg-green-800/20"
+                                            className="w-full flex items-center gap-3 p-3 hover:bg-green-700/50 rounded-xl transition-all border border-primary/30 hover:border-green-400/50 hover:shadow-lg bg-green-800/20"
                                           >
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500/40 to-green-600/40 flex items-center justify-center shadow-lg">
                                               <span className="text-sm font-bold text-green-300">{token.symbol[0]}</span>
                                             </div>
                                             <div className="flex-1 text-left">
                                               <div className="text-base font-bold text-green-200">{token.symbol}</div>
-                                              <div className="text-xs text-green-400/80">{token.name}</div>
+                                              <div className="text-xs text-primary/80">{token.name}</div>
                                             </div>
                                           </button>
                                         ))}
@@ -1713,7 +1713,7 @@ export default function TradePage() {
           {amountIn && Number.parseFloat(amountIn) > 0 && amountOut && (
             <div className="mt-4 pt-4 border-t border-white/10 text-xs text-gray-400 space-y-1">
               {amountOut && (
-                <div className="flex justify-between text-green-400">
+                <div className="flex justify-between text-primary">
                   <span>Expected Output</span>
                   <span>~{Number.parseFloat(amountOut).toFixed(6)} {toToken.symbol}</span>
                 </div>
@@ -1737,9 +1737,9 @@ export default function TradePage() {
         )}
 
         {success && (
-          <div className="glass-card p-4 rounded-xl border border-green-500/50 bg-green-500/10 mb-4 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-500" />
-            <span className="text-sm text-green-400">{success}</span>
+          <div className="glass-card p-4 rounded-xl border border-primary/50 bg-primary/10 mb-4 flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-primary" />
+            <span className="text-sm text-primary">{success}</span>
           </div>
         )}
 

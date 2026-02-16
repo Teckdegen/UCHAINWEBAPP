@@ -220,7 +220,7 @@ export default function SetupPage() {
                 />
                 <button
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-500"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -352,14 +352,14 @@ export default function SetupPage() {
               <p className="text-sm text-gray-400 mb-4">
                 This is your wallet backup. Store it safely - anyone with this phrase can access your wallet.
               </p>
-              <div className="bg-black/50 rounded-lg p-4 mb-4 border border-green-500/20">
+              <div className="bg-black/50 rounded-lg p-4 mb-4 border border-primary/20">
                 <p className="text-sm text-white font-mono break-words">{mnemonic}</p>
               </div>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(mnemonic)
                 }}
-                className="flex items-center gap-2 text-green-500 hover:text-green-400 text-sm"
+                className="flex items-center gap-2 text-primary hover:text-primary text-sm"
               >
                 <Copy className="w-4 h-4" />
                 Copy to clipboard

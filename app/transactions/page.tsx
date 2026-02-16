@@ -56,7 +56,7 @@ export default function TransactionsPage() {
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case "swap":
-        return <TrendingUp className="w-5 h-5 text-green-500" />
+        return <TrendingUp className="w-5 h-5 text-primary" />
       case "send":
         return <Send className="w-5 h-5 text-blue-500" />
       case "bridge":
@@ -94,8 +94,8 @@ export default function TransactionsPage() {
       <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-green-500" />
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Transactions</h1>
@@ -114,7 +114,7 @@ export default function TransactionsPage() {
           <button
             onClick={() => setChainId(1)}
             className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+              chainId === 1 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
             }`}
           >
             Ethereum
@@ -122,7 +122,7 @@ export default function TransactionsPage() {
           <button
             onClick={() => setChainId(97741)}
             className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+              chainId === 97741 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
             }`}
           >
             PEPU
@@ -130,7 +130,7 @@ export default function TransactionsPage() {
           <button
             onClick={() => setChainId(0)}
             className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-              chainId === 0 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+              chainId === 0 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
             }`}
           >
             All
@@ -175,7 +175,7 @@ export default function TransactionsPage() {
                         href={getExplorerUrl(tx)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-green-400 hover:text-green-300 font-mono truncate underline"
+                        className="text-xs text-primary hover:text-green-300 font-mono truncate underline"
                       >
                         {getExplorerUrl(tx)}
                       </a>
@@ -196,7 +196,7 @@ export default function TransactionsPage() {
                   className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
                   title="View on Explorer"
                 >
-                  <ExternalLink className="w-5 h-5 text-green-500" />
+                  <ExternalLink className="w-5 h-5 text-primary" />
                 </a>
               </div>
             ))}

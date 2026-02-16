@@ -19,7 +19,7 @@ export default function BottomNav({ active = "dashboard" }: BottomNavProps) {
     }
   }, [])
 
-  const isActive = (page: string) => (active === page ? "text-green-500" : "text-gray-400 hover:text-green-500")
+  const isActive = (page: string) => (active === page ? "text-primary scale-110" : "text-gray-500 hover:text-primary/70")
 
   return (
     <div className="fixed bottom-0 left-0 right-0 glass-card rounded-t-3xl border-t border-white/10 border-b-0">

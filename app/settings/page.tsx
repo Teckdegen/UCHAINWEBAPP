@@ -253,8 +253,8 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <Settings className="w-5 h-5 text-green-500" />
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <Settings className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Settings</h1>
@@ -273,7 +273,7 @@ export default function SettingsPage() {
                 <div>
                   <p className="text-sm text-gray-400 mb-2">Address</p>
                   <div className="flex items-center gap-2">
-                    <code className="text-sm font-mono text-green-400 break-all bg-black/50 p-2 rounded flex-1">
+                    <code className="text-sm font-mono text-primary break-all bg-black/50 p-2 rounded flex-1">
                       {(getCurrentWallet() || wallets[0]).address}
                     </code>
                     <button
@@ -281,7 +281,7 @@ export default function SettingsPage() {
                       className="p-2 hover:bg-white/10 rounded transition-colors"
                     >
                       {copied === "address" ? (
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-primary" />
                       ) : (
                         <Copy className="w-4 h-4 text-gray-400" />
                       )}
@@ -309,7 +309,7 @@ export default function SettingsPage() {
           <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-green-500" />
+                <Key className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-bold">Security</h2>
               </div>
             </div>
@@ -332,7 +332,7 @@ export default function SettingsPage() {
             {!showChangePasscode ? (
               <button
                 onClick={() => setShowChangePasscode(true)}
-                className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all"
+                className="w-full px-4 py-3 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-semibold transition-all"
               >
                 Change Passcode
               </button>
@@ -385,8 +385,8 @@ export default function SettingsPage() {
                 )}
 
                 {changePasscodeSuccess && (
-                  <div className="glass-card p-3 border border-green-500/50 bg-green-500/10">
-                    <p className="text-green-400 text-sm">{changePasscodeSuccess}</p>
+                  <div className="glass-card p-3 border border-primary/50 bg-primary/10">
+                    <p className="text-primary text-sm">{changePasscodeSuccess}</p>
                   </div>
                 )}
 
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleChangePasscode}
                     disabled={changePasscodeLoading}
-                    className="flex-1 px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50"
+                    className="flex-1 px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50"
                   >
                     {changePasscodeLoading ? "Updating..." : "Update Passcode"}
                   </button>
@@ -420,7 +420,7 @@ export default function SettingsPage() {
           <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-500" />
+                <DollarSign className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-bold">Display Currency</h2>
               </div>
             </div>
@@ -491,7 +491,7 @@ export default function SettingsPage() {
                     setError("Please enter your password first")
                   }
                 }}
-                className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-2"
+                className="flex items-center gap-2 text-primary hover:text-green-300 mb-2"
               >
                 {showPrivateKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 {showPrivateKey ? "Hide" : "Show"} Private Key
@@ -513,7 +513,7 @@ export default function SettingsPage() {
                         className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
                       >
                         {copied === "key" ? (
-                          <Check className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-primary" />
                         ) : (
                           <Copy className="w-4 h-4 text-gray-400" />
                         )}
@@ -537,7 +537,7 @@ export default function SettingsPage() {
                     setError("Please enter your password first")
                   }
                 }}
-                className="flex items-center gap-2 text-green-400 hover:text-green-300 mb-2"
+                className="flex items-center gap-2 text-primary hover:text-green-300 mb-2"
               >
                 {showMnemonic ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 {showMnemonic ? "Hide" : "Show"} Seed Phrase
@@ -559,7 +559,7 @@ export default function SettingsPage() {
                         className="p-2 hover:bg-white/10 rounded transition-colors flex-shrink-0"
                       >
                         {copied === "seed" ? (
-                          <Check className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-primary" />
                         ) : (
                           <Copy className="w-4 h-4 text-gray-400" />
                         )}

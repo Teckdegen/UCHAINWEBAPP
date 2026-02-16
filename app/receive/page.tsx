@@ -75,7 +75,7 @@ export default function ReceivePage() {
                 provider.setChainId(newChainId)
               }}
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all flex-1 ${
-                chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                chainId === 1 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
               }`}
             >
               Ethereum
@@ -89,7 +89,7 @@ export default function ReceivePage() {
                 provider.setChainId(newChainId)
               }}
               className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all flex-1 ${
-                chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                chainId === 97741 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
               }`}
             >
               PEPU
@@ -115,15 +115,15 @@ export default function ReceivePage() {
         <div className="glass-card p-4 mb-6">
           <p className="text-sm text-gray-400 mb-3">Your Address</p>
           <div className="flex items-center gap-2">
-            <code className="text-sm font-mono text-green-400 break-all flex-1">{address}</code>
+            <code className="text-sm font-mono text-primary break-all flex-1">{address}</code>
             <button onClick={handleCopy} className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0">
-              {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-gray-400" />}
+              {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4 text-gray-400" />}
             </button>
           </div>
         </div>
 
         {/* Info */}
-        <div className="glass-card p-4 border border-green-500/20">
+        <div className="glass-card p-4 border border-primary/20">
           <p className="text-sm text-gray-400">
             Share this address to receive tokens. Make sure to use the correct network.
           </p>

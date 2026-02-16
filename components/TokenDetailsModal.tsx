@@ -128,8 +128,8 @@ export default function TokenDetailsModal({
                 }}
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                <span className="font-bold text-green-500 text-lg">{tokenSymbol[0]}</span>
+              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                <span className="font-bold text-primary text-lg">{tokenSymbol[0]}</span>
               </div>
             )}
             <div>
@@ -149,7 +149,7 @@ export default function TokenDetailsModal({
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader className="w-8 h-8 animate-spin text-green-500 mb-3" />
+              <Loader className="w-8 h-8 animate-spin text-primary mb-3" />
               <p className="text-gray-400">Loading token details...</p>
             </div>
           ) : (
@@ -181,10 +181,10 @@ export default function TokenDetailsModal({
                 <p className="text-sm text-gray-400">Bond Status</p>
                 <div
                   className={`px-4 py-3 rounded-lg ${
-                    isBonded ? "bg-green-500/10 border border-green-500/20" : "bg-red-500/10 border border-red-500/20"
+                    isBonded ? "bg-primary/10 border border-primary/20" : "bg-red-500/10 border border-red-500/20"
                   }`}
                 >
-                  <p className={`font-semibold ${isBonded ? "text-green-400" : "text-red-400"}`}>
+                  <p className={`font-semibold ${isBonded ? "text-primary" : "text-red-400"}`}>
                     {isBonded ? "✅ BONDED" : "❌ NOT BONDED"}
                   </p>
                   {!isBonded && (
@@ -273,7 +273,7 @@ export default function TokenDetailsModal({
                     {balanceValue && (
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400">Value (USD)</span>
-                        <span className="font-semibold text-green-400">
+                        <span className="font-semibold text-primary">
                           ${balanceValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </span>
                       </div>

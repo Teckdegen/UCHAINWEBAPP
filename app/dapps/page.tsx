@@ -59,7 +59,7 @@ export default function DAppsPage() {
           </div>
           <Link
             href="/browser"
-            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Browse Apps
@@ -72,7 +72,7 @@ export default function DAppsPage() {
         {/* Native PEPU DApps Section */}
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-green-400" />
+            <Sparkles className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-bold text-white">Native PEPU DApps</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -87,12 +87,12 @@ export default function DAppsPage() {
                 <div className="flex items-start gap-4">
                   <div className="text-3xl">{dapp.icon}</div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-1 group-hover:text-green-400 transition-colors">
+                    <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">
                       {dapp.name}
                     </h3>
                     <p className="text-xs text-gray-400 break-all">{dapp.url}</p>
                   </div>
-                  <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-green-400 transition-colors flex-shrink-0 mt-1" />
+                  <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
                 </div>
               </a>
             ))}

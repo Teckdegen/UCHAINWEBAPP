@@ -253,8 +253,8 @@ export default function ConnectPage() {
           {/* Header */}
           <div className="border-b border-white/10 p-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-green-500" />
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <h1 className="text-lg font-bold">Connection Request</h1>
@@ -297,7 +297,7 @@ export default function ConnectPage() {
               <p className="text-xs text-gray-400 mb-2">Requesting App</p>
               {isWalletConnect && wcProposal ? (
                 <>
-                  <p className="text-sm font-semibold text-green-400">
+                  <p className="text-sm font-semibold text-primary">
                     {wcProposal.params.proposer.metadata?.name || "Unknown dApp"}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -309,7 +309,7 @@ export default function ConnectPage() {
                 </>
               ) : (
                 <>
-              <p className="text-sm font-mono text-green-400 break-all">{getDomainName(origin)}</p>
+              <p className="text-sm font-mono text-primary break-all">{getDomainName(origin)}</p>
               <p className="text-xs text-gray-500 mt-1">{origin}</p>
                 </>
               )}
@@ -335,11 +335,11 @@ export default function ConnectPage() {
               <p className="text-xs font-semibold text-gray-400 mb-3">This app will be able to:</p>
               <ul className="space-y-2 text-xs text-gray-300">
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="w-3 h-3 text-green-500" />
+                  <CheckCircle className="w-3 h-3 text-primary" />
                   See your wallet address
                 </li>
                 <li className="flex items-center gap-2">
-                  <CheckCircle className="w-3 h-3 text-green-500" />
+                  <CheckCircle className="w-3 h-3 text-primary" />
                   Request transaction signatures
                 </li>
                 <li className="flex items-center gap-2">
@@ -359,8 +359,8 @@ export default function ConnectPage() {
 
             {/* Status Messages */}
             {approved && (
-              <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/30 flex gap-2">
-                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+              <div className="bg-primary/10 rounded-lg p-3 border border-primary/30 flex gap-2">
+                <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-green-300">Connection approved. Closing...</p>
               </div>
             )}

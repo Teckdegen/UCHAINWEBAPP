@@ -243,8 +243,8 @@ export default function BridgePage() {
       {/* Header */}
       <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-green-500" />
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold">PEPU VAULT Bridge</h1>
@@ -266,9 +266,9 @@ export default function BridgePage() {
                 {/* Network Info */}
                 <div className="mb-8">
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20">
-                      <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <span className="text-sm font-bold text-green-400">L2</span>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 border border-primary/20">
+                      <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">L2</span>
                       </div>
                       <div>
                         <div className="text-xs text-gray-400">From</div>
@@ -326,7 +326,7 @@ export default function BridgePage() {
                   <div className="relative">
                     <input
                       type="number"
-                      className="w-full bg-white/[0.08] backdrop-blur-sm border-2 border-white/[0.2] rounded-xl px-4 py-4 text-white text-xl font-semibold focus:outline-none placeholder:text-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all"
+                      className="w-full bg-white/[0.08] backdrop-blur-sm border-2 border-white/[0.2] rounded-xl px-4 py-4 text-white text-xl font-semibold focus:outline-none placeholder:text-gray-500 focus:ring-2 focus:ring-green-500/50 focus:border-primary/50 transition-all"
                       value={amount}
                       onChange={handleInputChange}
                       min="0"
@@ -414,9 +414,9 @@ export default function BridgePage() {
                 )}
 
                 {successTx && (
-                  <div className="backdrop-blur-sm bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-4 text-green-100 text-center">
+                  <div className="backdrop-blur-sm bg-primary/10 border border-primary/20 rounded-xl p-4 mb-4 text-green-100 text-center">
                     <div className="flex items-center justify-center mb-3">
-                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-2">
+                      <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center mr-2">
                         <span className="text-white text-lg">✓</span>
                       </div>
                       <div className="font-bold text-lg">Bridge Successful!</div>
@@ -461,7 +461,7 @@ export default function BridgePage() {
 
                     <button
                       onClick={handleDismissSuccess}
-                      className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium transition-colors"
+                      className="px-4 py-2 rounded-lg bg-green-600 hover:bg-primary text-white font-medium transition-colors"
                     >
                       Continue Bridging
                     </button>
@@ -481,7 +481,7 @@ export default function BridgePage() {
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-white/[0.1]">
                       <span className="text-sm text-gray-400">You Will Receive</span>
-                      <span className="text-green-400 font-bold text-lg">
+                      <span className="text-primary font-bold text-lg">
                         {amount && !isNaN(Number(amount))
                           ? `${receivedAmount.toLocaleString(undefined, {
                               maximumFractionDigits: 6,

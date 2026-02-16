@@ -653,8 +653,8 @@ export default function SendPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
             )}
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <ArrowUp className="w-5 h-5 text-green-500" />
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <ArrowUp className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold">Send Tokens</h1>
@@ -674,9 +674,9 @@ export default function SendPage() {
           
           {/* Progress Steps */}
           <div className="flex items-center gap-2 mt-4">
-            <div className={`flex-1 h-1 rounded-full ${currentStep === "chain" ? "bg-green-500" : "bg-green-500"}`} />
-            <div className={`flex-1 h-1 rounded-full ${currentStep === "recipient" || currentStep === "amount" ? "bg-green-500" : "bg-white/10"}`} />
-            <div className={`flex-1 h-1 rounded-full ${currentStep === "amount" ? "bg-green-500" : "bg-white/10"}`} />
+            <div className={`flex-1 h-1 rounded-full ${currentStep === "chain" ? "bg-primary" : "bg-primary"}`} />
+            <div className={`flex-1 h-1 rounded-full ${currentStep === "recipient" || currentStep === "amount" ? "bg-primary" : "bg-white/10"}`} />
+            <div className={`flex-1 h-1 rounded-full ${currentStep === "amount" ? "bg-primary" : "bg-white/10"}`} />
           </div>
         </div>
 
@@ -691,7 +691,7 @@ export default function SendPage() {
                   <button
                     onClick={() => handleChainSwitch(1)}
                     className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                      chainId === 1 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                      chainId === 1 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                     }`}
                   >
                     Ethereum
@@ -699,7 +699,7 @@ export default function SendPage() {
                   <button
                     onClick={() => handleChainSwitch(97741)}
                     className={`flex-1 px-4 py-3 rounded-xl font-semibold transition-all ${
-                      chainId === 97741 ? "bg-green-500 text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
+                      chainId === 97741 ? "bg-primary text-black" : "bg-white/10 text-gray-400 hover:bg-white/20"
                     }`}
                   >
                     PEPU
@@ -737,7 +737,7 @@ export default function SendPage() {
                                 setTokenLoadError("")
                                 loadTokens()
                               }}
-                              className="text-xs text-green-400 hover:text-green-300 underline"
+                              className="text-xs text-primary hover:text-green-300 underline"
                             >
                               Retry
                             </button>
@@ -767,7 +767,7 @@ export default function SendPage() {
                                   <p className="font-semibold">{token.symbol || "TOKEN"}</p>
                                   <p className="text-xs text-gray-400">{token.name || "Unknown Token"}</p>
                                 </div>
-                                <p className="text-sm text-green-400">{Number.parseFloat(token.balance).toFixed(4)}</p>
+                                <p className="text-sm text-primary">{Number.parseFloat(token.balance).toFixed(4)}</p>
                               </div>
                             </button>
                           ))
@@ -799,7 +799,7 @@ export default function SendPage() {
             <>
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Recipient Address {chainId === 97741 && <span className="text-green-400">or .pepu domain</span>}
+                  Recipient Address {chainId === 97741 && <span className="text-primary">or .pepu domain</span>}
                 </label>
                 <input
                   type="text"
@@ -840,12 +840,12 @@ export default function SendPage() {
                   </p>
                 )}
                 {resolvedAddress && domainInput && (
-                  <div className="mt-2 glass-card p-3 border border-green-500/30 bg-green-500/10">
+                  <div className="mt-2 glass-card p-3 border border-primary/30 bg-primary/10">
                     <div className="flex items-center gap-2">
-                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <CheckCircle className="w-4 h-4 text-primary" />
                       <div className="flex-1">
                         <p className="text-xs text-gray-400">Domain: {domainInput}</p>
-                        <p className="text-sm text-green-400 font-mono break-all">{resolvedAddress}</p>
+                        <p className="text-sm text-primary font-mono break-all">{resolvedAddress}</p>
                       </div>
                     </div>
                   </div>
@@ -891,7 +891,7 @@ export default function SendPage() {
                   />
                   <button
                     onClick={() => setAmount(balance)}
-                    className="px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold whitespace-nowrap"
+                    className="px-4 py-3 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-semibold whitespace-nowrap"
                   >
                     MAX
                   </button>

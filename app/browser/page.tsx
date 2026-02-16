@@ -492,7 +492,7 @@ export default function BrowserPage() {
             <button
               onClick={() => setDesktopMode(!desktopMode)}
               className={`p-1.5 rounded transition-colors flex items-center flex-shrink-0 ${
-                desktopMode ? "bg-green-500/30 text-green-400" : "hover:bg-white/10 text-white"
+                desktopMode ? "bg-primary/30 text-primary" : "hover:bg-white/10 text-white"
               }`}
             >
               <Monitor className="w-4 h-4" />
@@ -511,7 +511,7 @@ export default function BrowserPage() {
                 handleNavigate(tab.url)
               }}
               className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs whitespace-nowrap cursor-pointer transition-colors flex-shrink-0 ${
-                activeTab === tab.id ? "bg-green-500/30 text-green-400" : "bg-white/10 hover:bg-white/20 text-white"
+                activeTab === tab.id ? "bg-primary/30 text-primary" : "bg-white/10 hover:bg-white/20 text-white"
               }`}
             >
               <span className="truncate max-w-xs">{tab.title}</span>
@@ -641,7 +641,7 @@ export default function BrowserPage() {
                           }}
                           className="w-full text-left p-2 rounded hover:bg-white/10 transition-colors text-xs"
                         >
-                          <p className="font-semibold text-green-400 truncate">{item.title}</p>
+                          <p className="font-semibold text-primary truncate">{item.title}</p>
                           <p className="text-gray-400 text-xs truncate">{item.url}</p>
                         </button>
                       ))}

@@ -61,13 +61,13 @@ export function RainbowKitDemo() {
           {!connected ? (
             <button
               onClick={handleConnect}
-              className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold text-sm transition-colors"
+              className="px-6 py-2 bg-primary hover:bg-green-600 text-white rounded-lg font-semibold text-sm transition-colors"
             >
               {isInstalled ? 'Connect Unchained Wallet' : 'Connect Wallet'}
             </button>
           ) : (
             <div className="space-y-2 text-center">
-              <div className="px-4 py-2 bg-green-500/20 border border-green-500/50 rounded-lg">
+              <div className="px-4 py-2 bg-primary/20 border border-primary/50 rounded-lg">
                 <p className="text-xs text-green-300 mb-1">Connected</p>
                 <p className="text-xs text-gray-300 font-mono break-all">{account}</p>
               </div>

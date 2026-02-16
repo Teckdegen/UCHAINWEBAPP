@@ -59,14 +59,14 @@ export default function DashboardPage() {
       const savedChainId = saved ? Number(saved) : 97741
       // Ensure it's a valid chainId (1 for ETH, 97741 for PEPU), default to PEPU if invalid
       const validChainId = (savedChainId === 1 || savedChainId === 97741) ? savedChainId : 97741
-      
+
       // Sync with provider immediately on initialization (especially important for extension)
       if (validChainId !== 97741 || !saved) {
         // If not PEPU or no saved value, ensure both localStorage keys are set
         localStorage.setItem("selected_chain", validChainId.toString())
         localStorage.setItem("unchained_chain_id", validChainId.toString())
       }
-      
+
       return validChainId
     }
     return 97741
@@ -136,15 +136,15 @@ export default function DashboardPage() {
     // Only sync on mount, don't override user's explicit chain switches
     const provider = getUnchainedProvider()
     const providerChainId = provider.getChainId()
-    
+
     // Ensure chainId is valid (1 or 97741), default to PEPU if invalid
     const validChainId = (chainId === 1 || chainId === 97741) ? chainId : 97741
-    
+
     // Only sync if provider has invalid chainId OR if this is the first mount (not a chain switch)
     // Use a ref to track if this is the initial mount
     const isInitialMount = !(window as any).__unchained_dashboard_mounted
-    ;(window as any).__unchained_dashboard_mounted = true
-    
+      ; (window as any).__unchained_dashboard_mounted = true
+
     if (providerChainId !== 1 && providerChainId !== 97741) {
       // Provider has invalid chainId, default to PEPU
       console.log(`[Dashboard] Provider has invalid chainId ${providerChainId}, defaulting to PEPU`)
@@ -166,14 +166,14 @@ export default function DashboardPage() {
     updateActivity()
     setWallets(wallets)
     setCurrentWalletIdState(getCurrentWalletId())
-    
+
     // Load display currency
     if (typeof window !== "undefined") {
       setDisplayCurrency(getSavedCurrency())
     }
-    
+
     const wallet = getCurrentWallet() || wallets[0]
-    
+
     // Try to load from cache first if available
     const cacheKey = `balance_cache_${wallet.address}_${chainId}`
     const cached = localStorage.getItem(cacheKey)
@@ -188,15 +188,15 @@ export default function DashboardPage() {
         console.error("Error loading cached balances:", error)
       }
     }
-    
+
     // Only show loading if we don't have cached data (initial load)
     // If we have cache, show it immediately and fetch in background
     const hasCachedData = !!cached
     setIsInitialLoad(!hasCachedData)
     setLoading(!hasCachedData)
-    
+
     fetchBalances()
-    
+
     // Listen for currency changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "display_currency") {
@@ -205,43 +205,43 @@ export default function DashboardPage() {
       }
     }
     window.addEventListener("storage", handleStorageChange)
-    
+
     // Set up retry mechanism: retry more frequently when RPC is unhealthy
     let retryInterval: NodeJS.Timeout | null = null
     let healthCheckInterval: NodeJS.Timeout | null = null
-    
+
     const setupRetryInterval = () => {
       // Clear existing interval
       if (retryInterval) {
         clearInterval(retryInterval)
       }
-      
+
       // Check health status
       const healthStatus = getRpcHealthStatus(chainId)
-      
+
       // If unhealthy, retry every 5 seconds; otherwise every 30 seconds
       const retryDelay = healthStatus.isHealthy ? 30000 : 5000
-      
+
       retryInterval = setInterval(() => {
-    fetchBalances()
+        fetchBalances()
       }, retryDelay)
     }
-    
+
     // Initial setup
     setupRetryInterval()
-    
+
     // Subscribe to health status changes to adjust retry interval
     const unsubscribe = subscribeToRpcHealth((updatedChainId, status) => {
       if (updatedChainId === chainId) {
         setupRetryInterval()
       }
     })
-    
+
     // Also check health status periodically to catch any missed updates
     healthCheckInterval = setInterval(() => {
       setupRetryInterval()
     }, 10000) // Check every 10 seconds
-    
+
     return () => {
       if (retryInterval) clearInterval(retryInterval)
       if (healthCheckInterval) clearInterval(healthCheckInterval)
@@ -255,18 +255,18 @@ export default function DashboardPage() {
     if (typeof window !== "undefined") {
       // Only sync if chainId is valid (1 or 97741)
       const validChainId = (chainId === 1 || chainId === 97741) ? chainId : 97741
-      
+
       // Sync both localStorage keys
       localStorage.setItem("selected_chain", validChainId.toString())
       localStorage.setItem("unchained_chain_id", validChainId.toString())
-      
+
       // Sync provider chainId - respect user's choice
       const provider = getUnchainedProvider()
       if (provider.getChainId() !== validChainId) {
         console.log(`[Dashboard] Updating provider chainId to ${validChainId}`)
         provider.setChainId(validChainId)
       }
-      
+
       // Update state if chainId was invalid
       if (validChainId !== chainId) {
         setChainId(validChainId)
@@ -277,9 +277,9 @@ export default function DashboardPage() {
   const fetchBalances = async () => {
     // Only show loading on initial load
     if (isInitialLoad) {
-    setLoading(true)
+      setLoading(true)
     }
-    
+
     try {
       const wallets = getWallets()
       if (wallets.length === 0) {
@@ -325,9 +325,9 @@ export default function DashboardPage() {
       }
 
       allBalances.push({
-          symbol: nativeSymbol,
-          name: currentChainId === 1 ? "Ethereum" : "Pepe Unchained",
-          balance,
+        symbol: nativeSymbol,
+        name: currentChainId === 1 ? "Ethereum" : "Pepe Unchained",
+        balance,
         usdValue: nativeUsdValue,
         isNative: true,
         isBonded: nativePrice > 0, // Native token is bonded if price > 0
@@ -343,7 +343,7 @@ export default function DashboardPage() {
               console.log("[Dashboard] Fetching ETH tokens for:", wallet.address)
               const ethTokens = await getAllEthTokenBalances(wallet.address)
               console.log("[Dashboard] Found ETH tokens:", ethTokens.length)
-              
+
               // Filter out blacklisted tokens
               const filteredTokens = ethTokens.filter(
                 (token) => !isTokenBlacklisted(token.address, chainId)
@@ -354,7 +354,7 @@ export default function DashboardPage() {
               for (const token of filteredTokens) {
                 const balanceFormatted = token.balanceFormatted
                 const balanceNum = Number.parseFloat(balanceFormatted)
-                
+
                 if (balanceNum > 0) {
                   allBalances.push({
                     symbol: token.symbol,
@@ -447,7 +447,7 @@ export default function DashboardPage() {
                 try {
                   // Get price from Quoter + CoinGecko (not GeckoTerminal)
                   const quoterPrice = await getPepuTokenPriceFromQuoter(tokenAddress, dec)
-                  
+
                   if (quoterPrice !== null && quoterPrice > 0) {
                     priceUsd = quoterPrice
                     isBonded = true
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                   isBonded,
                   priceUsd: isBonded ? priceUsd : null,
                 }
-    } catch (error) {
+              } catch (error) {
                 console.error(`Error fetching token ${tokenAddress}:`, error)
                 return null
               }
@@ -512,15 +512,15 @@ export default function DashboardPage() {
       }, 0)
 
       const portfolioValueStr = totalValue.toFixed(2)
-      
+
       // Update state
       setBalances(allBalances)
       setPortfolioValue(portfolioValueStr)
-      
+
       // Update cache
       setCachedBalances(allBalances)
       setCachedPortfolioValue(portfolioValueStr)
-      
+
       // Save to localStorage
       // CRITICAL: Convert BigInt values to strings before serialization
       const sanitizedBalances = allBalances.map(balance => {
@@ -533,26 +533,26 @@ export default function DashboardPage() {
         })
         return sanitized
       })
-      
+
       const cacheKey = `balance_cache_${wallet.address}_${chainId}`
       localStorage.setItem(cacheKey, JSON.stringify({
         balances: sanitizedBalances,
         portfolioValue: portfolioValueStr,
         timestamp: Date.now(),
       }))
-      
+
       // Report success if we got here (balance fetch succeeded)
       reportRpcSuccess(chainId)
-      
+
     } catch (error: any) {
       console.error("Error fetching balances:", error)
-      
+
       // Report RPC error if it's an RPC-related error
       const errorMessage = error?.message || String(error) || "Unknown error"
       if (errorMessage.includes("RPC") || errorMessage.includes("connection") || errorMessage.includes("fetch") || errorMessage.includes("network")) {
         reportRpcError(chainId, errorMessage)
       }
-      
+
       // On error, use cached data if available (only if not initial load)
       if (!isInitialLoad && cachedBalances.length > 0) {
         console.log("[Dashboard] Using cached balances due to fetch error")
@@ -574,13 +574,13 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-black text-white pb-24 relative">
       {/* RPC Connection Notification */}
       <RpcConnectionNotification chainId={chainId} />
-      
+
       {/* Header */}
       <div className="glass-card rounded-none p-6 border-b border-white/10 relative z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           {/* Chain Toggle Switch - Top Left */}
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <span className={`text-[10px] md:text-xs font-medium transition-colors ${chainId === 1 ? 'text-white' : 'text-gray-500'}`}>
               ETH
             </span>
             <button
@@ -597,33 +597,31 @@ export default function DashboardPage() {
                 provider.setChainId(newChainId)
                 console.log(`[Dashboard] Chain switched to ${newChainId === 97741 ? 'PEPU' : 'ETH'}`)
               }}
-              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                chainId === 97741 ? 'bg-green-500' : 'bg-gray-600'
-              }`}
+              className={`relative inline-flex h-6 w-11 md:h-7 md:w-14 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${chainId === 97741 ? 'bg-primary shadow-[0_0_10px_rgba(0,255,0,0.3)]' : 'bg-gray-700'
+                }`}
               role="switch"
               aria-checked={chainId === 97741}
             >
               <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                  chainId === 97741 ? 'translate-x-8' : 'translate-x-1'
-                }`}
+                className={`inline-block h-4 w-4 md:h-5 md:w-5 transform rounded-full bg-black transition-transform duration-300 ${chainId === 97741 ? 'translate-x-6 md:translate-x-8' : 'translate-x-1'
+                  }`}
               />
             </button>
-            <span className={`text-xs font-medium transition-colors ${chainId === 97741 ? 'text-white' : 'text-gray-500'}`}>
+            <span className={`text-[10px] md:text-xs font-semibold md:font-medium transition-colors ${chainId === 97741 ? 'text-primary' : 'text-gray-500'}`}>
               PEPU
             </span>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Wallet selector */}
             {wallets.length > 0 && (
               <div className="relative">
                 <button
                   onClick={() => setShowWalletMenu((prev) => !prev)}
-                  className="glass-card px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white/10 transition-colors"
+                  className="glass-card px-2 py-1.5 md:px-3 md:py-2 rounded-xl flex items-center gap-1.5 md:gap-2 hover:bg-white/10 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="text-xs font-bold text-green-400">
+                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-[10px] md:text-xs font-bold text-primary">
                       {(() => {
                         const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
                         const displayName = walletDomains[activeWallet?.id || ""] || activeWallet?.name || "W"
@@ -632,14 +630,14 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="text-left">
-                    <p className="text-xs text-gray-400">Active PEPU VAULT WALLET</p>
-                    <p className="text-sm font-semibold">
+                    <p className="hidden md:block text-[10px] text-gray-400">Active PEPU VAULT WALLET</p>
+                    <p className="text-xs md:text-sm font-semibold truncate max-w-[80px] md:max-w-none">
                       {(() => {
                         const activeWallet = wallets.find((w) => w.id === currentWalletId) || wallets[0]
                         return walletDomains[activeWallet?.id || ""] || activeWallet?.name || "My PEPU VAULT WALLET"
                       })()}
                     </p>
-          </div>
+                  </div>
                 </button>
                 {/* Simple dropdown list, toggled by button */}
                 {showWalletMenu && (
@@ -653,9 +651,8 @@ export default function DashboardPage() {
                           setShowWalletMenu(false)
                           fetchBalances()
                         }}
-                        className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 flex flex-col ${
-                          wallet.id === currentWalletId ? "bg-green-500/10" : ""
-                        }`}
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-white/10 flex flex-col ${wallet.id === currentWalletId ? "bg-primary/10" : ""
+                          }`}
                       >
                         <span className="font-semibold">
                           {walletDomains[wallet.id] || wallet.name || "Wallet"}
@@ -672,10 +669,10 @@ export default function DashboardPage() {
                         setAddWalletError("")
                         setShowWalletMenu(false)
                       }}
-                      className="w-full text-left px-3 py-2 text-xs text-green-400 hover:bg-green-500/10 border-t border-white/10"
+                      className="w-full text-left px-3 py-2 text-xs text-primary hover:bg-primary/10 border-t border-white/10"
                     >
                       + Add Wallet
-          </button>
+                    </button>
                   </div>
                 )}
               </div>
@@ -721,19 +718,19 @@ export default function DashboardPage() {
             // Ethereum: Send + Receive + Add Custom Token (+)
             <div className="space-y-3">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <Link href="/send" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-              <div className="flex justify-center mb-2">
-                <Send className="w-6 h-6 text-green-500" />
-              </div>
-              <p className="text-sm font-semibold">Send</p>
-            </Link>
+                <Link href="/send" className="glass-card p-3 md:p-4 text-center hover:bg-white/10 transition-all">
+                  <div className="flex justify-center mb-1 md:mb-2">
+                    <Send className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                  </div>
+                  <p className="text-xs md:text-sm font-semibold">Send</p>
+                </Link>
 
-            <Link href="/receive" className="glass-card p-4 text-center hover:bg-white/10 transition-all">
-              <div className="flex justify-center mb-2">
-                <Download className="w-6 h-6 text-green-500" />
-              </div>
-              <p className="text-sm font-semibold">Receive</p>
-            </Link>
+                <Link href="/receive" className="glass-card p-3 md:p-4 text-center hover:bg-white/10 transition-all">
+                  <div className="flex justify-center mb-1 md:mb-2">
+                    <Download className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                  </div>
+                  <p className="text-xs md:text-sm font-semibold">Receive</p>
+                </Link>
               </div>
 
               {/* ETH Add Custom Token "+" button under Send/Receive */}
@@ -744,45 +741,45 @@ export default function DashboardPage() {
                     setCustomTokenAddress("")
                     setCustomTokenError("")
                   }}
-                  className="w-10 h-10 rounded-full bg-green-500 text-black flex items-center justify-center text-xl font-bold hover:bg-green-400 transition-colors"
+                  className="w-10 h-10 rounded-full bg-primary text-black flex items-center justify-center text-xl font-bold hover:bg-green-400 transition-colors"
                   aria-label="Add custom token"
                 >
                   +
                 </button>
-                  </div>
-                </div>
+              </div>
+            </div>
           ) : (
             // PEPU: Swap + Tokens + Transactions - All on one line, compact size (Bridge hidden)
             <div className="flex items-center justify-between gap-1 flex-nowrap">
               <Link href="/trade" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
-                  <ArrowLeftRight className="w-2.5 h-2.5 text-green-500" />
-                  </div>
+                  <ArrowLeftRight className="w-2.5 h-2.5 text-primary" />
+                </div>
                 <p className="text-[8px] font-semibold leading-tight">Trade</p>
               </Link>
 
               <Link href="/tokens" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
-                  <Coins className="w-2.5 h-2.5 text-green-500" />
+                  <Coins className="w-2.5 h-2.5 text-primary" />
                 </div>
                 <p className="text-[8px] font-semibold leading-tight">Tokens</p>
               </Link>
 
               <Link href="/transactions" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
-                  <History className="w-2.5 h-2.5 text-green-500" />
-                  </div>
+                  <History className="w-2.5 h-2.5 text-primary" />
+                </div>
                 <p className="text-[8px] font-semibold leading-tight">Txs</p>
               </Link>
 
               <Link href="/rewards" className="glass-card p-1.5 text-center hover:bg-white/10 transition-all flex-shrink-0 flex-1 min-w-0">
                 <div className="flex justify-center mb-0.5">
-                  <Gift className="w-2.5 h-2.5 text-green-500" />
-                  </div>
+                  <Gift className="w-2.5 h-2.5 text-primary" />
+                </div>
                 <p className="text-[8px] font-semibold leading-tight">Rewards</p>
               </Link>
-                </div>
-            )}
+            </div>
+          )}
         </div>
 
         {/* Token List */}
@@ -796,8 +793,8 @@ export default function DashboardPage() {
             {balances.map((token) => (
               <div key={token.symbol} className="glass-card p-4 flex items-center justify-between hover:bg-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <span className="text-green-500 font-bold text-sm">{token.symbol[0]}</span>
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <span className="text-primary font-bold text-sm">{token.symbol[0]}</span>
                   </div>
                   <div>
                     <p className="font-semibold">{token.name}</p>
@@ -809,7 +806,7 @@ export default function DashboardPage() {
                   {!token.isNative && !token.isBonded ? (
                     <p className="text-xs text-gray-500">Not Bonded</p>
                   ) : (
-                  <p className="text-xs text-green-400">{displayCurrency.symbol}{token.usdValue}</p>
+                    <p className="text-xs text-primary">{displayCurrency.symbol}{token.usdValue}</p>
                   )}
                 </div>
               </div>
@@ -910,7 +907,7 @@ export default function DashboardPage() {
                   setCustomTokenError(err.message || "Failed to add token")
                 }
               }}
-              className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all text-sm"
+              className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all text-sm"
             >
               {customTokenInfo ? "Confirm & Save Token" : "Lookup Token"}
             </button>
@@ -949,7 +946,7 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 <button
                   onClick={() => setAddWalletMode("from-seed")}
-                  className="w-full px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 font-semibold transition-all text-sm"
+                  className="w-full px-4 py-3 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 font-semibold transition-all text-sm"
                 >
                   Create New PEPU VAULT WALLET (New Seed)
                 </button>
@@ -1023,7 +1020,7 @@ export default function DashboardPage() {
                       setAddWalletLoading(false)
                     }
                   }}
-                  className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                  className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
                 >
                   {addWalletLoading ? "Creating..." : "Create PEPU VAULT WALLET"}
                 </button>
@@ -1097,7 +1094,7 @@ export default function DashboardPage() {
                       setAddWalletLoading(false)
                     }
                   }}
-                  className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                  className="w-full px-4 py-3 rounded-lg bg-primary text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
                 >
                   {addWalletLoading ? "Importing..." : "Import Seed Phrase"}
                 </button>
@@ -1171,7 +1168,7 @@ export default function DashboardPage() {
                       setAddWalletLoading(false)
                     }
                   }}
-                  className="w-full px-4 py-3 rounded-lg bg-green-500 text-black hover:bg-green-600 font-semibold transition-all disabled:opacity-50 text-sm"
+                  className="btn-primary w-full text-sm"
                 >
                   {addWalletLoading ? "Importing..." : "Import Private Key"}
                 </button>

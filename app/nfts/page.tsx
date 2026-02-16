@@ -196,8 +196,8 @@ export default function NFTsPage() {
       <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-              <ImageIcon className="w-5 h-5 text-green-500" />
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <ImageIcon className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold">NFT Gallery</h1>
@@ -213,14 +213,14 @@ export default function NFTsPage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 mt-8">
         <p className="text-sm text-gray-400 mb-2">Network</p>
-        <button className="px-4 py-2 rounded-lg font-semibold bg-green-500/20 text-green-400 cursor-default mb-6">
+        <button className="px-4 py-2 rounded-lg font-semibold bg-primary/20 text-primary cursor-default mb-6">
           PEPU Only
         </button>
 
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="flex flex-col items-center gap-3">
-              <Loader className="w-8 h-8 animate-spin text-green-500" />
+              <Loader className="w-8 h-8 animate-spin text-primary" />
               <p className="text-gray-400">Loading NFTs from blockchain...</p>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function NFTsPage() {
             {nfts.map((nft, idx) => (
               <div
                 key={`${nft.contractAddress}-${nft.tokenId}-${idx}`}
-                className="glass-card overflow-hidden hover:border-green-500/50 transition-all group"
+                className="glass-card overflow-hidden hover:border-primary/50 transition-all group"
               >
                 <div className="relative aspect-square bg-white/5 overflow-hidden">
                   <img
@@ -251,7 +251,7 @@ export default function NFTsPage() {
                 <div className="p-4">
                   <p className="text-xs text-gray-400 mb-1">{nft.collectionName}</p>
                   <h3 className="font-bold mb-2 truncate">{nft.name}</h3>
-                  <p className="text-xs text-green-400">ID: {nft.tokenId}</p>
+                  <p className="text-xs text-primary">ID: {nft.tokenId}</p>
                 </div>
               </div>
             ))}

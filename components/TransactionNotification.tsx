@@ -50,19 +50,19 @@ export default function TransactionNotification({
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
       }`}
     >
-      <div className="glass-card p-4 border border-green-500/50 bg-gradient-to-r from-green-500/20 to-green-500/10 backdrop-blur-xl shadow-2xl shadow-green-500/20">
+      <div className="glass-card p-4 border border-primary/50 bg-gradient-to-r from-green-500/20 to-green-500/10 backdrop-blur-xl shadow-2xl shadow-green-500/20">
         {/* Progress bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-green-500/30 rounded-t-2xl overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-primary/30 rounded-t-2xl overflow-hidden">
           <div
-            className="h-full bg-green-500 transition-all duration-50 ease-linear"
+            className="h-full bg-primary transition-all duration-50 ease-linear"
             style={{ width: `${progress}%` }}
           />
         </div>
 
         <div className="flex items-start gap-3 pt-1">
           {/* Success Icon */}
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center border border-green-500/50">
-            <CheckCircle className="w-6 h-6 text-green-400" />
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center border border-primary/50">
+            <CheckCircle className="w-6 h-6 text-primary" />
           </div>
 
           {/* Content */}
@@ -78,7 +78,7 @@ export default function TransactionNotification({
                 href={explorerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:text-green-300 transition-colors"
               >
                 View on Explorer
                 <ExternalLink className="w-3 h-3" />

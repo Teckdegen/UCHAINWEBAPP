@@ -274,8 +274,8 @@ export default function DomainsPage() {
         {/* Header */}
         <div className="glass-card rounded-none p-6 border-b border-white/10 sticky top-0 backdrop-blur-xl bg-gradient-to-b from-black/80 to-black/60">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-green-500/30 shadow-lg shadow-green-500/20">
-              <Globe className="w-6 h-6 text-green-400" />
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500/30 to-green-500/10 flex items-center justify-center border border-primary/30 shadow-lg shadow-green-500/20">
+              <Globe className="w-6 h-6 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
@@ -290,14 +290,14 @@ export default function DomainsPage() {
           {/* User's Existing Domain */}
           {loadingUserDomain ? (
             <div className="glass-card p-8 text-center border border-white/10 backdrop-blur-xl">
-              <Loader className="w-6 h-6 animate-spin mx-auto text-green-500" />
+              <Loader className="w-6 h-6 animate-spin mx-auto text-primary" />
               <p className="text-sm text-gray-400 mt-3">Loading your domain...</p>
             </div>
           ) : userDomain && userDomainInfo ? (
-            <div className="glass-card p-6 border-2 border-green-500/40 bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent backdrop-blur-xl shadow-2xl shadow-green-500/20">
+            <div className="glass-card p-6 border-2 border-primary/40 bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent backdrop-blur-xl shadow-2xl shadow-green-500/20">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center border border-green-500/50">
-                  <CheckCircle className="w-6 h-6 text-green-400" />
+                <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center border border-primary/50">
+                  <CheckCircle className="w-6 h-6 text-primary" />
                 </div>
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
                   Your Domain
@@ -306,7 +306,7 @@ export default function DomainsPage() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-gray-400">Domain Name</p>
-                  <p className="text-lg font-semibold text-green-400">{userDomain}</p>
+                  <p className="text-lg font-semibold text-primary">{userDomain}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -365,7 +365,7 @@ export default function DomainsPage() {
                     }
                   }}
                   placeholder="Enter domain name (e.g., myname)"
-                  className="input-field pl-12 bg-white/5 border-white/20 focus:border-green-500/50 focus:ring-2 focus:ring-green-500/30"
+                  className="input-field pl-12 bg-white/5 border-white/20 focus:border-primary/50 focus:ring-2 focus:ring-green-500/30"
                 />
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               </div>
@@ -401,23 +401,23 @@ export default function DomainsPage() {
             <div
               className={`glass-card p-6 border-2 backdrop-blur-xl shadow-2xl transition-all duration-300 ${
                 isAvailable
-                  ? "border-green-500/50 bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent shadow-green-500/20"
+                  ? "border-primary/50 bg-gradient-to-br from-green-500/20 via-green-500/10 to-transparent shadow-green-500/20"
                   : "border-red-500/50 bg-gradient-to-br from-red-500/20 via-red-500/10 to-transparent shadow-red-500/20"
               }`}
             >
               <div className="flex items-center gap-4">
                 {isAvailable ? (
                   <>
-                    <div className="w-12 h-12 rounded-full bg-green-500/30 flex items-center justify-center border-2 border-green-500/50">
-                      <CheckCircle className="w-7 h-7 text-green-400" />
+                    <div className="w-12 h-12 rounded-full bg-primary/30 flex items-center justify-center border-2 border-primary/50">
+                      <CheckCircle className="w-7 h-7 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-lg text-green-400 mb-1">
+                      <p className="font-bold text-lg text-primary mb-1">
                         {searchQuery.replace(".pepu", "")}.pepu is available! 🎉
                       </p>
                       {domainStatus && (
                         <p className="text-sm text-gray-300">
-                          Base fee: <span className="font-semibold text-green-400">{Number.parseFloat(domainStatus.fee).toFixed(2)} USDC</span> per year
+                          Base fee: <span className="font-semibold text-primary">{Number.parseFloat(domainStatus.fee).toFixed(2)} USDC</span> per year
                         </p>
                       )}
                     </div>
@@ -447,10 +447,10 @@ export default function DomainsPage() {
 
           {/* Registration Form */}
           {showRegisterForm && isAvailable && (
-            <div className="glass-card p-6 space-y-6 border-2 border-green-500/30 bg-gradient-to-br from-green-500/10 via-transparent to-transparent backdrop-blur-xl shadow-2xl shadow-green-500/10">
+            <div className="glass-card p-6 space-y-6 border-2 border-primary/30 bg-gradient-to-br from-green-500/10 via-transparent to-transparent backdrop-blur-xl shadow-2xl shadow-green-500/10">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-green-500/30 flex items-center justify-center border border-green-500/50">
-                  <Globe className="w-5 h-5 text-green-400" />
+                <div className="w-10 h-10 rounded-full bg-primary/30 flex items-center justify-center border border-primary/50">
+                  <Globe className="w-5 h-5 text-primary" />
                 </div>
                 <h3 className="text-xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
                   Register Domain
@@ -465,7 +465,7 @@ export default function DomainsPage() {
                     onClick={() => setInputMode("days")}
                     className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
                       inputMode === "days"
-                        ? "bg-green-500 text-black"
+                        ? "bg-primary text-black"
                         : "bg-white/10 text-gray-400 hover:bg-white/20"
                     }`}
                   >
@@ -475,7 +475,7 @@ export default function DomainsPage() {
                     onClick={() => setInputMode("years")}
                     className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-all ${
                       inputMode === "years"
-                        ? "bg-green-500 text-black"
+                        ? "bg-primary text-black"
                         : "bg-white/10 text-gray-400 hover:bg-white/20"
                     }`}
                   >
@@ -513,7 +513,7 @@ export default function DomainsPage() {
                           }}
                           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                             days === d
-                              ? "bg-green-500 text-black"
+                              ? "bg-primary text-black"
                               : "bg-white/10 text-gray-400 hover:bg-white/20"
                           }`}
                         >
@@ -551,7 +551,7 @@ export default function DomainsPage() {
                             }}
                             className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                               years === y
-                                ? "bg-green-500 text-black"
+                                ? "bg-primary text-black"
                                 : "bg-white/10 text-gray-400 hover:bg-white/20"
                             }`}
                           >
@@ -570,7 +570,7 @@ export default function DomainsPage() {
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-semibold text-gray-300">Registration Fee</span>
                   {loadingFee ? (
-                    <Loader className="w-5 h-5 animate-spin text-green-400" />
+                    <Loader className="w-5 h-5 animate-spin text-primary" />
                   ) : (
                     <span className="text-2xl font-bold bg-gradient-to-r from-green-400 to-green-500 bg-clip-text text-transparent">
                       {Number.parseFloat(registrationFee).toFixed(2)} USDC
@@ -657,8 +657,8 @@ export default function DomainsPage() {
 
           {/* Success Message */}
           {success && (
-            <div className="glass-card p-4 border border-green-500/50 bg-green-500/10">
-              <p className="text-green-400 text-sm">{success}</p>
+            <div className="glass-card p-4 border border-primary/50 bg-primary/10">
+              <p className="text-primary text-sm">{success}</p>
             </div>
           )}
         </div>
